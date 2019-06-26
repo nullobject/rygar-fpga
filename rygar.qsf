@@ -46,7 +46,7 @@ set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
 set_global_assignment -name TOP_LEVEL_ENTITY rygar
 set_global_assignment -name VHDL_FILE src/single_port_ram.vhd
 set_global_assignment -name VHDL_FILE src/single_port_rom.vhd
-set_global_assignment -name VHDL_FILE src/rygar.vhd
+set_global_assignment -name VHDL_FILE src/rygar.vhd -hdl_version VHDL_2008
 set_global_assignment -name SDC_FILE src/rygar.sdc
 set_global_assignment -name VHDL_FILE src/t80/T80s.vhd
 set_global_assignment -name VHDL_FILE src/t80/T80_Reg.vhd
@@ -83,3 +83,36 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to key[0]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to key[1]
 set_location_assignment PIN_AH17 -to key[0]
 set_location_assignment PIN_AH16 -to key[1]
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[8]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[9]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[10]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[11]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[12]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[13]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[14]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[15]
+set_location_assignment PIN_AG13 -to debug[0]
+set_location_assignment PIN_AF13 -to debug[1]
+set_location_assignment PIN_AG10 -to debug[2]
+set_location_assignment PIN_AG9 -to debug[3]
+set_location_assignment PIN_U14 -to debug[4]
+set_location_assignment PIN_U13 -to debug[5]
+set_location_assignment PIN_AG8 -to debug[6]
+set_location_assignment PIN_AH8 -to debug[7]
+set_location_assignment PIN_AF17 -to debug[8]
+set_location_assignment PIN_AE15 -to debug[9]
+set_location_assignment PIN_AF15 -to debug[10]
+set_location_assignment PIN_AG16 -to debug[11]
+set_location_assignment PIN_AH11 -to debug[12]
+set_location_assignment PIN_AH12 -to debug[13]
+set_location_assignment PIN_AH9 -to debug[14]
+set_location_assignment PIN_AG11 -to debug[15]
