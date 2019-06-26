@@ -115,7 +115,7 @@ begin
   cpu : entity work.T80s
   port map(
     RESET_n => '1',
-    CLK_n   => cpu_clk,
+    CLK     => clk,
     WAIT_n  => '1',
     INT_n   => '1',
     NMI_n   => '1',
