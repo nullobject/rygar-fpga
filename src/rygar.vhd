@@ -15,8 +15,8 @@ architecture arch of rygar is
   -- cpu reset
   signal cpu_reset_n : std_logic;
 
-  -- cpu clock
-  signal cpu_clk : std_logic;
+  -- cpu clock enable
+  signal cpu_cen : std_logic;
 
   -- cpu address bus
   signal cpu_addr : std_logic_vector(15 downto 0);
@@ -42,9 +42,17 @@ architecture arch of rygar is
   -- cpu refresh: the lower seven bits of the address bus should be refreshed
   signal cpu_rfsh_n : std_logic;
 
-  -- XXX: for debugging
+  -- cpu interrupt: should be asserted to trigger an interrupt in the cpu
+  signal cpu_int_n : std_logic := '1';
+
+  -- cpu timing signal
   signal cpu_m1_n : std_logic;
+
+  -- XXX: for debugging
   signal cpu_halt_n : std_logic;
+
+  -- interrupt request acknowledge
+  signal irq_ack : std_logic;
 
   -- chip select signals
   signal prog_rom_1_cs  : std_logic;
@@ -70,6 +78,8 @@ architecture arch of rygar is
 
   signal current_bank : unsigned(3 downto 0);
 
+  signal video_vblank : std_logic;
+
   signal edge_det : std_logic;
   signal count : unsigned(31 downto 0);
 begin
@@ -81,7 +91,7 @@ begin
     end if;
   end process;
 
-  cpu_clk <= (not edge_det) and count(16);
+  cpu_cen <= (not edge_det) and count(16);
 
   -- generate cpu reset pulse after powering on, or when KEY0 is pressed
   reset_gen : entity work.reset_gen
@@ -89,6 +99,17 @@ begin
     clk => clk,
     reset => not key(0),
     reset_n => cpu_reset_n
+  );
+
+  video_gen : entity work.video_gen
+  port map(
+    cen    => '1',
+    clk    => clk,
+    csync  => open,
+    hblank => open,
+    hsync  => open,
+    vblank => video_vblank,
+    vsync  => open
   );
 
   -- program rom 1
@@ -190,9 +211,9 @@ begin
   port map(
     RESET_n => cpu_reset_n,
     CLK     => clk,
-    CEN     => cpu_clk,
+    CEN     => cpu_cen,
     WAIT_n  => '1',
-    INT_n   => '1',
+    INT_n   => cpu_int_n,
     NMI_n   => '1',
     BUSRQ_n => '1',
     M1_n    => cpu_m1_n,
@@ -237,12 +258,21 @@ begin
     end if;
   end process;
 
+  -- When the CPU handles an interrupt, the interrupt request must be cleared
+  -- by deasserting the INT pin. On the Rygar board, when the M1 and IORQ pins
+  -- are asserted together, then the interrupt is cleared.
+  irq_ack <= (not cpu_m1_n) and (not cpu_ioreq_n);
+
+  -- Triggers an interrupt when the VBLANK signal is deasserted.
+  cpu_int_n <= irq_ack when rising_edge(clk) and video_vblank = '0';
+
   -- The current bank for the bank switched ROM is set by the value of the
   -- register at $f808. From the schematic, we can see that data bus lines 3 to
   -- 6 are used to set the bank value.
   current_bank <= unsigned(cpu_dout(6 downto 3)) when
                   rising_edge(clk) and
                   cpu_mreq_n = '0' and
+                  cpu_rfsh_n = '1' and
                   cpu_wr_n = '0' and
                   cpu_addr = X"f808";
 
