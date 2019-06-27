@@ -77,30 +77,21 @@ begin
   begin
     if rising_edge(clk) then
       count <= count + 1;
-      edge_det <= count(22);
+      edge_det <= count(16);
     end if;
   end process;
 
-  cpu_clk <= (not edge_det) and count(22);
+  cpu_clk <= (not edge_det) and count(16);
 
-  -- Generate a one clock reset pulse after power on, or if KEY0 is pressed.
-  --
-  -- The Z80 needs to be reset after power on, otherwise it may receive garbage data from the
-  reset_gen : process(clk)
-    variable r : std_logic;
-  begin
-    if falling_edge(clk) then
-      if not key(0) then
-        cpu_reset_n <= '0';
-        r := '0';
-      else
-        cpu_reset_n <= r;
-        r := '1';
-      end if;
-    end if;
-  end process;
+  -- generate cpu reset pulse after powering on, or when KEY0 is pressed
+  reset_gen : entity work.reset_gen
+  port map(
+    clk => clk,
+    reset => not key(0),
+    reset_n => cpu_reset_n
+  );
 
-  -- prog rom 1: $0000-$7fff
+  -- program rom 1
   prog_rom_1 : entity work.single_port_rom
   generic map(ADDR_WIDTH => 15, DATA_WIDTH => 8, INIT_FILE => "cpu_5p.mif")
   port map(
@@ -109,7 +100,7 @@ begin
     dout => prog_rom_1_dout
   );
 
-  -- prog rom 2: $8000-$bfff
+  -- program rom 2
   prog_rom_2 : entity work.single_port_rom
   generic map(ADDR_WIDTH => 14, DATA_WIDTH => 8, INIT_FILE => "cpu_5m.mif")
   port map(
@@ -118,7 +109,7 @@ begin
     dout => prog_rom_2_dout
   );
 
-  -- work ram: $c000-$cfff
+  -- work ram
   work_ram : entity work.single_port_ram
   generic map(ADDR_WIDTH => 12, DATA_WIDTH => 8)
   port map(
@@ -129,7 +120,7 @@ begin
     we   => work_ram_cs and (not cpu_wr_n)
   );
 
-  -- char ram: $d000-$d7ff
+  -- character ram
   char_ram : entity work.single_port_ram
   generic map(ADDR_WIDTH => 11, DATA_WIDTH => 8)
   port map(
@@ -140,7 +131,7 @@ begin
     we   => char_ram_cs and (not cpu_wr_n)
   );
 
-  -- fg ram: $d800-$dbff
+  -- fg ram
   fg_ram : entity work.single_port_ram
   generic map(ADDR_WIDTH => 10, DATA_WIDTH => 8)
   port map(
@@ -151,7 +142,7 @@ begin
     we   => fg_ram_cs and (not cpu_wr_n)
   );
 
-  -- bg ram: $dc00-$dfff
+  -- bg ram
   bg_ram : entity work.single_port_ram
   generic map(ADDR_WIDTH => 10, DATA_WIDTH => 8)
   port map(
@@ -162,7 +153,7 @@ begin
     we   => bg_ram_cs and (not cpu_wr_n)
   );
 
-  -- sprite ram: $e000-$e7ff
+  -- sprite ram
   sprite_ram : entity work.single_port_ram
   generic map(ADDR_WIDTH => 11, DATA_WIDTH => 8)
   port map(
@@ -173,7 +164,7 @@ begin
     we   => sprite_ram_cs and (not cpu_wr_n)
   );
 
-  -- palette ram: $e800-$efff
+  -- palette ram
   palette_ram : entity work.single_port_ram
   generic map(ADDR_WIDTH => 11, DATA_WIDTH => 8)
   port map(
@@ -184,7 +175,7 @@ begin
     we   => palette_ram_cs and (not cpu_wr_n)
   );
 
-  -- bank switched rom: $f000-$f7ff
+  -- bank switched rom
   bank : entity work.single_port_rom
   generic map(ADDR_WIDTH => 15, DATA_WIDTH => 8, INIT_FILE => "cpu_5j.mif")
   port map(
@@ -193,7 +184,7 @@ begin
     dout => bank_dout
   );
 
-  -- main cpu
+  -- main z80 cpu
   cpu : entity work.T80s
   generic map(T2Write => 1)
   port map(
@@ -232,22 +223,28 @@ begin
 
     if cpu_mreq_n = '0' and cpu_rfsh_n = '1' then
       case? cpu_addr(15 downto 10) is
-        when "0-----" => prog_rom_1_cs  <= '1'; -- $0000-$7fff
-        when "10----" => prog_rom_2_cs  <= '1'; -- $8000-$bfff
-        when "1100--" => work_ram_cs    <= '1'; -- $c000-$cfff
-        when "11010-" => char_ram_cs    <= '1'; -- $d000-$d7ff
-        when "110110" => fg_ram_cs      <= '1'; -- $d800-$dbff
-        when "110111" => bg_ram_cs      <= '1'; -- $dc00-$dfff
-        when "11100-" => sprite_ram_cs  <= '1'; -- $e000-$e7ff
-        when "11101-" => palette_ram_cs <= '1'; -- $e800-$efff
-        when "11110-" => bank_cs        <= '1'; -- $f000-$f7ff
+        when "0-----" => prog_rom_1_cs  <= '1'; -- $0000-$7fff PROGRAM ROM 1
+        when "10----" => prog_rom_2_cs  <= '1'; -- $8000-$bfff PROGRAM ROM 2
+        when "1100--" => work_ram_cs    <= '1'; -- $c000-$cfff WORK RAM
+        when "11010-" => char_ram_cs    <= '1'; -- $d000-$d7ff CHARACTER RAM
+        when "110110" => fg_ram_cs      <= '1'; -- $d800-$dbff FOREGROUND RAM
+        when "110111" => bg_ram_cs      <= '1'; -- $dc00-$dfff BACKGROUND RAM
+        when "11100-" => sprite_ram_cs  <= '1'; -- $e000-$e7ff SPRITE RAM
+        when "11101-" => palette_ram_cs <= '1'; -- $e800-$efff PALETTE RAM
+        when "11110-" => bank_cs        <= '1'; -- $f000-$f7ff BANK SWITCHED ROM
         when "11111-" => null;                  -- $f800-$ffff
       end case?;
     end if;
   end process;
 
-  -- register $f808 sets the current bank
-  current_bank <= unsigned(cpu_dout(6 downto 3)) when rising_edge(clk) and cpu_mreq_n = '0' and cpu_wr_n = '0' and cpu_addr = X"f808";
+  -- The current bank for the bank switched ROM is set by the value of the
+  -- register at $f808. From the schematic, we can see that data bus lines 3 to
+  -- 6 are used to set the bank value.
+  current_bank <= unsigned(cpu_dout(6 downto 3)) when
+                  rising_edge(clk) and
+                  cpu_mreq_n = '0' and
+                  cpu_wr_n = '0' and
+                  cpu_addr = X"f808";
 
   -- multiplex cpu data input bus
   cpu_din <= (others => '0') when cpu_rd_n = '1' else
@@ -263,7 +260,13 @@ begin
              (others => '0');
 
   led <= cpu_din;
-  debug <= (not cpu_m1_n) & (not cpu_mreq_n) & (not cpu_rd_n) & (not cpu_wr_n) & (not cpu_rfsh_n) & (not cpu_halt_n) & cpu_addr(9 downto 0);
+  debug <= (not cpu_m1_n) &
+           (not cpu_mreq_n) &
+           (not cpu_rd_n) &
+           (not cpu_wr_n) &
+           (not cpu_rfsh_n) &
+           (not cpu_halt_n) &
+           cpu_addr(9 downto 0);
 
   -- led(0) <= prog_rom_1_cs;
   -- led(1) <= prog_rom_2_cs;

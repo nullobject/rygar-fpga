@@ -46,6 +46,7 @@ set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
 set_global_assignment -name TOP_LEVEL_ENTITY rygar
 set_global_assignment -name VHDL_FILE src/single_port_ram.vhd
 set_global_assignment -name VHDL_FILE src/single_port_rom.vhd
+set_global_assignment -name VHDL_FILE src/reset_gen.vhd -hdl_version VHDL_2008
 set_global_assignment -name VHDL_FILE src/rygar.vhd -hdl_version VHDL_2008
 set_global_assignment -name SDC_FILE src/rygar.sdc
 set_global_assignment -name VHDL_FILE src/t80/T80s.vhd
