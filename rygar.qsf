@@ -50,12 +50,7 @@ set_global_assignment -name VHDL_FILE src/reset_gen.vhd -hdl_version VHDL_2008
 set_global_assignment -name VHDL_FILE src/rygar.vhd -hdl_version VHDL_2008
 set_global_assignment -name VHDL_FILE src/video_gen.vhd -hdl_version VHDL_2008
 set_global_assignment -name SDC_FILE src/rygar.sdc
-set_global_assignment -name VHDL_FILE src/t80/T80s.vhd
-set_global_assignment -name VHDL_FILE src/t80/T80_Reg.vhd
-set_global_assignment -name VHDL_FILE src/t80/T80_Pack.vhd
-set_global_assignment -name VHDL_FILE src/t80/T80_MCode.vhd
-set_global_assignment -name VHDL_FILE src/t80/T80_ALU.vhd
-set_global_assignment -name VHDL_FILE src/t80/T80.vhd
+set_global_assignment -name QIP_FILE src/t80/T80.qip
 
 set_global_assignment -name MIN_CORE_JUNCTION_TEMP "-40"
 set_global_assignment -name MAX_CORE_JUNCTION_TEMP 100

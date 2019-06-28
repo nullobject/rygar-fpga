@@ -42,7 +42,7 @@ architecture arch of rygar is
   -- cpu refresh: the lower seven bits of the address bus should be refreshed
   signal cpu_rfsh_n : std_logic;
 
-  -- cpu interrupt: should be asserted to trigger an interrupt in the cpu
+  -- cpu interrupt: when this signal is asserted it triggers an interrupt
   signal cpu_int_n : std_logic := '1';
 
   -- cpu timing signal
@@ -57,6 +57,7 @@ architecture arch of rygar is
   -- chip select signals
   signal prog_rom_1_cs  : std_logic;
   signal prog_rom_2_cs  : std_logic;
+  signal prog_rom_3_cs  : std_logic;
   signal work_ram_cs    : std_logic;
   signal char_ram_cs    : std_logic;
   signal fg_ram_cs      : std_logic;
@@ -68,15 +69,16 @@ architecture arch of rygar is
   -- chip data output signals
   signal prog_rom_1_dout  : std_logic_vector(7 downto 0);
   signal prog_rom_2_dout  : std_logic_vector(7 downto 0);
+  signal prog_rom_3_dout  : std_logic_vector(7 downto 0);
   signal work_ram_dout    : std_logic_vector(7 downto 0);
   signal char_ram_dout    : std_logic_vector(7 downto 0);
   signal fg_ram_dout      : std_logic_vector(7 downto 0);
   signal bg_ram_dout      : std_logic_vector(7 downto 0);
   signal sprite_ram_dout  : std_logic_vector(7 downto 0);
   signal palette_ram_dout : std_logic_vector(7 downto 0);
-  signal bank_dout        : std_logic_vector(7 downto 0);
 
-  signal current_bank : unsigned(3 downto 0);
+  -- currently selected bank for program rom 3
+  signal prog_rom_3_bank : unsigned(3 downto 0);
 
   signal video_vblank : std_logic;
 
@@ -112,7 +114,7 @@ begin
     vsync  => open
   );
 
-  -- program rom 1
+  -- program rom 1 (32kB)
   prog_rom_1 : entity work.single_port_rom
   generic map(ADDR_WIDTH => 15, DATA_WIDTH => 8, INIT_FILE => "cpu_5p.mif")
   port map(
@@ -121,7 +123,7 @@ begin
     dout => prog_rom_1_dout
   );
 
-  -- program rom 2
+  -- program rom 2 (16kB)
   prog_rom_2 : entity work.single_port_rom
   generic map(ADDR_WIDTH => 14, DATA_WIDTH => 8, INIT_FILE => "cpu_5m.mif")
   port map(
@@ -130,7 +132,16 @@ begin
     dout => prog_rom_2_dout
   );
 
-  -- work ram
+  -- program rom 3 (32kB bank switched)
+  prog_rom_3 : entity work.single_port_rom
+  generic map(ADDR_WIDTH => 15, DATA_WIDTH => 8, INIT_FILE => "cpu_5j.mif")
+  port map(
+    clk  => clk,
+    addr => std_logic_vector(prog_rom_3_bank) & cpu_addr(10 downto 0),
+    dout => prog_rom_3_dout
+  );
+
+  -- work ram (4kB)
   work_ram : entity work.single_port_ram
   generic map(ADDR_WIDTH => 12, DATA_WIDTH => 8)
   port map(
@@ -141,7 +152,7 @@ begin
     we   => work_ram_cs and (not cpu_wr_n)
   );
 
-  -- character ram
+  -- character ram (2kB)
   char_ram : entity work.single_port_ram
   generic map(ADDR_WIDTH => 11, DATA_WIDTH => 8)
   port map(
@@ -152,7 +163,7 @@ begin
     we   => char_ram_cs and (not cpu_wr_n)
   );
 
-  -- fg ram
+  -- fg ram (1kB)
   fg_ram : entity work.single_port_ram
   generic map(ADDR_WIDTH => 10, DATA_WIDTH => 8)
   port map(
@@ -163,7 +174,7 @@ begin
     we   => fg_ram_cs and (not cpu_wr_n)
   );
 
-  -- bg ram
+  -- bg ram (1kB)
   bg_ram : entity work.single_port_ram
   generic map(ADDR_WIDTH => 10, DATA_WIDTH => 8)
   port map(
@@ -174,7 +185,7 @@ begin
     we   => bg_ram_cs and (not cpu_wr_n)
   );
 
-  -- sprite ram
+  -- sprite ram (2kB)
   sprite_ram : entity work.single_port_ram
   generic map(ADDR_WIDTH => 11, DATA_WIDTH => 8)
   port map(
@@ -185,7 +196,7 @@ begin
     we   => sprite_ram_cs and (not cpu_wr_n)
   );
 
-  -- palette ram
+  -- palette ram (2kB)
   palette_ram : entity work.single_port_ram
   generic map(ADDR_WIDTH => 11, DATA_WIDTH => 8)
   port map(
@@ -196,18 +207,8 @@ begin
     we   => palette_ram_cs and (not cpu_wr_n)
   );
 
-  -- bank switched rom
-  bank : entity work.single_port_rom
-  generic map(ADDR_WIDTH => 15, DATA_WIDTH => 8, INIT_FILE => "cpu_5j.mif")
-  port map(
-    clk  => clk,
-    addr => std_logic_vector(current_bank) & cpu_addr(10 downto 0),
-    dout => bank_dout
-  );
-
-  -- main z80 cpu
+  -- main cpu
   cpu : entity work.T80s
-  generic map(T2Write => 1)
   port map(
     RESET_n => cpu_reset_n,
     CLK     => clk,
@@ -229,11 +230,17 @@ begin
     DO      => cpu_dout
   );
 
-  -- enable chip select signals for the current cpu address
-  chip_select : process(cpu_addr, cpu_mreq_n, cpu_rfsh_n, cpu_halt_n)
+  -- Enable chip select signals for devices connected to the CPU data bus.
+  chip_select : process(cpu_addr, cpu_mreq_n, cpu_rfsh_n, cpu_rd_n, cpu_wr_n)
+    variable rd, wr: std_logic;
   begin
+    rd := not cpu_rd_n; -- cpu read
+    wr := not cpu_wr_n; -- cpu write
+
+    -- deassert all chip selects by default
     prog_rom_1_cs  <= '0';
     prog_rom_2_cs  <= '0';
+    prog_rom_3_cs  <= '0';
     work_ram_cs    <= '0';
     char_ram_cs    <= '0';
     fg_ram_cs      <= '0';
@@ -244,49 +251,46 @@ begin
 
     if cpu_mreq_n = '0' and cpu_rfsh_n = '1' then
       case? cpu_addr(15 downto 10) is
-        when "0-----" => prog_rom_1_cs  <= '1'; -- $0000-$7fff PROGRAM ROM 1
-        when "10----" => prog_rom_2_cs  <= '1'; -- $8000-$bfff PROGRAM ROM 2
-        when "1100--" => work_ram_cs    <= '1'; -- $c000-$cfff WORK RAM
-        when "11010-" => char_ram_cs    <= '1'; -- $d000-$d7ff CHARACTER RAM
-        when "110110" => fg_ram_cs      <= '1'; -- $d800-$dbff FOREGROUND RAM
-        when "110111" => bg_ram_cs      <= '1'; -- $dc00-$dfff BACKGROUND RAM
-        when "11100-" => sprite_ram_cs  <= '1'; -- $e000-$e7ff SPRITE RAM
-        when "11101-" => palette_ram_cs <= '1'; -- $e800-$efff PALETTE RAM
-        when "11110-" => bank_cs        <= '1'; -- $f000-$f7ff BANK SWITCHED ROM
-        when "11111-" => null;                  -- $f800-$ffff
+        when "0-----" => prog_rom_1_cs  <= rd;       -- $0000-$7fff PROGRAM ROM 1
+        when "10----" => prog_rom_2_cs  <= rd;       -- $8000-$bfff PROGRAM ROM 2
+        when "1100--" => work_ram_cs    <= rd or wr; -- $c000-$cfff WORK RAM
+        when "11010-" => char_ram_cs    <= rd or wr; -- $d000-$d7ff CHARACTER RAM
+        when "110110" => fg_ram_cs      <= rd or wr; -- $d800-$dbff FOREGROUND RAM
+        when "110111" => bg_ram_cs      <= rd or wr; -- $dc00-$dfff BACKGROUND RAM
+        when "11100-" => sprite_ram_cs  <= rd or wr; -- $e000-$e7ff SPRITE RAM
+        when "11101-" => palette_ram_cs <= rd or wr; -- $e800-$efff PALETTE RAM
+        when "11110-" => prog_rom_3_cs  <= rd;       -- $f000-$f7ff PROGRAM ROM 3 (BANK SWITCHED)
+        when "11111-" =>                             -- $f800-$ffff
+          case cpu_addr(3 downto 0) is
+            when "1000" => bank_cs      <= wr;       -- $f808 BANK REGISTER
+            when others => null;
+          end case;
       end case?;
     end if;
   end process;
 
-  -- When the CPU handles an interrupt, the interrupt request must be cleared
-  -- by deasserting the INT pin. On the Rygar board, when the M1 and IORQ pins
-  -- are asserted together, then the interrupt is cleared.
+  -- An interrupt request is triggered when the VBLANK signal is deasserted.
+  --
+  -- Once the interrupt request is handled by the CPU, it is cleared by
+  -- deasserting the INT signal. When the M1 and IORQ signal are asserted, then
+  -- the interrupt is cleared.
   irq_ack <= (not cpu_m1_n) and (not cpu_ioreq_n);
-
-  -- Triggers an interrupt when the VBLANK signal is deasserted.
   cpu_int_n <= irq_ack when rising_edge(clk) and video_vblank = '0';
 
-  -- The current bank for the bank switched ROM is set by the value of the
-  -- register at $f808. From the schematic, we can see that data bus lines 3 to
-  -- 6 are used to set the bank value.
-  current_bank <= unsigned(cpu_dout(6 downto 3)) when
-                  rising_edge(clk) and
-                  cpu_mreq_n = '0' and
-                  cpu_rfsh_n = '1' and
-                  cpu_wr_n = '0' and
-                  cpu_addr = X"f808";
+  -- The register that controls the currently selected bank of program ROM
+  -- 3 (5J) is set from lines 3 to 6 of the data bus.
+  prog_rom_3_bank <= unsigned(cpu_dout(6 downto 3)) when rising_edge(clk) and bank_cs = '1';
 
-  -- multiplex cpu data input bus
-  cpu_din <= (others => '0') when cpu_rd_n = '1' else
-             prog_rom_1_dout when prog_rom_1_cs = '1' else
-             prog_rom_2_dout when prog_rom_2_cs = '1' else
+  -- Connect the selected devices to the CPU data input bus.
+  cpu_din <= prog_rom_1_dout when prog_rom_1_cs else
+             prog_rom_2_dout when prog_rom_2_cs else
+             prog_rom_3_dout when prog_rom_3_cs else
              work_ram_dout when work_ram_cs else
              char_ram_dout when char_ram_cs else
              fg_ram_dout when fg_ram_cs else
              bg_ram_dout when bg_ram_cs else
              sprite_ram_dout when sprite_ram_cs else
              palette_ram_dout when palette_ram_cs else
-             bank_dout when bank_cs = '1' else
              (others => '0');
 
   led <= cpu_din;
