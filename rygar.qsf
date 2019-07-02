@@ -42,31 +42,17 @@ set_global_assignment -name ORIGINAL_QUARTUS_VERSION 18.1.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "16:15:06  JUNE 21, 2019"
 set_global_assignment -name LAST_QUARTUS_VERSION "18.1.0 Lite Edition"
 set_global_assignment -name NUM_PARALLEL_PROCESSORS ALL
-set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
-set_global_assignment -name TOP_LEVEL_ENTITY rygar
-set_global_assignment -name VHDL_FILE src/single_port_ram.vhd
-set_global_assignment -name VHDL_FILE src/single_port_rom.vhd
-set_global_assignment -name VHDL_FILE src/reset_gen.vhd -hdl_version VHDL_2008
-set_global_assignment -name VHDL_FILE src/rygar.vhd -hdl_version VHDL_2008
-set_global_assignment -name VHDL_FILE src/video_gen.vhd -hdl_version VHDL_2008
-set_global_assignment -name SDC_FILE src/rygar.sdc
-set_global_assignment -name QIP_FILE src/t80/T80.qip
 
 set_global_assignment -name MIN_CORE_JUNCTION_TEMP "-40"
 set_global_assignment -name MAX_CORE_JUNCTION_TEMP 100
 set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 256
 
+# clock
 set_location_assignment PIN_V11 -to clk
+
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to clk
 
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[0]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[1]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[2]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[3]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[4]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[5]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[6]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[7]
+# led
 set_location_assignment PIN_W15 -to led[0]
 set_location_assignment PIN_AA24 -to led[1]
 set_location_assignment PIN_V16 -to led[2]
@@ -76,40 +62,60 @@ set_location_assignment PIN_AE26 -to led[5]
 set_location_assignment PIN_Y16 -to led[6]
 set_location_assignment PIN_AA23 -to led[7]
 
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to key[0]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to key[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to led
+set_instance_assignment -name SLEW_RATE 1 -to led
+
 set_location_assignment PIN_AH17 -to key[0]
 set_location_assignment PIN_AH16 -to key[1]
 
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[0]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[1]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[2]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[3]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[4]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[5]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[6]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[7]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[8]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[9]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[10]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[11]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[12]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[13]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[14]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[15]
-set_location_assignment PIN_AG13 -to debug[0]
-set_location_assignment PIN_AF13 -to debug[1]
-set_location_assignment PIN_AG10 -to debug[2]
-set_location_assignment PIN_AG9 -to debug[3]
-set_location_assignment PIN_U14 -to debug[4]
-set_location_assignment PIN_U13 -to debug[5]
-set_location_assignment PIN_AG8 -to debug[6]
-set_location_assignment PIN_AH8 -to debug[7]
-set_location_assignment PIN_AF17 -to debug[8]
-set_location_assignment PIN_AE15 -to debug[9]
-set_location_assignment PIN_AF15 -to debug[10]
-set_location_assignment PIN_AG16 -to debug[11]
-set_location_assignment PIN_AH11 -to debug[12]
-set_location_assignment PIN_AH12 -to debug[13]
-set_location_assignment PIN_AH9 -to debug[14]
-set_location_assignment PIN_AG11 -to debug[15]
+# key
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to key[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to key[1]
+
+# vga
+set_location_assignment PIN_AE17 -to vga_r[0]
+set_location_assignment PIN_AE20 -to vga_r[1]
+set_location_assignment PIN_AF20 -to vga_r[2]
+set_location_assignment PIN_AH18 -to vga_r[3]
+set_location_assignment PIN_AH19 -to vga_r[4]
+set_location_assignment PIN_AF21 -to vga_r[5]
+
+set_location_assignment PIN_AE19 -to vga_g[0]
+set_location_assignment PIN_AG15 -to vga_g[1]
+set_location_assignment PIN_AF18 -to vga_g[2]
+set_location_assignment PIN_AG18 -to vga_g[3]
+set_location_assignment PIN_AG19 -to vga_g[4]
+set_location_assignment PIN_AG20 -to vga_g[5]
+
+set_location_assignment PIN_AG21 -to vga_b[0]
+set_location_assignment PIN_AA20 -to vga_b[1]
+set_location_assignment PIN_AE22 -to vga_b[2]
+set_location_assignment PIN_AF22 -to vga_b[3]
+set_location_assignment PIN_AH23 -to vga_b[4]
+set_location_assignment PIN_AH21 -to vga_b[5]
+
+set_location_assignment PIN_AH22 -to vga_hs
+set_location_assignment PIN_AG24 -to vga_vs
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to vga_*
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to vga_*
+
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
+set_global_assignment -name TOP_LEVEL_ENTITY rygar
+set_global_assignment -name VHDL_INPUT_VERSION VHDL_2008
+set_global_assignment -name SDC_FILE src/rygar.sdc
+set_global_assignment -name QIP_FILE src/pll.qip
+set_global_assignment -name QIP_FILE src/t80/T80.qip
+set_global_assignment -name VHDL_FILE src/reset_gen.vhd
+set_global_assignment -name VHDL_FILE src/rygar.vhd
+set_global_assignment -name VHDL_FILE src/single_port_ram.vhd
+set_global_assignment -name VHDL_FILE src/single_port_rom.vhd
+set_global_assignment -name VHDL_FILE src/sync_gen.vhd
