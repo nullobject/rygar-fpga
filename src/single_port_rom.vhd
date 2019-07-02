@@ -6,12 +6,12 @@ library altera_mf;
 use altera_mf.altera_mf_components.all;
 
 entity single_port_rom is
-  generic(
+  generic (
     ADDR_WIDTH : integer := 8;
     DATA_WIDTH : integer := 8;
     INIT_FILE : string := ""
   );
-  port(
+  port (
     -- clock
     clk : in std_logic;
 

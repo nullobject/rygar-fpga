@@ -2,16 +2,33 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+library pll;
+
 entity rygar is
-  port(
+  port (
+    -- 50MHz reference clock
     clk : in std_logic;
+
+    -- vga colours
+    vga_r, vga_g, vga_b : out std_logic_vector(5 downto 0);
+
+    -- vga horizontal and vertical sync
+    vga_hs, vga_vs : out std_logic;
+
+    -- buttons
     key : in std_logic_vector(1 downto 0);
-    led : out std_logic_vector(7 downto 0);
-    debug : out std_logic_vector(15 downto 0)
+
+    -- leds
+    led : out std_logic_vector(7 downto 0)
   );
 end rygar;
 
 architecture arch of rygar is
+  -- clock signals
+  signal clk_12 : std_logic;
+  signal cen_6 : std_logic;
+  signal cen_4 : std_logic;
+
   -- cpu reset
   signal cpu_reset_n : std_logic;
 
@@ -22,8 +39,7 @@ architecture arch of rygar is
   signal cpu_addr : std_logic_vector(15 downto 0);
 
   -- cpu data bus
-  signal cpu_din  : std_logic_vector(7 downto 0);
-  signal cpu_dout : std_logic_vector(7 downto 0);
+  signal cpu_din, cpu_dout : std_logic_vector(7 downto 0);
 
   -- cpu io request: the address bus holds a valid address for an i/o read or
   -- write operation
@@ -48,7 +64,7 @@ architecture arch of rygar is
   -- cpu timing signal
   signal cpu_m1_n : std_logic;
 
-  -- XXX: for debugging
+  -- cpu halt signal
   signal cpu_halt_n : std_logic;
 
   -- interrupt request acknowledge
@@ -80,72 +96,80 @@ architecture arch of rygar is
   -- currently selected bank for program rom 3
   signal prog_rom_3_bank : unsigned(3 downto 0);
 
-  signal video_vblank : std_logic;
-
-  signal edge_det : std_logic;
-  signal count : unsigned(31 downto 0);
+  signal video_hpos, video_vpos : unsigned(8 downto 0);
+  signal video_hsync, video_vsync : std_logic;
+  signal video_hblank, video_vblank : std_logic;
+  signal video_on : std_logic;
 begin
-  clock_divider : process(clk)
-  begin
-    if rising_edge(clk) then
-      count <= count + 1;
-      edge_det <= count(16);
-    end if;
-  end process;
+  my_pll : entity pll.pll
+  port map (
+    refclk   => clk,
+    rst      => '0',
+    outclk_0 => clk_12,
+    locked   => open
+  );
 
-  cpu_cen <= (not edge_det) and count(16);
+  -- clock generator
+  clock_gen : entity work.clock_gen
+  port map (
+    clk_12 => clk_12,
+    cen_6  => cen_6,
+    cen_4  => cen_4
+  );
 
   -- generate cpu reset pulse after powering on, or when KEY0 is pressed
   reset_gen : entity work.reset_gen
-  port map(
-    clk => clk,
-    reset => not key(0),
+  port map (
+    clk     => clk_12,
+    reset   => not key(0),
     reset_n => cpu_reset_n
   );
 
-  video_gen : entity work.video_gen
-  port map(
-    cen    => '1',
-    clk    => clk,
-    csync  => open,
-    hblank => open,
-    hsync  => open,
-    vblank => video_vblank,
-    vsync  => open
+  -- video sync generator
+  sync_gen : entity work.sync_gen
+  port map (
+    clk    => clk_12,
+    cen    => cen_6,
+    hpos   => video_hpos,
+    vpos   => video_vpos,
+    hsync  => video_hsync,
+    vsync  => video_vsync,
+    hblank => video_hblank,
+    vblank => video_vblank
   );
 
   -- program rom 1 (32kB)
   prog_rom_1 : entity work.single_port_rom
-  generic map(ADDR_WIDTH => 15, DATA_WIDTH => 8, INIT_FILE => "cpu_5p.mif")
-  port map(
-    clk  => clk,
+  generic map (ADDR_WIDTH => 15, DATA_WIDTH => 8, INIT_FILE => "cpu_5p.mif")
+  port map (
+    clk  => clk_12,
     addr => cpu_addr(14 downto 0),
     dout => prog_rom_1_dout
   );
 
   -- program rom 2 (16kB)
   prog_rom_2 : entity work.single_port_rom
-  generic map(ADDR_WIDTH => 14, DATA_WIDTH => 8, INIT_FILE => "cpu_5m.mif")
-  port map(
-    clk  => clk,
+  generic map (ADDR_WIDTH => 14, DATA_WIDTH => 8, INIT_FILE => "cpu_5m.mif")
+  port map (
+    clk  => clk_12,
     addr => cpu_addr(13 downto 0),
     dout => prog_rom_2_dout
   );
 
   -- program rom 3 (32kB bank switched)
   prog_rom_3 : entity work.single_port_rom
-  generic map(ADDR_WIDTH => 15, DATA_WIDTH => 8, INIT_FILE => "cpu_5j.mif")
-  port map(
-    clk  => clk,
+  generic map (ADDR_WIDTH => 15, DATA_WIDTH => 8, INIT_FILE => "cpu_5j.mif")
+  port map (
+    clk  => clk_12,
     addr => std_logic_vector(prog_rom_3_bank) & cpu_addr(10 downto 0),
     dout => prog_rom_3_dout
   );
 
   -- work ram (4kB)
   work_ram : entity work.single_port_ram
-  generic map(ADDR_WIDTH => 12, DATA_WIDTH => 8)
-  port map(
-    clk  => clk,
+  generic map (ADDR_WIDTH => 12, DATA_WIDTH => 8)
+  port map (
+    clk  => clk_12,
     addr => cpu_addr(11 downto 0),
     din  => cpu_dout,
     dout => work_ram_dout,
@@ -154,9 +178,9 @@ begin
 
   -- character ram (2kB)
   char_ram : entity work.single_port_ram
-  generic map(ADDR_WIDTH => 11, DATA_WIDTH => 8)
-  port map(
-    clk  => clk,
+  generic map (ADDR_WIDTH => 11, DATA_WIDTH => 8)
+  port map (
+    clk  => clk_12,
     addr => cpu_addr(10 downto 0),
     din  => cpu_dout,
     dout => char_ram_dout,
@@ -165,9 +189,9 @@ begin
 
   -- fg ram (1kB)
   fg_ram : entity work.single_port_ram
-  generic map(ADDR_WIDTH => 10, DATA_WIDTH => 8)
-  port map(
-    clk  => clk,
+  generic map (ADDR_WIDTH => 10, DATA_WIDTH => 8)
+  port map (
+    clk  => clk_12,
     addr => cpu_addr(9 downto 0),
     din  => cpu_dout,
     dout => fg_ram_dout,
@@ -176,9 +200,9 @@ begin
 
   -- bg ram (1kB)
   bg_ram : entity work.single_port_ram
-  generic map(ADDR_WIDTH => 10, DATA_WIDTH => 8)
-  port map(
-    clk  => clk,
+  generic map (ADDR_WIDTH => 10, DATA_WIDTH => 8)
+  port map (
+    clk  => clk_12,
     addr => cpu_addr(9 downto 0),
     din  => cpu_dout,
     dout => bg_ram_dout,
@@ -187,9 +211,9 @@ begin
 
   -- sprite ram (2kB)
   sprite_ram : entity work.single_port_ram
-  generic map(ADDR_WIDTH => 11, DATA_WIDTH => 8)
-  port map(
-    clk  => clk,
+  generic map (ADDR_WIDTH => 11, DATA_WIDTH => 8)
+  port map (
+    clk  => clk_12,
     addr => cpu_addr(10 downto 0),
     din  => cpu_dout,
     dout => sprite_ram_dout,
@@ -198,9 +222,9 @@ begin
 
   -- palette ram (2kB)
   palette_ram : entity work.single_port_ram
-  generic map(ADDR_WIDTH => 11, DATA_WIDTH => 8)
-  port map(
-    clk  => clk,
+  generic map (ADDR_WIDTH => 11, DATA_WIDTH => 8)
+  port map (
+    clk  => clk_12,
     addr => cpu_addr(10 downto 0),
     din  => cpu_dout,
     dout => palette_ram_dout,
@@ -209,14 +233,12 @@ begin
 
   -- main cpu
   cpu : entity work.T80s
-  port map(
+  port map (
     RESET_n => cpu_reset_n,
-    CLK     => clk,
-    CEN     => cpu_cen,
+    CLK     => clk_12,
+    CEN     => cen_4,
     WAIT_n  => '1',
     INT_n   => cpu_int_n,
-    NMI_n   => '1',
-    BUSRQ_n => '1',
     M1_n    => cpu_m1_n,
     MREQ_n  => cpu_mreq_n,
     IORQ_n  => cpu_ioreq_n,
@@ -294,20 +316,11 @@ begin
              (others => '0');
 
   led <= cpu_din;
-  debug <= (not cpu_m1_n) &
-           (not cpu_mreq_n) &
-           (not cpu_rd_n) &
-           (not cpu_wr_n) &
-           (not cpu_rfsh_n) &
-           (not cpu_halt_n) &
-           cpu_addr(9 downto 0);
 
-  -- led(0) <= prog_rom_1_cs;
-  -- led(1) <= prog_rom_2_cs;
-  -- led(2) <= work_ram_cs;
-  -- led(3) <= char_ram_cs;
-  -- led(4) <= fg_ram_cs;
-  -- led(5) <= bg_ram_cs;
-  -- led(6) <= sprite_ram_cs;
-  -- led(7) <= palette_ram_cs;
+  video_on <= not (video_hblank or video_vblank);
+  vga_hs <= not (video_hsync xor video_vsync);
+  vga_vs <= '1';
+  vga_r <= "111111" when video_on = '1' and ((video_hpos(2 downto 0) = "000") or (video_vpos(2 downto 0) = "000")) else "ZZZZZZ";
+  vga_g <= "111111" when video_on = '1' and video_hpos(4) = '1' else "ZZZZZZ";
+  vga_b <= "111111" when video_on = '1' and video_vpos(4) = '1' else "ZZZZZZ";
 end arch;
