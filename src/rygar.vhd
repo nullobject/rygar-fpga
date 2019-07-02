@@ -100,6 +100,9 @@ architecture arch of rygar is
   signal video_hsync, video_vsync : std_logic;
   signal video_hblank, video_vblank : std_logic;
   signal video_on : std_logic;
+
+  signal video_addr : std_logic_vector(11 downto 0);
+  signal video_data : std_logic_vector(7 downto 0);
 begin
   my_pll : entity pll.pll
   port map (
@@ -166,14 +169,18 @@ begin
   );
 
   -- work ram (4kB)
-  work_ram : entity work.single_port_ram
+  work_ram : entity work.dual_port_ram
   generic map (ADDR_WIDTH => 12, DATA_WIDTH => 8)
   port map (
-    clk  => clk_12,
-    addr => cpu_addr(11 downto 0),
-    di   => cpu_do,
-    do   => work_ram_do,
-    we   => work_ram_cs and (not cpu_wr_n)
+    clk_a  => clk_12,
+    addr_a => cpu_addr(11 downto 0),
+    di_a   => cpu_do,
+    do_a   => work_ram_do,
+    we_a   => work_ram_cs and (not cpu_wr_n),
+
+    clk_b  => clk_12,
+    addr_b => video_addr,
+    do_b   => video_data
   );
 
   -- character ram (2kB)
@@ -320,7 +327,20 @@ begin
   video_on <= not (video_hblank or video_vblank);
   vga_hs <= not (video_hsync xor video_vsync);
   vga_vs <= '1';
-  vga_r <= "111111" when video_on = '1' and ((video_hpos(2 downto 0) = "000") or (video_vpos(2 downto 0) = "000")) else "ZZZZZZ";
-  vga_g <= "111111" when video_on = '1' and video_hpos(4) = '1' else "ZZZZZZ";
-  vga_b <= "111111" when video_on = '1' and video_vpos(4) = '1' else "ZZZZZZ";
+  -- vga_r <= "111111" when video_on = '1' and ((video_hpos(2 downto 0) = "000") or (video_vpos(2 downto 0) = "000")) else "ZZZZZZ";
+  -- vga_g <= "111111" when video_on = '1' and video_hpos(4) = '1' else "ZZZZZZ";
+  -- vga_b <= "111111" when video_on = '1' and video_vpos(4) = '1' else "ZZZZZZ";
+
+  video_addr <= std_logic_vector(video_vpos(3 downto 0)) & std_logic_vector(video_hpos(7 downto 0));
+
+  process(clk_12)
+  begin
+    if rising_edge(clk_12) and cen_6 = '1' then
+      if video_on = '1' then
+        vga_r <= video_data(5 downto 0);
+      else
+        vga_r <= (others => '0');
+      end if;
+    end if;
+  end process;
 end arch;
