@@ -39,7 +39,7 @@ architecture arch of rygar is
   signal cpu_addr : std_logic_vector(15 downto 0);
 
   -- cpu data bus
-  signal cpu_din, cpu_dout : std_logic_vector(7 downto 0);
+  signal cpu_di, cpu_do : std_logic_vector(7 downto 0);
 
   -- cpu io request: the address bus holds a valid address for an i/o read or
   -- write operation
@@ -83,15 +83,15 @@ architecture arch of rygar is
   signal bank_cs        : std_logic;
 
   -- chip data output signals
-  signal prog_rom_1_dout  : std_logic_vector(7 downto 0);
-  signal prog_rom_2_dout  : std_logic_vector(7 downto 0);
-  signal prog_rom_3_dout  : std_logic_vector(7 downto 0);
-  signal work_ram_dout    : std_logic_vector(7 downto 0);
-  signal char_ram_dout    : std_logic_vector(7 downto 0);
-  signal fg_ram_dout      : std_logic_vector(7 downto 0);
-  signal bg_ram_dout      : std_logic_vector(7 downto 0);
-  signal sprite_ram_dout  : std_logic_vector(7 downto 0);
-  signal palette_ram_dout : std_logic_vector(7 downto 0);
+  signal prog_rom_1_do  : std_logic_vector(7 downto 0);
+  signal prog_rom_2_do  : std_logic_vector(7 downto 0);
+  signal prog_rom_3_do  : std_logic_vector(7 downto 0);
+  signal work_ram_do    : std_logic_vector(7 downto 0);
+  signal char_ram_do    : std_logic_vector(7 downto 0);
+  signal fg_ram_do      : std_logic_vector(7 downto 0);
+  signal bg_ram_do      : std_logic_vector(7 downto 0);
+  signal sprite_ram_do  : std_logic_vector(7 downto 0);
+  signal palette_ram_do : std_logic_vector(7 downto 0);
 
   -- currently selected bank for program rom 3
   signal prog_rom_3_bank : unsigned(3 downto 0);
@@ -144,7 +144,7 @@ begin
   port map (
     clk  => clk_12,
     addr => cpu_addr(14 downto 0),
-    dout => prog_rom_1_dout
+    do   => prog_rom_1_do
   );
 
   -- program rom 2 (16kB)
@@ -153,7 +153,7 @@ begin
   port map (
     clk  => clk_12,
     addr => cpu_addr(13 downto 0),
-    dout => prog_rom_2_dout
+    do   => prog_rom_2_do
   );
 
   -- program rom 3 (32kB bank switched)
@@ -162,7 +162,7 @@ begin
   port map (
     clk  => clk_12,
     addr => std_logic_vector(prog_rom_3_bank) & cpu_addr(10 downto 0),
-    dout => prog_rom_3_dout
+    do   => prog_rom_3_do
   );
 
   -- work ram (4kB)
@@ -171,8 +171,8 @@ begin
   port map (
     clk  => clk_12,
     addr => cpu_addr(11 downto 0),
-    din  => cpu_dout,
-    dout => work_ram_dout,
+    di   => cpu_do,
+    do   => work_ram_do,
     we   => work_ram_cs and (not cpu_wr_n)
   );
 
@@ -182,8 +182,8 @@ begin
   port map (
     clk  => clk_12,
     addr => cpu_addr(10 downto 0),
-    din  => cpu_dout,
-    dout => char_ram_dout,
+    di   => cpu_do,
+    do   => char_ram_do,
     we   => char_ram_cs and (not cpu_wr_n)
   );
 
@@ -193,8 +193,8 @@ begin
   port map (
     clk  => clk_12,
     addr => cpu_addr(9 downto 0),
-    din  => cpu_dout,
-    dout => fg_ram_dout,
+    di   => cpu_do,
+    do   => fg_ram_do,
     we   => fg_ram_cs and (not cpu_wr_n)
   );
 
@@ -204,8 +204,8 @@ begin
   port map (
     clk  => clk_12,
     addr => cpu_addr(9 downto 0),
-    din  => cpu_dout,
-    dout => bg_ram_dout,
+    di   => cpu_do,
+    do   => bg_ram_do,
     we   => bg_ram_cs and (not cpu_wr_n)
   );
 
@@ -215,8 +215,8 @@ begin
   port map (
     clk  => clk_12,
     addr => cpu_addr(10 downto 0),
-    din  => cpu_dout,
-    dout => sprite_ram_dout,
+    di   => cpu_do,
+    do   => sprite_ram_do,
     we   => sprite_ram_cs and (not cpu_wr_n)
   );
 
@@ -226,8 +226,8 @@ begin
   port map (
     clk  => clk_12,
     addr => cpu_addr(10 downto 0),
-    din  => cpu_dout,
-    dout => palette_ram_dout,
+    di   => cpu_do,
+    do   => palette_ram_do,
     we   => palette_ram_cs and (not cpu_wr_n)
   );
 
@@ -248,8 +248,8 @@ begin
     HALT_n  => cpu_halt_n,
     BUSAK_n => open,
     A       => cpu_addr,
-    DI      => cpu_din,
-    DO      => cpu_dout
+    DI      => cpu_di,
+    DO      => cpu_do
   );
 
   -- Enable chip select signals for devices connected to the CPU data bus.
@@ -301,21 +301,21 @@ begin
 
   -- The register that controls the currently selected bank of program ROM
   -- 3 (5J) is set from lines 3 to 6 of the data bus.
-  prog_rom_3_bank <= unsigned(cpu_dout(6 downto 3)) when rising_edge(clk) and bank_cs = '1';
+  prog_rom_3_bank <= unsigned(cpu_do(6 downto 3)) when rising_edge(clk) and bank_cs = '1';
 
   -- Connect the selected devices to the CPU data input bus.
-  cpu_din <= prog_rom_1_dout when prog_rom_1_cs else
-             prog_rom_2_dout when prog_rom_2_cs else
-             prog_rom_3_dout when prog_rom_3_cs else
-             work_ram_dout when work_ram_cs else
-             char_ram_dout when char_ram_cs else
-             fg_ram_dout when fg_ram_cs else
-             bg_ram_dout when bg_ram_cs else
-             sprite_ram_dout when sprite_ram_cs else
-             palette_ram_dout when palette_ram_cs else
-             (others => '0');
+  cpu_di <= prog_rom_1_do when prog_rom_1_cs else
+            prog_rom_2_do when prog_rom_2_cs else
+            prog_rom_3_do when prog_rom_3_cs else
+            work_ram_do when work_ram_cs else
+            char_ram_do when char_ram_cs else
+            fg_ram_do when fg_ram_cs else
+            bg_ram_do when bg_ram_cs else
+            sprite_ram_do when sprite_ram_cs else
+            palette_ram_do when palette_ram_cs else
+            (others => '0');
 
-  led <= cpu_din;
+  led <= cpu_di;
 
   video_on <= not (video_hblank or video_vblank);
   vga_hs <= not (video_hsync xor video_vsync);

@@ -17,13 +17,13 @@ entity single_port_ram is
     cen : in std_logic := '1';
 
     -- address
-    addr : in std_logic_vector (ADDR_WIDTH-1 downto 0);
+    addr : in std_logic_vector(ADDR_WIDTH-1 downto 0);
 
     -- data in
-    din : in std_logic_vector (DATA_WIDTH-1 downto 0);
+    di : in std_logic_vector(DATA_WIDTH-1 downto 0);
 
     -- data out
-    dout : out std_logic_vector (DATA_WIDTH-1 downto 0);
+    do : out std_logic_vector(DATA_WIDTH-1 downto 0);
 
     -- write enable
     we : in std_logic := '0'
@@ -53,8 +53,8 @@ begin
     address_a => addr,
     clock0    => clk,
     clocken0  => cen,
-    data_a    => din,
+    data_a    => di,
     wren_a    => we,
-    q_a       => dout
+    q_a       => do
   );
 end arch;

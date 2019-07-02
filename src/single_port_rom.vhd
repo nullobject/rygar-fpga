@@ -19,7 +19,7 @@ entity single_port_rom is
     addr : in std_logic_vector(ADDR_WIDTH-1 downto 0);
 
     -- data out
-    dout : out std_logic_vector(DATA_WIDTH-1 downto 0)
+    do : out std_logic_vector(DATA_WIDTH-1 downto 0)
   );
 end single_port_rom;
 
@@ -45,6 +45,6 @@ begin
   port map (
     address_a => addr,
     clock0    => clk,
-    q_a       => dout
+    q_a       => do
   );
 end arch;
