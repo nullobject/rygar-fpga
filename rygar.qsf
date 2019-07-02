@@ -114,6 +114,7 @@ set_global_assignment -name VHDL_INPUT_VERSION VHDL_2008
 set_global_assignment -name SDC_FILE src/rygar.sdc
 set_global_assignment -name QIP_FILE src/pll.qip
 set_global_assignment -name QIP_FILE src/t80/T80.qip
+set_global_assignment -name VHDL_FILE src/clock_gen.vhd
 set_global_assignment -name VHDL_FILE src/reset_gen.vhd
 set_global_assignment -name VHDL_FILE src/rygar.vhd
 set_global_assignment -name VHDL_FILE src/single_port_ram.vhd

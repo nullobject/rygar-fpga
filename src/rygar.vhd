@@ -24,9 +24,10 @@ entity rygar is
 end rygar;
 
 architecture arch of rygar is
-  -- pll signals
-  signal pll_clk_12 : std_logic;
-  signal pll_locked : std_logic;
+  -- clock signals
+  signal clk_12 : std_logic;
+  signal cen_6 : std_logic;
+  signal cen_4 : std_logic;
 
   -- cpu reset
   signal cpu_reset_n : std_logic;
@@ -97,33 +98,29 @@ architecture arch of rygar is
 
   signal video_hpos, video_vpos : unsigned(8 downto 0);
   signal video_hsync, video_vsync : std_logic;
-  signal edge_det : std_logic;
-  signal count : unsigned(31 downto 0);
   signal video_hblank, video_vblank : std_logic;
   signal video_on : std_logic;
 begin
-  clock_divider : process(pll_clk_12)
-  begin
-    if rising_edge(pll_clk_12) then
-      count <= count + 1;
-      edge_det <= count(16);
-    end if;
-  end process;
-
-  cpu_cen <= (not edge_det) and count(16);
-
   my_pll : entity pll.pll
   port map (
     refclk   => clk,
     rst      => '0',
-    outclk_0 => pll_clk_12,
-    locked   => pll_locked
+    outclk_0 => clk_12,
+    locked   => open
+  );
+
+  -- clock generator
+  clock_gen : entity work.clock_gen
+  port map (
+    clk_12 => clk_12,
+    cen_6  => cen_6,
+    cen_4  => cen_4
   );
 
   -- generate cpu reset pulse after powering on, or when KEY0 is pressed
   reset_gen : entity work.reset_gen
   port map (
-    clk     => pll_clk_12,
+    clk     => clk_12,
     reset   => not key(0),
     reset_n => cpu_reset_n
   );
@@ -131,8 +128,8 @@ begin
   -- video sync generator
   sync_gen : entity work.sync_gen
   port map (
-    clk    => pll_clk_12,
-    cen    => '1',
+    clk    => clk_12,
+    cen    => cen_6,
     hpos   => video_hpos,
     vpos   => video_vpos,
     hsync  => video_hsync,
@@ -145,7 +142,7 @@ begin
   prog_rom_1 : entity work.single_port_rom
   generic map (ADDR_WIDTH => 15, DATA_WIDTH => 8, INIT_FILE => "cpu_5p.mif")
   port map (
-    clk  => pll_clk_12,
+    clk  => clk_12,
     addr => cpu_addr(14 downto 0),
     dout => prog_rom_1_dout
   );
@@ -154,7 +151,7 @@ begin
   prog_rom_2 : entity work.single_port_rom
   generic map (ADDR_WIDTH => 14, DATA_WIDTH => 8, INIT_FILE => "cpu_5m.mif")
   port map (
-    clk  => pll_clk_12,
+    clk  => clk_12,
     addr => cpu_addr(13 downto 0),
     dout => prog_rom_2_dout
   );
@@ -163,7 +160,7 @@ begin
   prog_rom_3 : entity work.single_port_rom
   generic map (ADDR_WIDTH => 15, DATA_WIDTH => 8, INIT_FILE => "cpu_5j.mif")
   port map (
-    clk  => pll_clk_12,
+    clk  => clk_12,
     addr => std_logic_vector(prog_rom_3_bank) & cpu_addr(10 downto 0),
     dout => prog_rom_3_dout
   );
@@ -172,7 +169,7 @@ begin
   work_ram : entity work.single_port_ram
   generic map (ADDR_WIDTH => 12, DATA_WIDTH => 8)
   port map (
-    clk  => pll_clk_12,
+    clk  => clk_12,
     addr => cpu_addr(11 downto 0),
     din  => cpu_dout,
     dout => work_ram_dout,
@@ -183,7 +180,7 @@ begin
   char_ram : entity work.single_port_ram
   generic map (ADDR_WIDTH => 11, DATA_WIDTH => 8)
   port map (
-    clk  => pll_clk_12,
+    clk  => clk_12,
     addr => cpu_addr(10 downto 0),
     din  => cpu_dout,
     dout => char_ram_dout,
@@ -194,7 +191,7 @@ begin
   fg_ram : entity work.single_port_ram
   generic map (ADDR_WIDTH => 10, DATA_WIDTH => 8)
   port map (
-    clk  => pll_clk_12,
+    clk  => clk_12,
     addr => cpu_addr(9 downto 0),
     din  => cpu_dout,
     dout => fg_ram_dout,
@@ -205,7 +202,7 @@ begin
   bg_ram : entity work.single_port_ram
   generic map (ADDR_WIDTH => 10, DATA_WIDTH => 8)
   port map (
-    clk  => pll_clk_12,
+    clk  => clk_12,
     addr => cpu_addr(9 downto 0),
     din  => cpu_dout,
     dout => bg_ram_dout,
@@ -216,7 +213,7 @@ begin
   sprite_ram : entity work.single_port_ram
   generic map (ADDR_WIDTH => 11, DATA_WIDTH => 8)
   port map (
-    clk  => pll_clk_12,
+    clk  => clk_12,
     addr => cpu_addr(10 downto 0),
     din  => cpu_dout,
     dout => sprite_ram_dout,
@@ -227,7 +224,7 @@ begin
   palette_ram : entity work.single_port_ram
   generic map (ADDR_WIDTH => 11, DATA_WIDTH => 8)
   port map (
-    clk  => pll_clk_12,
+    clk  => clk_12,
     addr => cpu_addr(10 downto 0),
     din  => cpu_dout,
     dout => palette_ram_dout,
@@ -238,8 +235,8 @@ begin
   cpu : entity work.T80s
   port map (
     RESET_n => cpu_reset_n,
-    CLK     => pll_clk_12,
-    CEN     => cpu_cen,
+    CLK     => clk_12,
+    CEN     => cen_4,
     WAIT_n  => '1',
     INT_n   => cpu_int_n,
     M1_n    => cpu_m1_n,
