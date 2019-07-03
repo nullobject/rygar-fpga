@@ -35,6 +35,6 @@ begin
     end if;
   end process;
 
-  cen_6 <= even_count(0);
-  cen_4 <= odd_count(1);
+  cen_6 <= '1' when even_count = 1 else '0';
+  cen_4 <= '1' when odd_count = 2 else '0';
 end architecture;
