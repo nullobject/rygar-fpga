@@ -291,7 +291,7 @@ begin
         when "11110-" => prog_rom_3_cs  <= rd;       -- $f000-$f7ff PROGRAM ROM 3 (BANK SWITCHED)
         when "11111-" =>                             -- $f800-$ffff
           case cpu_addr(3 downto 0) is
-            when "1000" => bank_cs      <= wr;       -- $f808 BANK REGISTER
+            when "1000" => bank_cs <= wr;            -- $f808 BANK REGISTER
             when others => null;
           end case;
       end case?;
@@ -304,11 +304,11 @@ begin
   -- deasserting the INT signal. When the M1 and IORQ signal are asserted, then
   -- the interrupt is cleared.
   irq_ack <= (not cpu_m1_n) and (not cpu_ioreq_n);
-  cpu_int_n <= irq_ack when rising_edge(clk) and video_vblank = '0';
+  cpu_int_n <= irq_ack when rising_edge(clk_12) and video_vblank = '0';
 
   -- The register that controls the currently selected bank of program ROM
   -- 3 (5J) is set from lines 3 to 6 of the data bus.
-  prog_rom_3_bank <= unsigned(cpu_do(6 downto 3)) when rising_edge(clk) and bank_cs = '1';
+  prog_rom_3_bank <= unsigned(cpu_do(6 downto 3)) when rising_edge(clk_12) and bank_cs = '1';
 
   -- Connect the selected devices to the CPU data input bus.
   cpu_di <= prog_rom_1_do when prog_rom_1_cs else
