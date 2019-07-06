@@ -6,7 +6,7 @@ library pll;
 
 entity rygar is
   port (
-    -- 50MHz reference clock
+    -- 50 MHz input clock
     clk : in std_logic;
 
     -- vga colours
@@ -19,7 +19,8 @@ entity rygar is
     key : in std_logic_vector(1 downto 0);
 
     -- leds
-    led : out std_logic_vector(7 downto 0)
+    led : out std_logic_vector(7 downto 0);
+    debug : out std_logic_vector(23 downto 0)
   );
 end rygar;
 
@@ -67,9 +68,6 @@ architecture arch of rygar is
   -- cpu halt signal
   signal cpu_halt_n : std_logic;
 
-  -- interrupt request acknowledge
-  signal irq_ack : std_logic;
-
   -- chip select signals
   signal prog_rom_1_cs  : std_logic;
   signal prog_rom_2_cs  : std_logic;
@@ -103,6 +101,7 @@ architecture arch of rygar is
 
   signal video_addr : std_logic_vector(11 downto 0);
   signal video_data : std_logic_vector(7 downto 0);
+  signal vblank_t1 : std_logic;
 begin
   my_pll : entity pll.pll
   port map (
@@ -173,10 +172,11 @@ begin
   generic map (ADDR_WIDTH => 12, DATA_WIDTH => 8)
   port map (
     clk_a  => clk_12,
+    cen_a  => work_ram_cs,
     addr_a => cpu_addr(11 downto 0),
     di_a   => cpu_do,
     do_a   => work_ram_do,
-    we_a   => work_ram_cs and (not cpu_wr_n),
+    we_a   => not cpu_wr_n,
 
     clk_b  => clk_12,
     addr_b => video_addr,
@@ -188,10 +188,11 @@ begin
   generic map (ADDR_WIDTH => 11, DATA_WIDTH => 8)
   port map (
     clk  => clk_12,
+    cen  => char_ram_cs,
     addr => cpu_addr(10 downto 0),
     di   => cpu_do,
     do   => char_ram_do,
-    we   => char_ram_cs and (not cpu_wr_n)
+    we   => not cpu_wr_n
   );
 
   -- fg ram (1kB)
@@ -199,10 +200,11 @@ begin
   generic map (ADDR_WIDTH => 10, DATA_WIDTH => 8)
   port map (
     clk  => clk_12,
+    cen  => fg_ram_cs,
     addr => cpu_addr(9 downto 0),
     di   => cpu_do,
     do   => fg_ram_do,
-    we   => fg_ram_cs and (not cpu_wr_n)
+    we   => not cpu_wr_n
   );
 
   -- bg ram (1kB)
@@ -210,10 +212,11 @@ begin
   generic map (ADDR_WIDTH => 10, DATA_WIDTH => 8)
   port map (
     clk  => clk_12,
+    cen  => bg_ram_cs,
     addr => cpu_addr(9 downto 0),
     di   => cpu_do,
     do   => bg_ram_do,
-    we   => bg_ram_cs and (not cpu_wr_n)
+    we   => not cpu_wr_n
   );
 
   -- sprite ram (2kB)
@@ -221,10 +224,11 @@ begin
   generic map (ADDR_WIDTH => 11, DATA_WIDTH => 8)
   port map (
     clk  => clk_12,
+    cen  => sprite_ram_cs,
     addr => cpu_addr(10 downto 0),
     di   => cpu_do,
     do   => sprite_ram_do,
-    we   => sprite_ram_cs and (not cpu_wr_n)
+    we   => not cpu_wr_n
   );
 
   -- palette ram (2kB)
@@ -232,10 +236,11 @@ begin
   generic map (ADDR_WIDTH => 11, DATA_WIDTH => 8)
   port map (
     clk  => clk_12,
+    cen  => palette_ram_cs,
     addr => cpu_addr(10 downto 0),
     di   => cpu_do,
     do   => palette_ram_do,
-    we   => palette_ram_cs and (not cpu_wr_n)
+    we   => not cpu_wr_n
   );
 
   -- main cpu
@@ -259,56 +264,47 @@ begin
     DO      => cpu_do
   );
 
-  -- Enable chip select signals for devices connected to the CPU data bus.
-  chip_select : process(cpu_addr, cpu_mreq_n, cpu_rfsh_n, cpu_rd_n, cpu_wr_n)
-    variable rd, wr: std_logic;
+  -- An interrupt is triggered on the falling edge of the VBLANK signal.
+  --
+  -- Once the interrupt request has been accepted by the CPU, it is
+  -- acknowledged by activating the IORQ signal during the M1 cycle. This
+  -- disables the interrupt signal, and the cycle starts over.
+  irq : process(clk_12)
   begin
-    rd := not cpu_rd_n; -- cpu read
-    wr := not cpu_wr_n; -- cpu write
+    if rising_edge(clk_12) then
+      vblank_t1 <= video_vblank;
 
-    -- deassert all chip selects by default
-    prog_rom_1_cs  <= '0';
-    prog_rom_2_cs  <= '0';
-    prog_rom_3_cs  <= '0';
-    work_ram_cs    <= '0';
-    char_ram_cs    <= '0';
-    fg_ram_cs      <= '0';
-    bg_ram_cs      <= '0';
-    sprite_ram_cs  <= '0';
-    palette_ram_cs <= '0';
-    bank_cs        <= '0';
-
-    if cpu_mreq_n = '0' and cpu_rfsh_n = '1' then
-      case? cpu_addr(15 downto 10) is
-        when "0-----" => prog_rom_1_cs  <= rd;       -- $0000-$7fff PROGRAM ROM 1
-        when "10----" => prog_rom_2_cs  <= rd;       -- $8000-$bfff PROGRAM ROM 2
-        when "1100--" => work_ram_cs    <= rd or wr; -- $c000-$cfff WORK RAM
-        when "11010-" => char_ram_cs    <= rd or wr; -- $d000-$d7ff CHARACTER RAM
-        when "110110" => fg_ram_cs      <= rd or wr; -- $d800-$dbff FOREGROUND RAM
-        when "110111" => bg_ram_cs      <= rd or wr; -- $dc00-$dfff BACKGROUND RAM
-        when "11100-" => sprite_ram_cs  <= rd or wr; -- $e000-$e7ff SPRITE RAM
-        when "11101-" => palette_ram_cs <= rd or wr; -- $e800-$efff PALETTE RAM
-        when "11110-" => prog_rom_3_cs  <= rd;       -- $f000-$f7ff PROGRAM ROM 3 (BANK SWITCHED)
-        when "11111-" =>                             -- $f800-$ffff
-          case cpu_addr(3 downto 0) is
-            when "1000" => bank_cs <= wr;            -- $f808 BANK REGISTER
-            when others => null;
-          end case;
-      end case?;
+      if (not cpu_m1_n) and (not cpu_ioreq_n) then
+        cpu_int_n <= '1';
+      elsif vblank_t1 = '1' and video_vblank = '0' then
+        cpu_int_n <= '0';
+      end if;
     end if;
   end process;
-
-  -- An interrupt request is triggered when the VBLANK signal is deasserted.
-  --
-  -- Once the interrupt request is handled by the CPU, it is cleared by
-  -- deasserting the INT signal. When the M1 and IORQ signal are asserted, then
-  -- the interrupt is cleared.
-  irq_ack <= (not cpu_m1_n) and (not cpu_ioreq_n);
-  cpu_int_n <= irq_ack when rising_edge(clk_12) and video_vblank = '0';
 
   -- The register that controls the currently selected bank of program ROM
   -- 3 (5J) is set from lines 3 to 6 of the data bus.
   prog_rom_3_bank <= unsigned(cpu_do(6 downto 3)) when rising_edge(clk_12) and bank_cs = '1';
+
+  -- $0000-$7fff PROGRAM ROM 1
+  -- $8000-$bfff PROGRAM ROM 2
+  -- $c000-$cfff WORK RAM
+  -- $d000-$d7ff CHARACTER RAM
+  -- $d800-$dbff FOREGROUND RAM
+  -- $dc00-$dfff BACKGROUND RAM
+  -- $e000-$e7ff SPRITE RAM
+  -- $e800-$efff PALETTE RAM
+  -- $f000-$f7ff PROGRAM ROM 3 (BANK SWITCHED)
+  -- $f800-$ffff
+  prog_rom_1_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"0000" and unsigned(cpu_addr) <= x"7fff" else '0';
+  prog_rom_2_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"8000" and unsigned(cpu_addr) <= x"bfff" else '0';
+  work_ram_cs    <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"c000" and unsigned(cpu_addr) <= x"cfff" else '0';
+  char_ram_cs    <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"d000" and unsigned(cpu_addr) <= x"d7ff" else '0';
+  fg_ram_cs      <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"d800" and unsigned(cpu_addr) <= x"dbff" else '0';
+  bg_ram_cs      <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"dc00" and unsigned(cpu_addr) <= x"dfff" else '0';
+  sprite_ram_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"e000" and unsigned(cpu_addr) <= x"e7ff" else '0';
+  palette_ram_cs <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"e800" and unsigned(cpu_addr) <= x"efff" else '0';
+  prog_rom_3_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"f000" and unsigned(cpu_addr) <= x"f7ff" else '0';
 
   -- Connect the selected devices to the CPU data input bus.
   cpu_di <= prog_rom_1_do when prog_rom_1_cs else
@@ -322,22 +318,36 @@ begin
             palette_ram_do when palette_ram_cs else
             (others => '0');
 
-  led <= cpu_di;
+  led <= cpu_do when work_ram_cs = '1' and cpu_wr_n = '0' else (others => '0');
+
+  -- output flags and 8 lsb address lines
+  debug(15 downto 0) <= (not cpu_m1_n) &
+                        (not cpu_mreq_n) &
+                        (not cpu_rd_n) &
+                        (not cpu_wr_n) &
+                        (not cpu_rfsh_n) &
+                        (not cpu_halt_n) &
+                        cpu_addr(9 downto 0);
+  debug(16) <= clk_12;
+  debug(17) <= cen_4;
+  debug(18) <= cen_6;
+  debug(19) <= video_vsync;
+  debug(20) <= video_vblank;
+  debug(21) <= cpu_int_n;
+  debug(22) <= cpu_m1_n;
+  debug(23) <= cpu_ioreq_n;
 
   video_on <= not (video_hblank or video_vblank);
   vga_hs <= not (video_hsync xor video_vsync);
   vga_vs <= '1';
-  -- vga_r <= "111111" when video_on = '1' and ((video_hpos(2 downto 0) = "000") or (video_vpos(2 downto 0) = "000")) else "ZZZZZZ";
-  -- vga_g <= "111111" when video_on = '1' and video_hpos(4) = '1' else "ZZZZZZ";
-  -- vga_b <= "111111" when video_on = '1' and video_vpos(4) = '1' else "ZZZZZZ";
 
   video_addr <= std_logic_vector(video_vpos(3 downto 0)) & std_logic_vector(video_hpos(7 downto 0));
 
   process(clk_12)
   begin
-    if rising_edge(clk_12) and cen_6 = '1' then
+    if rising_edge(clk_12) then
       if video_on = '1' then
-        vga_r <= video_data(5 downto 0);
+        vga_r <= std_logic_vector(to_unsigned(to_integer(unsigned(video_data)) * 6 / 10, vga_r'length));
       else
         vga_r <= (others => '0');
       end if;
