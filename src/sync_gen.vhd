@@ -22,26 +22,24 @@ entity sync_gen is
 end sync_gen;
 
 architecture struct of sync_gen is
-  signal hcnt : unsigned(8 downto 0) := 9x"080";
-  signal vcnt : unsigned(8 downto 0) := 9x"0f8";
-
-  signal do_hsync : boolean;
+  signal hcnt : unsigned(8 downto 0);
+  signal vcnt : unsigned(8 downto 0);
 begin
   hv_count : process(clk)
   begin
     if rising_edge(clk) then
       if cen = '1' then
         -- horizontal counter counts $080 to $1ff = 384 (6Mhz/384 = 15.625 kHz)
-        if hcnt = 9x"1ff" then
-          hcnt <= 9x"080";
+        if hcnt = 9x"17f" then
+          hcnt <= 9x"000";
         else
           hcnt <= hcnt + 1;
         end if;
 
         -- vertical counter counts $0f8 to $1ff = 264 (15625/264 = 59.185 Hz)
-        if do_hsync then
-          if vcnt = 9x"1ff" then
-            vcnt <= 9x"0f8";
+        if hcnt = 9x"12f" then
+          if vcnt = 9x"107" then
+            vcnt <= 9x"000";
           else
             vcnt <= vcnt + 1;
           end if;
@@ -54,25 +52,25 @@ begin
   begin
     if rising_edge(clk) then
       if cen = '1' then
-        if    hcnt = 9x"0af" then hsync <= '1';
-        elsif hcnt = 9x"0cf" then hsync <= '0';
+        if    hcnt = 9x"000" then hblank <= '0';
+        elsif hcnt = 9x"100" then hblank <= '1';
         end if;
 
-        if    hcnt = 9x"087" then hblank <= '1';
-        elsif hcnt = 9x"107" then hblank <= '0';
+        if    hcnt = 9x"12f" then hsync <= '1';
+        elsif hcnt = 9x"14f" then hsync <= '0';
         end if;
 
-        if do_hsync then
-          if    vcnt = 9x"1ef" then vblank <= '1';
-          elsif vcnt = 9x"10f" then vblank <= '0';
-          end if;
+        if    vcnt = 9x"000" then vblank <= '0';
+        elsif vcnt = 9x"0e0" then vblank <= '1';
+        end if;
+
+        if    vcnt = 9x"0f0" then vsync <= '1';
+        elsif vcnt = 9x"0f8" then vsync <= '0';
         end if;
       end if;
     end if;
   end process;
 
-  vsync <= not vcnt(8);
-  do_hsync <= (hcnt = 9x"0af");
   hpos <= hcnt;
   vpos <= vcnt;
 end architecture;
