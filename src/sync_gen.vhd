@@ -22,26 +22,24 @@ entity sync_gen is
 end sync_gen;
 
 architecture struct of sync_gen is
-  signal hcnt : unsigned(8 downto 0) := 9x"080";
-  signal vcnt : unsigned(8 downto 0) := 9x"0f8";
-
-  signal do_hsync : boolean;
+  signal hcnt : integer range 0 to 511;
+  signal vcnt : integer range 0 to 511;
 begin
   hv_count : process(clk)
   begin
     if rising_edge(clk) then
       if cen = '1' then
-        -- horizontal counter counts $080 to $1ff = 384 (6Mhz/384 = 15.625 kHz)
-        if hcnt = 9x"1ff" then
-          hcnt <= 9x"080";
+        -- 6Mhz / 384 = 15.625 kHz
+        if hcnt = 383 then
+          hcnt <= 0;
         else
           hcnt <= hcnt + 1;
         end if;
 
-        -- vertical counter counts $0f8 to $1ff = 264 (15625/264 = 59.185 Hz)
-        if do_hsync then
-          if vcnt = 9x"1ff" then
-            vcnt <= 9x"0f8";
+        -- 15.625 kHz / 264 = 59.185 Hz
+        if hcnt = 303 then
+          if vcnt = 263 then
+            vcnt <= 0;
           else
             vcnt <= vcnt + 1;
           end if;
@@ -54,25 +52,25 @@ begin
   begin
     if rising_edge(clk) then
       if cen = '1' then
-        if    hcnt = 9x"0af" then hsync <= '1';
-        elsif hcnt = 9x"0cf" then hsync <= '0';
+        if hcnt = 0 then hblank <= '0';
+        elsif hcnt = 256 then hblank <= '1';
         end if;
 
-        if    hcnt = 9x"087" then hblank <= '1';
-        elsif hcnt = 9x"107" then hblank <= '0';
+        if hcnt = 303 then hsync <= '1';
+        elsif hcnt = 335 then hsync <= '0';
         end if;
 
-        if do_hsync then
-          if    vcnt = 9x"1ef" then vblank <= '1';
-          elsif vcnt = 9x"10f" then vblank <= '0';
-          end if;
+        if vcnt = 0 then vblank <= '0';
+        elsif vcnt = 224 then vblank <= '1';
+        end if;
+
+        if vcnt = 240 then vsync <= '1';
+        elsif vcnt = 248 then vsync <= '0';
         end if;
       end if;
     end if;
   end process;
 
-  vsync <= not vcnt(8);
-  do_hsync <= (hcnt = 9x"0af");
-  hpos <= hcnt;
-  vpos <= vcnt;
+  hpos <= to_unsigned(hcnt, hpos'length);
+  vpos <= to_unsigned(vcnt, vpos'length);
 end architecture;
