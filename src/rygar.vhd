@@ -282,9 +282,17 @@ begin
     end if;
   end process;
 
-  -- The register that controls the currently selected bank of program ROM
-  -- 3 (5J) is set from lines 3 to 6 of the data bus.
-  prog_rom_3_bank <= unsigned(cpu_do(6 downto 3)) when rising_edge(clk_12) and bank_cs = '1';
+  -- Setting the bank register changes the currently selected bank of program
+  -- ROM 3.
+  bank_register : process(clk_12)
+  begin
+    if rising_edge(clk_12) then
+      if bank_cs = '1' and cpu_wr_n = '0' then
+        -- flip-flop 6J uses data lines 3 to 6
+        prog_rom_3_bank <= unsigned(cpu_do(6 downto 3));
+      end if;
+    end if;
+  end process;
 
   -- $0000-$7fff PROGRAM ROM 1
   -- $8000-$bfff PROGRAM ROM 2
@@ -305,6 +313,7 @@ begin
   sprite_ram_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"e000" and unsigned(cpu_addr) <= x"e7ff" else '0';
   palette_ram_cs <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"e800" and unsigned(cpu_addr) <= x"efff" else '0';
   prog_rom_3_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"f000" and unsigned(cpu_addr) <= x"f7ff" else '0';
+  bank_cs        <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) = x"f808" else '0';
 
   -- Connect the selected devices to the CPU data input bus.
   cpu_di <= prog_rom_1_do when prog_rom_1_cs = '1' else
