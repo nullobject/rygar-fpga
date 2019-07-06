@@ -20,7 +20,7 @@ entity single_port_ram is
     addr : in std_logic_vector(ADDR_WIDTH-1 downto 0);
 
     -- data in
-    di : in std_logic_vector(DATA_WIDTH-1 downto 0);
+    di : in std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
 
     -- data out
     do : out std_logic_vector(DATA_WIDTH-1 downto 0);
@@ -35,7 +35,7 @@ begin
   altsyncram_component : altsyncram
   generic map (
     clock_enable_input_a          => "NORMAL",
-    clock_enable_output_a         => "NORMAL",
+    clock_enable_output_a         => "BYPASS",
     intended_device_family        => "Cyclone V",
     lpm_hint                      => "ENABLE_RUNTIME_MOD=NO",
     lpm_type                      => "altsyncram",
