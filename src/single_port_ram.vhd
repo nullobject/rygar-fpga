@@ -20,10 +20,10 @@ entity single_port_ram is
     addr : in std_logic_vector(ADDR_WIDTH-1 downto 0);
 
     -- data in
-    di : in std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+    din : in std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
 
     -- data out
-    do : out std_logic_vector(DATA_WIDTH-1 downto 0);
+    dout : out std_logic_vector(DATA_WIDTH-1 downto 0);
 
     -- write enable
     we : in std_logic := '0'
@@ -53,8 +53,8 @@ begin
     address_a => addr,
     clock0    => clk,
     clocken0  => cen,
-    data_a    => di,
+    data_a    => din,
     wren_a    => we,
-    q_a       => do
+    q_a       => dout
   );
 end arch;

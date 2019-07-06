@@ -20,10 +20,10 @@ entity dual_port_ram is
     addr_a, addr_b : in std_logic_vector(ADDR_WIDTH-1 downto 0);
 
     -- data in
-    di_a, di_b : in std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+    din_a, din_b : in std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
 
     -- data out
-    do_a, do_b : out std_logic_vector(DATA_WIDTH-1 downto 0);
+    dout_a, dout_b : out std_logic_vector(DATA_WIDTH-1 downto 0);
 
     -- write enable
     we_a, we_b : in std_logic := '0'
@@ -67,11 +67,11 @@ begin
     clock1    => clk_b,
     clocken0  => cen_a,
     clocken1  => cen_b,
-    data_a    => di_a,
-    data_b    => di_b,
+    data_a    => din_a,
+    data_b    => din_b,
     wren_a    => we_a,
     wren_b    => we_b,
-    q_a       => do_a,
-    q_b       => do_b
+    q_a       => dout_a,
+    q_b       => dout_b
   );
 end arch;
