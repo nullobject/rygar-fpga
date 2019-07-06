@@ -20,7 +20,7 @@ begin
     variable r : std_logic;
   begin
     if falling_edge(clk) then
-      if reset then
+      if reset = '1' then
         reset_n <= '0';
         r := '0';
       else

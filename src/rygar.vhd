@@ -274,7 +274,7 @@ begin
     if rising_edge(clk_12) then
       vblank_t1 <= video_vblank;
 
-      if (not cpu_m1_n) and (not cpu_ioreq_n) then
+      if cpu_m1_n = '0' and cpu_ioreq_n = '0' then
         cpu_int_n <= '1';
       elsif vblank_t1 = '1' and video_vblank = '0' then
         cpu_int_n <= '0';
@@ -307,15 +307,15 @@ begin
   prog_rom_3_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"f000" and unsigned(cpu_addr) <= x"f7ff" else '0';
 
   -- Connect the selected devices to the CPU data input bus.
-  cpu_di <= prog_rom_1_do when prog_rom_1_cs else
-            prog_rom_2_do when prog_rom_2_cs else
-            prog_rom_3_do when prog_rom_3_cs else
-            work_ram_do when work_ram_cs else
-            char_ram_do when char_ram_cs else
-            fg_ram_do when fg_ram_cs else
-            bg_ram_do when bg_ram_cs else
-            sprite_ram_do when sprite_ram_cs else
-            palette_ram_do when palette_ram_cs else
+  cpu_di <= prog_rom_1_do when prog_rom_1_cs = '1' else
+            prog_rom_2_do when prog_rom_2_cs = '1' else
+            prog_rom_3_do when prog_rom_3_cs = '1' else
+            work_ram_do when work_ram_cs = '1' else
+            char_ram_do when char_ram_cs = '1' else
+            fg_ram_do when fg_ram_cs = '1' else
+            bg_ram_do when bg_ram_cs = '1' else
+            sprite_ram_do when sprite_ram_cs = '1' else
+            palette_ram_do when palette_ram_cs = '1' else
             (others => '0');
 
   led <= cpu_do when work_ram_cs = '1' and cpu_wr_n = '0' else (others => '0');
