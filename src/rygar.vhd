@@ -98,11 +98,11 @@ architecture arch of rygar is
   signal video_hsync, video_vsync : std_logic;
   signal video_hblank, video_vblank : std_logic;
   signal video_on : std_logic;
-
-  signal video_addr : std_logic_vector(11 downto 0);
-  signal video_data : std_logic_vector(7 downto 0);
-
   signal vblank_falling : std_logic;
+
+  -- char tilemap signals
+  signal char_tilemap_data : std_logic_vector(7 downto 0);
+  signal char_tilemap_debug : std_logic_vector(5 downto 0);
 begin
   my_pll : entity pll.pll
   port map (
@@ -171,30 +171,14 @@ begin
   );
 
   -- work ram (4kB)
-  work_ram : entity work.dual_port_ram
+  work_ram : entity work.single_port_ram
   generic map (ADDR_WIDTH => 12, DATA_WIDTH => 8)
   port map (
-    clk_a  => clk_12,
-    cen_a  => work_ram_cs,
-    addr_a => cpu_addr(11 downto 0),
-    din_a  => cpu_dout,
-    dout_a => work_ram_dout,
-    we_a   => not cpu_wr_n,
-
-    clk_b  => clk_12,
-    addr_b => video_addr,
-    dout_b => video_data
-  );
-
-  -- character ram (2kB)
-  char_ram : entity work.single_port_ram
-  generic map (ADDR_WIDTH => 11, DATA_WIDTH => 8)
-  port map (
     clk  => clk_12,
-    cen  => char_ram_cs,
-    addr => cpu_addr(10 downto 0),
+    cen  => work_ram_cs,
+    addr => cpu_addr(11 downto 0),
     din  => cpu_dout,
-    dout => char_ram_dout,
+    dout => work_ram_dout,
     we   => not cpu_wr_n
   );
 
@@ -304,6 +288,23 @@ begin
     end if;
   end process;
 
+  -- character tilemap generator
+  char_tilemap : entity work.char_tilemap
+  port map (
+    reset    => not cpu_reset_n,
+    clk      => clk_12,
+    cen      => cen_6,
+    ram_cs   => char_ram_cs,
+    ram_addr => cpu_addr(10 downto 0),
+    ram_din  => cpu_dout,
+    ram_dout => char_ram_dout,
+    ram_we   => not cpu_wr_n,
+    pixel_x  => video_pixel_x(7 downto 0),
+    pixel_y  => video_pixel_y(7 downto 0),
+    data     => char_tilemap_data,
+    debug    => char_tilemap_debug
+  );
+
   -- $0000-$7fff PROGRAM ROM 1
   -- $8000-$bfff PROGRAM ROM 2
   -- $c000-$cfff WORK RAM
@@ -360,13 +361,11 @@ begin
   vga_hs <= not (video_hsync xor video_vsync);
   vga_vs <= '1';
 
-  video_addr <= std_logic_vector(video_pixel_y(3 downto 0)) & std_logic_vector(video_pixel_x(7 downto 0));
-
   process(clk_12)
   begin
     if rising_edge(clk_12) then
       if video_on = '1' then
-        vga_r <= std_logic_vector(to_unsigned(to_integer(unsigned(video_data)) * 6 / 10, vga_r'length));
+        vga_r <= char_tilemap_debug;
       else
         vga_r <= (others => '0');
       end if;
