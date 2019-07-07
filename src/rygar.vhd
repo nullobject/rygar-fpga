@@ -111,13 +111,15 @@ begin
     locked   => open
   );
 
-  -- clock generator
-  clock_gen : entity work.clock_gen
-  port map (
-    clk_12 => clk_12,
-    cen_6  => cen_6,
-    cen_4  => cen_4
-  );
+  -- generate the 6 MHz clock enable
+  clock_divider_6 : entity work.clock_divider
+  generic map (DIVISOR => 2)
+  port map (clk => clk_12, cen => cen_6);
+
+  -- generate the 4 MHz clock enable
+  clock_divider_4 : entity work.clock_divider
+  generic map (DIVISOR => 3)
+  port map (clk => clk_12, cen => cen_4);
 
   -- generate cpu reset pulse after powering on, or when KEY0 is pressed
   reset_gen : entity work.reset_gen

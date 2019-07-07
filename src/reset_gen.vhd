@@ -8,8 +8,13 @@ use ieee.std_logic_1164.all;
 -- data from the address and data buses.
 entity reset_gen is
   port(
+    -- clock
     clk : in std_logic;
+
+    -- reset input
     reset : in std_logic;
+
+    -- reset output
     reset_n : out std_logic
   );
 end reset_gen;
