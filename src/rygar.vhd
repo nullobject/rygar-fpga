@@ -111,12 +111,12 @@ begin
     locked   => open
   );
 
-  -- generate the 6 MHz clock enable
+  -- generate the 6 MHz clock enable signal
   clock_divider_6 : entity work.clock_divider
   generic map (DIVISOR => 2)
   port map (clk => clk_12, cen => cen_6);
 
-  -- generate the 4 MHz clock enable
+  -- generate the 4 MHz clock enable signal
   clock_divider_4 : entity work.clock_divider
   generic map (DIVISOR => 3)
   port map (clk => clk_12, cen => cen_4);
