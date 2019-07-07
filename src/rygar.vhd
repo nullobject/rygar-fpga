@@ -94,7 +94,7 @@ architecture arch of rygar is
   -- currently selected bank for program rom 3
   signal prog_rom_3_bank : unsigned(3 downto 0);
 
-  signal video_hpos, video_vpos : unsigned(8 downto 0);
+  signal video_pixel_x, video_pixel_y : unsigned(8 downto 0);
   signal video_hsync, video_vsync : std_logic;
   signal video_hblank, video_vblank : std_logic;
   signal video_on : std_logic;
@@ -133,14 +133,14 @@ begin
   -- video sync generator
   sync_gen : entity work.sync_gen
   port map (
-    clk    => clk_12,
-    cen    => cen_6,
-    hpos   => video_hpos,
-    vpos   => video_vpos,
-    hsync  => video_hsync,
-    vsync  => video_vsync,
-    hblank => video_hblank,
-    vblank => video_vblank
+    clk     => clk_12,
+    cen     => cen_6,
+    pixel_x => video_pixel_x,
+    pixel_y => video_pixel_y,
+    hsync   => video_hsync,
+    vsync   => video_vsync,
+    hblank  => video_hblank,
+    vblank  => video_vblank
   );
 
   -- program rom 1 (32kB)
@@ -276,7 +276,6 @@ begin
     falling => vblank_falling
   );
 
-
   -- An interrupt is triggered on the falling edge of the VBLANK signal.
   --
   -- Once the interrupt request has been accepted by the CPU, it is
@@ -361,7 +360,7 @@ begin
   vga_hs <= not (video_hsync xor video_vsync);
   vga_vs <= '1';
 
-  video_addr <= std_logic_vector(video_vpos(3 downto 0)) & std_logic_vector(video_hpos(7 downto 0));
+  video_addr <= std_logic_vector(video_pixel_y(3 downto 0)) & std_logic_vector(video_pixel_x(7 downto 0));
 
   process(clk_12)
   begin

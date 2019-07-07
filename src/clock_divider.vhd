@@ -11,7 +11,7 @@ entity clock_divider is
     -- input clock
     clk : in std_logic;
 
-    -- clock enable
+    -- clock enable output strobe
     cen : out std_logic
   );
 end clock_divider;

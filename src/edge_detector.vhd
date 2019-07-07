@@ -11,7 +11,7 @@ entity edge_detector is
     -- data input
     data : in std_logic;
 
-    -- edge strobe output signals
+    -- edge output strobes
     rising, falling : out std_logic
   );
 end edge_detector;

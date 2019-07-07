@@ -4,14 +4,14 @@ use ieee.numeric_std.all;
 
 entity sync_gen is
   port (
-    -- clock
+    -- input clock
     clk : in std_logic;
 
     -- clock enable
     cen : in std_logic;
 
-    -- horizontal and vertical position
-    hpos, vpos : out unsigned(8 downto 0);
+    -- horizontal and vertical pixel position
+    pixel_x, pixel_y : out unsigned(8 downto 0);
 
     -- horizontal and vertical sync
     hsync, vsync : out std_logic;
@@ -71,6 +71,6 @@ begin
     end if;
   end process;
 
-  hpos <= to_unsigned(hcnt, hpos'length);
-  vpos <= to_unsigned(vcnt, vpos'length);
+  pixel_x <= to_unsigned(hcnt, pixel_x'length);
+  pixel_y <= to_unsigned(vcnt, pixel_y'length);
 end architecture;
