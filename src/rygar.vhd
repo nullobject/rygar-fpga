@@ -101,7 +101,8 @@ architecture arch of rygar is
 
   signal video_addr : std_logic_vector(11 downto 0);
   signal video_data : std_logic_vector(7 downto 0);
-  signal vblank_t1 : std_logic;
+
+  signal vblank_falling : std_logic;
 begin
   my_pll : entity pll.pll
   port map (
@@ -266,6 +267,16 @@ begin
     DO      => cpu_dout
   );
 
+  -- detect falling edges of the VBLANK signal
+  vblank_edge_detector : entity work.edge_detector
+  port map (
+    clk     => clk_12,
+    data    => video_vblank,
+    rising  => open,
+    falling => vblank_falling
+  );
+
+
   -- An interrupt is triggered on the falling edge of the VBLANK signal.
   --
   -- Once the interrupt request has been accepted by the CPU, it is
@@ -274,11 +285,9 @@ begin
   irq : process(clk_12)
   begin
     if rising_edge(clk_12) then
-      vblank_t1 <= video_vblank;
-
       if cpu_m1_n = '0' and cpu_ioreq_n = '0' then
         cpu_int_n <= '1';
-      elsif vblank_t1 = '1' and video_vblank = '0' then
+      elsif vblank_falling = '1' then
         cpu_int_n <= '0';
       end if;
     end if;
