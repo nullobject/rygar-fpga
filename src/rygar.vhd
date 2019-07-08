@@ -6,19 +6,19 @@ library pll;
 
 entity rygar is
   port (
-    -- 50 MHz input clock
+    -- 50MHz input clock
     clk : in std_logic;
 
-    -- vga colours
+    -- RGB colours
     vga_r, vga_g, vga_b : out std_logic_vector(5 downto 0);
 
-    -- vga horizontal and vertical sync
-    vga_hs, vga_vs : out std_logic;
+    -- horizontal and vertical sync
+    vga_hs, vga_vs : out std_logic := '1';
 
     -- buttons
     key : in std_logic_vector(1 downto 0);
 
-    -- leds
+    -- LEDs
     led : out std_logic_vector(7 downto 0);
     debug : out std_logic_vector(23 downto 0)
   );
@@ -112,12 +112,12 @@ begin
     locked   => open
   );
 
-  -- generate the 6 MHz clock enable signal
+  -- generate the 6MHz clock enable signal
   clock_divider_6 : entity work.clock_divider
   generic map (DIVISOR => 2)
   port map (clk => clk_12, cen => cen_6);
 
-  -- generate the 4 MHz clock enable signal
+  -- generate the 4MHz clock enable signal
   clock_divider_4 : entity work.clock_divider
   generic map (DIVISOR => 3)
   port map (clk => clk_12, cen => cen_4);
@@ -359,15 +359,18 @@ begin
 
   video_on <= not (video_hblank or video_vblank);
   vga_hs <= not (video_hsync xor video_vsync);
-  vga_vs <= '1';
 
   process(clk_12)
   begin
     if rising_edge(clk_12) then
       if video_on = '1' then
         vga_r <= char_tilemap_debug;
+        vga_g <= char_tilemap_debug;
+        vga_b <= char_tilemap_debug;
       else
         vga_r <= (others => '0');
+        vga_g <= (others => '0');
+        vga_b <= (others => '0');
       end if;
     end if;
   end process;
