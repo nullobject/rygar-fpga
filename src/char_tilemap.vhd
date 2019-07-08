@@ -73,8 +73,6 @@ architecture arch of char_tilemap is
 
   -- the color is represented by the 4 MSBs of the high byte
   alias color : std_logic_vector(3 downto 0) is high_byte(7 downto 4);
-
-  signal pixel : std_logic_vector(3 downto 0);
 begin
   -- character RAM (2kB)
   tile_ram : entity work.dual_port_ram
@@ -109,7 +107,7 @@ begin
       state         <= next_state;
       low_byte      <= next_low_byte;
       high_byte     <= next_high_byte;
-      tile_rom_addr <= next_tile_rom_addr;
+      -- tile_rom_addr <= next_tile_rom_addr;
     end if;
   end process;
 
@@ -121,7 +119,7 @@ begin
     next_state         <= state;
     next_low_byte      <= low_byte;
     next_high_byte     <= high_byte;
-    next_tile_rom_addr <= tile_rom_addr;
+    -- next_tile_rom_addr <= tile_rom_addr;
 
     -- calculate index of the current tile
     index := row*COLS + col;
@@ -153,11 +151,23 @@ begin
     end case;
   end process;
 
-  -- each byte in the tile ROM contains two 4-bit pixels
-  pixel <= tile_rom_dout(7 downto 4) when offset_x(0) = '1' else tile_rom_dout(3 downto 0);
+  process(clk)
+    variable pixel : std_logic_vector(3 downto 0);
+  begin
+    if cen = '1' then
+      tile_rom_addr <= std_logic_vector(row & col & offset_y & offset_x(2 downto 1));
 
-  data <= color & pixel;
+      -- each byte in the tile ROM contains two 4-bit pixels
+      if offset_x(0) = '1' then
+        pixel := tile_rom_dout(7 downto 4);
+      else
+        pixel := tile_rom_dout(3 downto 0);
+      end if;
 
-  -- debug <= tile_code(9 downto 4);
-  debug <= pixel & pixel(3 downto 2);
+      data <= color & pixel;
+
+      -- debug <= tile_code(9 downto 4);
+      debug <= pixel & pixel(3 downto 2);
+    end if;
+  end process;
 end architecture;
