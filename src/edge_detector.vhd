@@ -22,8 +22,12 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
--- detects the rising and falling edges of a signal
+-- Generates a pulse when a rising or falling edge is detected for the input
+-- signal.
 entity edge_detector is
+  generic (
+    RISING : boolean := true
+  );
   port (
     -- input clock
     clk : in std_logic;
@@ -31,8 +35,8 @@ entity edge_detector is
     -- data input
     data : in std_logic;
 
-    -- edge output strobes
-    rising, falling : out std_logic
+    -- edge output strobe
+    edge : out std_logic
   );
 end edge_detector;
 
@@ -47,6 +51,5 @@ begin
     end if;
   end process;
 
-  rising  <= (not t1) and t0;
-  falling <= (not t0) and t1;
+  edge <= (not t1 and t0) WHEN rising else (not t0 and t1);
 end architecture;

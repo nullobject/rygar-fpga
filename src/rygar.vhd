@@ -273,11 +273,11 @@ begin
 
   -- detect falling edges of the VBLANK signal
   vblank_edge_detector : entity work.edge_detector
+  generic map (RISING => false)
   port map (
-    clk     => clk_12,
-    data    => video_vblank,
-    rising  => open,
-    falling => vblank_falling
+    clk  => clk_12,
+    data => video_vblank,
+    edge => vblank_falling
   );
 
   -- An interrupt is triggered on the falling edge of the VBLANK signal.
