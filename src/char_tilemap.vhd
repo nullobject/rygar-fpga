@@ -57,10 +57,7 @@ entity char_tilemap is
     vcnt : in unsigned(7 downto 0);
 
     -- palette index output
-    data : out std_logic_vector(7 downto 0);
-
-    -- debug output
-    debug : out std_logic_vector(5 downto 0)
+    data : out std_logic_vector(7 downto 0)
   );
 end char_tilemap;
 
@@ -99,7 +96,7 @@ architecture arch of char_tilemap is
   -- the color is represented by the 4 MSBs of the high byte
   alias color : std_logic_vector(3 downto 0) is high_byte(7 downto 4);
 begin
-  -- character RAM (2kB)
+  -- character tile RAM
   tile_ram : entity work.dual_port_ram
   generic map (ADDR_WIDTH => CHAR_RAM_ADDR_WIDTH)
   port map (
@@ -114,7 +111,7 @@ begin
     dout_b => tile_ram_dout
   );
 
-  -- tile ROM (32kB)
+  -- character tile ROM
   tile_rom : entity work.single_port_rom
   generic map (ADDR_WIDTH => CHAR_ROM_ADDR_WIDTH, INIT_FILE => "cpu_8k.mif")
   port map (
@@ -190,9 +187,6 @@ begin
       end if;
 
       data <= color & pixel;
-
-      -- debug <= tile_code(9 downto 4);
-      debug <= pixel & pixel(3 downto 2);
     end if;
   end process;
 end architecture;

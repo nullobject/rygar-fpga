@@ -112,8 +112,7 @@ architecture arch of rygar_top is
   signal vblank_falling : std_logic;
 
   -- char tilemap signals
-  signal char_tilemap_data  : std_logic_vector(7 downto 0);
-  signal char_tilemap_debug : std_logic_vector(5 downto 0);
+  signal char_tilemap_data : std_logic_vector(7 downto 0);
 begin
   my_pll : entity pll.pll
   port map (
@@ -315,8 +314,7 @@ begin
     ram_we   => not cpu_wr_n,
     hcnt     => video_hcnt(7 downto 0),
     vcnt     => video_vcnt(7 downto 0),
-    data     => char_tilemap_data,
-    debug    => char_tilemap_debug
+    data     => char_tilemap_data
   );
 
   -- $0000-$7fff PROGRAM ROM 1
@@ -378,9 +376,9 @@ begin
   begin
     if rising_edge(clk_12) then
       if video_on = '1' then
-        vga_r <= char_tilemap_debug;
-        vga_g <= char_tilemap_debug;
-        vga_b <= char_tilemap_debug;
+        vga_r <= char_tilemap_data(3 downto 0) & char_tilemap_data(3 downto 2);
+        vga_g <= char_tilemap_data(3 downto 0) & char_tilemap_data(3 downto 2);
+        vga_b <= char_tilemap_data(3 downto 0) & char_tilemap_data(3 downto 2);
       else
         vga_r <= (others => '0');
         vga_g <= (others => '0');
