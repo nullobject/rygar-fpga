@@ -22,6 +22,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+-- Generates the video timing signals.
 entity sync_gen is
   port (
     -- input clock

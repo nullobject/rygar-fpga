@@ -53,39 +53,39 @@ architecture arch of rygar is
   -- reset
   signal reset : std_logic;
 
-  -- cpu clock enable
+  -- CPU clock enable
   signal cpu_cen : std_logic;
 
-  -- cpu address bus
+  -- CPU address bus
   signal cpu_addr : std_logic_vector(15 downto 0);
 
-  -- cpu data bus
+  -- CPU data bus
   signal cpu_din, cpu_dout : std_logic_vector(7 downto 0);
 
-  -- cpu io request: the address bus holds a valid address for an i/o read or
+  -- CPU IO request: the address bus holds a valid address for an IO read or
   -- write operation
   signal cpu_ioreq_n : std_logic;
 
-  -- cpu memory request: the address bus holds a valid address for a memory
+  -- CPU memory request: the address bus holds a valid address for a memory
   -- read or write operation
   signal cpu_mreq_n : std_logic;
 
-  -- cpu read: ready to read data from the data bus
+  -- CPU read: ready to read data from the data bus
   signal cpu_rd_n : std_logic;
 
-  -- cpu write: the data bus contains a byte to write somewhere
+  -- CPU write: the data bus contains a byte to write somewhere
   signal cpu_wr_n : std_logic;
 
-  -- cpu refresh: the lower seven bits of the address bus should be refreshed
+  -- CPU refresh: the lower seven bits of the address bus should be refreshed
   signal cpu_rfsh_n : std_logic;
 
-  -- cpu interrupt: when this signal is asserted it triggers an interrupt
+  -- CPU interrupt: when this signal is asserted it triggers an interrupt
   signal cpu_int_n : std_logic := '1';
 
-  -- cpu timing signal
+  -- CPU timing signal
   signal cpu_m1_n : std_logic;
 
-  -- cpu halt signal
+  -- CPU halt signal
   signal cpu_halt_n : std_logic;
 
   -- chip select signals
@@ -111,7 +111,7 @@ architecture arch of rygar is
   signal sprite_ram_dout  : std_logic_vector(7 downto 0);
   signal palette_ram_dout : std_logic_vector(7 downto 0);
 
-  -- currently selected bank for program rom 3
+  -- currently selected bank for program ROM 3
   signal prog_rom_3_bank : unsigned(3 downto 0);
 
   signal video_pixel_x, video_pixel_y : unsigned(8 downto 0);
@@ -166,7 +166,7 @@ begin
     vblank  => video_vblank
   );
 
-  -- program rom 1 (32kB)
+  -- program ROM 1 (32kB)
   prog_rom_1 : entity work.single_port_rom
   generic map (ADDR_WIDTH => 15, DATA_WIDTH => 8, INIT_FILE => "cpu_5p.mif")
   port map (
@@ -175,7 +175,7 @@ begin
     dout => prog_rom_1_dout
   );
 
-  -- program rom 2 (16kB)
+  -- program ROM 2 (16kB)
   prog_rom_2 : entity work.single_port_rom
   generic map (ADDR_WIDTH => 14, DATA_WIDTH => 8, INIT_FILE => "cpu_5m.mif")
   port map (
@@ -184,7 +184,7 @@ begin
     dout => prog_rom_2_dout
   );
 
-  -- program rom 3 (32kB bank switched)
+  -- program ROM 3 (32kB bank switched)
   prog_rom_3 : entity work.single_port_rom
   generic map (ADDR_WIDTH => 15, DATA_WIDTH => 8, INIT_FILE => "cpu_5j.mif")
   port map (

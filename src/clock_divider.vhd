@@ -22,7 +22,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
--- generates a clock enable signal by dividing the input clock
+-- Generates a clock enable signal by dividing the input clock.
 entity clock_divider is
   generic (
     DIVISOR : natural
