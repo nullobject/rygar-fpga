@@ -23,32 +23,32 @@ use ieee.std_logic_1164.all;
 
 -- Generates an initial reset pulse, or at any time the input signal is
 -- asserted.
+--
+-- This is based on the circuit described in Advanced FPGA Design (p144).
 entity reset_gen is
   port(
     -- clock
     clk : in std_logic;
 
     -- reset input
-    data : in std_logic;
+    rin : in std_logic;
 
     -- reset output
-    reset : out std_logic
+    rout : out std_logic
   );
 end reset_gen;
 
 architecture arch of reset_gen is
   signal t1 : std_logic := '1';
 begin
-  reset_pulse : process(clk)
+  process(clk, rin)
   begin
-    if falling_edge(clk) then
-      if data = '1' then
-        reset <= '1';
-        t1 <= '1';
-      else
-        reset <= t1;
-        t1 <= '0';
-      end if;
+    if rin = '1' then
+      t1 <= '1';
+      rout <= '1';
+    elsif rising_edge(clk) then
+      t1 <= '0';
+      rout <= t1;
     end if;
   end process;
 end architecture arch;

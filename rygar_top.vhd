@@ -150,9 +150,9 @@ begin
   -- data from the address and data buses.
   reset_gen : entity work.reset_gen
   port map (
-    clk   => clk_12,
-    data  => not key(0),
-    reset => reset
+    clk  => clk_12,
+    rin  => not key(0),
+    rout => reset
   );
 
   -- video sync generator
