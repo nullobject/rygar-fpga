@@ -22,6 +22,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use work.rygar.all;
+
 -- Generates the character tilemap.
 --
 -- The character tilemap is a 32x32 grid of 8x8 tiles. The CPU updates the
@@ -34,10 +36,6 @@ use ieee.numeric_std.all;
 -- represented by four bitplanes, and each tile takes up exactly 32 bytes (8
 -- bytes per bitplane).
 entity char_tilemap is
-  generic (
-    TILE_RAM_ADDR_WIDTH : natural := 11;
-    TILE_ROM_ADDR_WIDTH : natural := 15
-  );
   port (
     reset : in std_logic;
 
@@ -49,7 +47,7 @@ entity char_tilemap is
 
     -- char ram
     ram_cs : in std_logic;
-    ram_addr : in std_logic_vector(TILE_RAM_ADDR_WIDTH-1 downto 0);
+    ram_addr : in std_logic_vector(CHAR_RAM_ADDR_WIDTH-1 downto 0);
     ram_din : in std_logic_vector(7 downto 0);
     ram_dout : out std_logic_vector(7 downto 0);
     ram_we : in std_logic;
@@ -73,11 +71,11 @@ architecture arch of char_tilemap is
   signal state, next_state : state_type;
 
   -- char RAM
-  signal tile_ram_addr : std_logic_vector(TILE_RAM_ADDR_WIDTH-1 downto 0);
+  signal tile_ram_addr : std_logic_vector(CHAR_RAM_ADDR_WIDTH-1 downto 0);
   signal tile_ram_dout : std_logic_vector(7 downto 0);
 
   -- char ROM
-  signal tile_rom_addr, next_tile_rom_addr : std_logic_vector(TILE_ROM_ADDR_WIDTH-1 downto 0);
+  signal tile_rom_addr, next_tile_rom_addr : std_logic_vector(CHAR_ROM_ADDR_WIDTH-1 downto 0);
   signal tile_rom_dout : std_logic_vector(7 downto 0);
 
   signal high_byte, next_high_byte : std_logic_vector(7 downto 0);
@@ -96,7 +94,7 @@ architecture arch of char_tilemap is
 begin
   -- character RAM (2kB)
   tile_ram : entity work.dual_port_ram
-  generic map (ADDR_WIDTH => TILE_RAM_ADDR_WIDTH)
+  generic map (ADDR_WIDTH => CHAR_RAM_ADDR_WIDTH)
   port map (
     clk_a  => clk,
     cen_a  => ram_cs,
@@ -111,7 +109,7 @@ begin
 
   -- tile ROM (32kB)
   tile_rom : entity work.single_port_rom
-  generic map (ADDR_WIDTH => TILE_ROM_ADDR_WIDTH, INIT_FILE => "cpu_8k.mif")
+  generic map (ADDR_WIDTH => CHAR_ROM_ADDR_WIDTH, INIT_FILE => "cpu_8k.mif")
   port map (
     clk  => clk,
     addr => tile_rom_addr,

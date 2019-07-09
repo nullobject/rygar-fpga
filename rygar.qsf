@@ -124,7 +124,7 @@ set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to debug
 set_instance_assignment -name SLEW_RATE 1 -to debug
 
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
-set_global_assignment -name TOP_LEVEL_ENTITY rygar
+set_global_assignment -name TOP_LEVEL_ENTITY rygar_top
 set_global_assignment -name SDC_FILE src/rygar.sdc
 set_global_assignment -name QIP_FILE src/pll.qip
 set_global_assignment -name QIP_FILE src/t80/T80.qip
@@ -134,6 +134,7 @@ set_global_assignment -name VHDL_FILE src/dual_port_ram.vhd
 set_global_assignment -name VHDL_FILE src/edge_detector.vhd
 set_global_assignment -name VHDL_FILE src/reset_gen.vhd
 set_global_assignment -name VHDL_FILE src/rygar.vhd
+set_global_assignment -name VHDL_FILE src/rygar_top.vhd
 set_global_assignment -name VHDL_FILE src/single_port_ram.vhd
 set_global_assignment -name VHDL_FILE src/single_port_rom.vhd
 set_global_assignment -name VHDL_FILE src/sync_gen.vhd
