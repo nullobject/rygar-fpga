@@ -42,8 +42,8 @@ entity sync_gen is
 end sync_gen;
 
 architecture struct of sync_gen is
-  signal hcnt : integer range 0 to 511;
-  signal vcnt : integer range 0 to 511;
+  signal hcnt : natural range 0 to 511;
+  signal vcnt : natural range 0 to 511;
 begin
   hv_count : process(clk)
   begin

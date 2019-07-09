@@ -25,7 +25,7 @@ use ieee.numeric_std.all;
 -- generates a clock enable signal by dividing the input clock
 entity clock_divider is
   generic (
-    DIVISOR : integer
+    DIVISOR : natural
   );
   port (
     -- input clock
@@ -39,7 +39,7 @@ end clock_divider;
 architecture arch of clock_divider is
 begin
   process(clk)
-    variable count : integer range 0 to DIVISOR-1;
+    variable count : natural range 0 to DIVISOR-1;
   begin
     if rising_edge(clk) then
       if count < DIVISOR-1 then

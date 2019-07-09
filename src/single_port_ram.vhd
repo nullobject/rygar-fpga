@@ -26,8 +26,8 @@ use altera_mf.altera_mf_components.all;
 
 entity single_port_ram is
   generic (
-    ADDR_WIDTH : integer := 8;
-    DATA_WIDTH : integer := 8
+    ADDR_WIDTH : natural := 8;
+    DATA_WIDTH : natural := 8
   );
   port (
     -- clock

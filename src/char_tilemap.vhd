@@ -35,8 +35,8 @@ use ieee.numeric_std.all;
 -- bytes per bitplane).
 entity char_tilemap is
   generic (
-    TILE_RAM_ADDR_WIDTH : integer := 11;
-    TILE_ROM_ADDR_WIDTH : integer := 15
+    TILE_RAM_ADDR_WIDTH : natural := 11;
+    TILE_ROM_ADDR_WIDTH : natural := 15
   );
   port (
     reset : in std_logic;
@@ -66,8 +66,8 @@ entity char_tilemap is
 end char_tilemap;
 
 architecture arch of char_tilemap is
-  constant COLS : integer := 32;
-  constant ROWS : integer := 32;
+  constant COLS : natural := 32;
+  constant ROWS : natural := 32;
 
   type state_type is (FETCH_LOW_BYTE_STATE, FETCH_HIGH_BYTE_STATE, LATCH_STATE);
   signal state, next_state : state_type;
