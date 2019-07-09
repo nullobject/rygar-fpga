@@ -32,16 +32,21 @@ entity rygar_top is
     clk : in std_logic;
 
     -- RGB colours
-    vga_r, vga_g, vga_b : out std_logic_vector(5 downto 0);
+    vga_r : out std_logic_vector(5 downto 0);
+    vga_g : out std_logic_vector(5 downto 0);
+    vga_b : out std_logic_vector(5 downto 0);
 
     -- horizontal and vertical sync
-    vga_hs, vga_vs : out std_logic := '1';
+    vga_hs : out std_logic := '1';
+    vga_vs : out std_logic := '1';
 
     -- buttons
     key : in std_logic_vector(1 downto 0);
 
     -- LEDs
     led : out std_logic_vector(7 downto 0);
+
+    -- debug GPIO
     debug : out std_logic_vector(23 downto 0)
   );
 end rygar_top;
@@ -49,46 +54,25 @@ end rygar_top;
 architecture arch of rygar_top is
   -- clock signals
   signal clk_12 : std_logic;
-  signal cen_6 : std_logic;
-  signal cen_4 : std_logic;
+  signal cen_6  : std_logic;
+  signal cen_4  : std_logic;
 
   -- reset
   signal reset : std_logic;
 
-  -- CPU clock enable
-  signal cpu_cen : std_logic;
-
-  -- CPU address bus
-  signal cpu_addr : std_logic_vector(15 downto 0);
-
-  -- CPU data bus
-  signal cpu_din, cpu_dout : std_logic_vector(7 downto 0);
-
-  -- CPU IO request: the address bus holds a valid address for an IO read or
-  -- write operation
+  -- CPU signals
+  signal cpu_cen     : std_logic;
+  signal cpu_addr    : std_logic_vector(15 downto 0);
+  signal cpu_din     : std_logic_vector(7 downto 0);
+  signal cpu_dout    : std_logic_vector(7 downto 0);
   signal cpu_ioreq_n : std_logic;
-
-  -- CPU memory request: the address bus holds a valid address for a memory
-  -- read or write operation
-  signal cpu_mreq_n : std_logic;
-
-  -- CPU read: ready to read data from the data bus
-  signal cpu_rd_n : std_logic;
-
-  -- CPU write: the data bus contains a byte to write somewhere
-  signal cpu_wr_n : std_logic;
-
-  -- CPU refresh: the lower seven bits of the address bus should be refreshed
-  signal cpu_rfsh_n : std_logic;
-
-  -- CPU interrupt: when this signal is asserted it triggers an interrupt
-  signal cpu_int_n : std_logic := '1';
-
-  -- CPU timing signal
-  signal cpu_m1_n : std_logic;
-
-  -- CPU halt signal
-  signal cpu_halt_n : std_logic;
+  signal cpu_mreq_n  : std_logic;
+  signal cpu_rd_n    : std_logic;
+  signal cpu_wr_n    : std_logic;
+  signal cpu_rfsh_n  : std_logic;
+  signal cpu_int_n   : std_logic := '1';
+  signal cpu_m1_n    : std_logic;
+  signal cpu_halt_n  : std_logic;
 
   -- chip select signals
   signal prog_rom_1_cs  : std_logic;
@@ -114,16 +98,21 @@ architecture arch of rygar_top is
   signal palette_ram_dout : std_logic_vector(7 downto 0);
 
   -- currently selected bank for program ROM 3
-  signal prog_rom_3_bank : unsigned(3 downto 0);
+  signal current_bank : unsigned(3 downto 0);
 
-  signal video_pixel_x, video_pixel_y : unsigned(8 downto 0);
-  signal video_hsync, video_vsync : std_logic;
-  signal video_hblank, video_vblank : std_logic;
-  signal video_on : std_logic;
+  -- video signals
+  signal video_hcnt   : unsigned(8 downto 0);
+  signal video_vcnt   : unsigned(8 downto 0);
+  signal video_hsync  : std_logic;
+  signal video_vsync  : std_logic;
+  signal video_hblank : std_logic;
+  signal video_vblank : std_logic;
+  signal video_on     : std_logic;
+
   signal vblank_falling : std_logic;
 
   -- char tilemap signals
-  signal char_tilemap_data : std_logic_vector(7 downto 0);
+  signal char_tilemap_data  : std_logic_vector(7 downto 0);
   signal char_tilemap_debug : std_logic_vector(5 downto 0);
 begin
   my_pll : entity pll.pll
@@ -144,7 +133,7 @@ begin
   generic map (DIVISOR => 3)
   port map (clk => clk_12, cen => cen_4);
 
-  -- Generate CPU reset pulse after powering on, or when KEY0 is pressed.
+  -- Generate reset pulse after powering on, or when KEY0 is pressed.
   --
   -- The Z80 needs to be reset after powering on, otherwise it may load garbage
   -- data from the address and data buses.
@@ -158,17 +147,17 @@ begin
   -- video sync generator
   sync_gen : entity work.sync_gen
   port map (
-    clk     => clk_12,
-    cen     => cen_6,
-    pixel_x => video_pixel_x,
-    pixel_y => video_pixel_y,
-    hsync   => video_hsync,
-    vsync   => video_vsync,
-    hblank  => video_hblank,
-    vblank  => video_vblank
+    clk    => clk_12,
+    cen    => cen_6,
+    hcnt   => video_hcnt,
+    vcnt   => video_vcnt,
+    hsync  => video_hsync,
+    vsync  => video_vsync,
+    hblank => video_hblank,
+    vblank => video_vblank
   );
 
-  -- program ROM 1 (32kB)
+  -- program ROM 1
   prog_rom_1 : entity work.single_port_rom
   generic map (ADDR_WIDTH => PROG_ROM_1_ADDR_WIDTH, INIT_FILE => "cpu_5p.mif")
   port map (
@@ -177,7 +166,7 @@ begin
     dout => prog_rom_1_dout
   );
 
-  -- program ROM 2 (16kB)
+  -- program ROM 2
   prog_rom_2 : entity work.single_port_rom
   generic map (ADDR_WIDTH => PROG_ROM_2_ADDR_WIDTH, INIT_FILE => "cpu_5m.mif")
   port map (
@@ -186,16 +175,16 @@ begin
     dout => prog_rom_2_dout
   );
 
-  -- program ROM 3 (32kB bank switched)
+  -- program ROM 3
   prog_rom_3 : entity work.single_port_rom
   generic map (ADDR_WIDTH => PROG_ROM_3_ADDR_WIDTH, INIT_FILE => "cpu_5j.mif")
   port map (
     clk  => clk_12,
-    addr => std_logic_vector(prog_rom_3_bank) & cpu_addr(10 downto 0),
+    addr => std_logic_vector(current_bank) & cpu_addr(10 downto 0),
     dout => prog_rom_3_dout
   );
 
-  -- work ram (4kB)
+  -- work ram
   work_ram : entity work.single_port_ram
   generic map (ADDR_WIDTH => WORK_RAM_ADDR_WIDTH)
   port map (
@@ -207,7 +196,7 @@ begin
     we   => not cpu_wr_n
   );
 
-  -- fg ram (1kB)
+  -- fg ram
   fg_ram : entity work.single_port_ram
   generic map (ADDR_WIDTH => FG_RAM_ADDR_WIDTH)
   port map (
@@ -219,7 +208,7 @@ begin
     we   => not cpu_wr_n
   );
 
-  -- bg ram (1kB)
+  -- bg ram
   bg_ram : entity work.single_port_ram
   generic map (ADDR_WIDTH => BG_RAM_ADDR_WIDTH)
   port map (
@@ -231,7 +220,7 @@ begin
     we   => not cpu_wr_n
   );
 
-  -- sprite ram (2kB)
+  -- sprite ram
   sprite_ram : entity work.single_port_ram
   generic map (ADDR_WIDTH => SPRITE_RAM_ADDR_WIDTH)
   port map (
@@ -243,7 +232,7 @@ begin
     we   => not cpu_wr_n
   );
 
-  -- palette ram (2kB)
+  -- palette ram
   palette_ram : entity work.single_port_ram
   generic map (ADDR_WIDTH => PALETTE_RAM_ADDR_WIDTH)
   port map (
@@ -308,7 +297,7 @@ begin
     if rising_edge(clk_12) then
       if bank_cs = '1' and cpu_wr_n = '0' then
         -- flip-flop 6J uses data lines 3 to 6
-        prog_rom_3_bank <= unsigned(cpu_dout(6 downto 3));
+        current_bank <= unsigned(cpu_dout(6 downto 3));
       end if;
     end if;
   end process;
@@ -324,8 +313,8 @@ begin
     ram_din  => cpu_dout,
     ram_dout => char_ram_dout,
     ram_we   => not cpu_wr_n,
-    pixel_x  => video_pixel_x(7 downto 0),
-    pixel_y  => video_pixel_y(7 downto 0),
+    hcnt     => video_hcnt(7 downto 0),
+    vcnt     => video_vcnt(7 downto 0),
     data     => char_tilemap_data,
     debug    => char_tilemap_debug
   );

@@ -29,7 +29,7 @@ entity single_port_rom is
   generic (
     ADDR_WIDTH : natural := 8;
     DATA_WIDTH : natural := 8;
-    INIT_FILE : string := ""
+    INIT_FILE  : string := ""
   );
   port (
     -- clock

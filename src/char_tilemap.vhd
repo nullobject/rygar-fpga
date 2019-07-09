@@ -45,15 +45,16 @@ entity char_tilemap is
     -- clock enable
     cen : in std_logic;
 
-    -- char ram
-    ram_cs : in std_logic;
+    -- char RAM
+    ram_cs   : in std_logic;
     ram_addr : in std_logic_vector(CHAR_RAM_ADDR_WIDTH-1 downto 0);
-    ram_din : in std_logic_vector(7 downto 0);
+    ram_din  : in std_logic_vector(7 downto 0);
     ram_dout : out std_logic_vector(7 downto 0);
-    ram_we : in std_logic;
+    ram_we   : in std_logic;
 
-    -- horizontal and vertical pixel position
-    pixel_x, pixel_y : in unsigned(7 downto 0);
+    -- horizontal and vertical counter
+    hcnt : in unsigned(7 downto 0);
+    vcnt : in unsigned(7 downto 0);
 
     -- palette index output
     data : out std_logic_vector(7 downto 0);
@@ -68,26 +69,32 @@ architecture arch of char_tilemap is
   constant ROWS : natural := 32;
 
   type state_type is (FETCH_LOW_BYTE_STATE, FETCH_HIGH_BYTE_STATE, LATCH_STATE);
-  signal state, next_state : state_type;
+
+  -- state
+  signal state      : state_type;
+  signal next_state : state_type;
 
   -- char RAM
   signal tile_ram_addr : std_logic_vector(CHAR_RAM_ADDR_WIDTH-1 downto 0);
   signal tile_ram_dout : std_logic_vector(7 downto 0);
 
   -- char ROM
-  signal tile_rom_addr, next_tile_rom_addr : std_logic_vector(CHAR_ROM_ADDR_WIDTH-1 downto 0);
-  signal tile_rom_dout : std_logic_vector(7 downto 0);
+  signal tile_rom_addr      : std_logic_vector(CHAR_ROM_ADDR_WIDTH-1 downto 0);
+  signal next_tile_rom_addr : std_logic_vector(CHAR_ROM_ADDR_WIDTH-1 downto 0);
+  signal tile_rom_dout      : std_logic_vector(7 downto 0);
 
-  signal high_byte, next_high_byte : std_logic_vector(7 downto 0);
-  signal low_byte, next_low_byte : std_logic_vector(7 downto 0);
+  signal high_byte      : std_logic_vector(7 downto 0);
+  signal next_high_byte : std_logic_vector(7 downto 0);
+  signal low_byte       : std_logic_vector(7 downto 0);
+  signal next_low_byte  : std_logic_vector(7 downto 0);
 
   -- tile column and row
-  alias col : unsigned(4 downto 0) is pixel_x(7 downto 3);
-  alias row : unsigned(4 downto 0) is pixel_y(7 downto 3);
+  alias col : unsigned(4 downto 0) is hcnt(7 downto 3);
+  alias row : unsigned(4 downto 0) is vcnt(7 downto 3);
 
   -- tile offset in pixels
-  alias offset_x : unsigned(2 downto 0) is pixel_x(2 downto 0);
-  alias offset_y : unsigned(2 downto 0) is pixel_y(2 downto 0);
+  alias offset_x : unsigned(2 downto 0) is hcnt(2 downto 0);
+  alias offset_y : unsigned(2 downto 0) is vcnt(2 downto 0);
 
   -- the color is represented by the 4 MSBs of the high byte
   alias color : std_logic_vector(3 downto 0) is high_byte(7 downto 4);

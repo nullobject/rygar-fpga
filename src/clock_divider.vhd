@@ -37,16 +37,16 @@ entity clock_divider is
 end clock_divider;
 
 architecture arch of clock_divider is
+  signal count : natural range 0 to DIVISOR-1;
 begin
   process(clk)
-    variable count : natural range 0 to DIVISOR-1;
   begin
     if rising_edge(clk) then
       if count < DIVISOR-1 then
-        count := count + 1;
+        count <= count + 1;
         cen <= '0';
       else
-        count := 0;
+        count <= 0;
         cen <= '1';
       end if;
     end if;

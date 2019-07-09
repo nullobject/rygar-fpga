@@ -23,24 +23,25 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 package rygar is
-  constant PROG_ROM_1_ADDR_WIDTH : natural := 15; -- 32kB
-  constant PROG_ROM_2_ADDR_WIDTH : natural := 14; -- 16kB
-  constant PROG_ROM_3_ADDR_WIDTH : natural := 15; -- 32kB
+  constant SCREEN_WIDTH  : natural := 256;
+  constant SCREEN_HEIGHT : natural := 224;
 
-  constant WORK_RAM_ADDR_WIDTH : natural := 12; -- 4kB
+  constant COLOR_DEPTH_R : natural := 4;
+  constant COLOR_DEPTH_G : natural := 4;
+  constant COLOR_DEPTH_B : natural := 4;
 
-  constant CHAR_RAM_ADDR_WIDTH : natural := 11; -- 2kB
-  constant CHAR_ROM_ADDR_WIDTH : natural := 15; -- 32kB
-
-  constant FG_RAM_ADDR_WIDTH : natural := 10; -- 1kB
-  constant FG_ROM_ADDR_WIDTH : natural := 17; -- 128kB
-
-  constant BG_RAM_ADDR_WIDTH : natural := 10; -- 1kB
-  constant BG_ROM_ADDR_WIDTH : natural := 17; -- 128kB
-
-  constant SPRITE_RAM_ADDR_WIDTH : natural := 11; -- 2kB
-  constant SPRITE_ROM_ADDR_WIDTH : natural := 17; -- 128kB
-
+  constant PROG_ROM_1_ADDR_WIDTH  : natural := 15; -- 32kB
+  constant PROG_ROM_2_ADDR_WIDTH  : natural := 14; -- 16kB
+  constant PROG_ROM_3_ADDR_WIDTH  : natural := 15; -- 32kB
+  constant WORK_RAM_ADDR_WIDTH    : natural := 12; -- 4kB
+  constant CHAR_RAM_ADDR_WIDTH    : natural := 11; -- 2kB
+  constant CHAR_ROM_ADDR_WIDTH    : natural := 15; -- 32kB
+  constant FG_RAM_ADDR_WIDTH      : natural := 10; -- 1kB
+  constant FG_ROM_ADDR_WIDTH      : natural := 17; -- 128kB
+  constant BG_RAM_ADDR_WIDTH      : natural := 10; -- 1kB
+  constant BG_ROM_ADDR_WIDTH      : natural := 17; -- 128kB
+  constant SPRITE_RAM_ADDR_WIDTH  : natural := 11; -- 2kB
+  constant SPRITE_ROM_ADDR_WIDTH  : natural := 17; -- 128kB
   constant PALETTE_RAM_ADDR_WIDTH : natural := 11; -- 2kB
 end package rygar;
 
