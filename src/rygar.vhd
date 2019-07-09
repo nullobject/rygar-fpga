@@ -50,8 +50,8 @@ architecture arch of rygar is
   signal cen_6 : std_logic;
   signal cen_4 : std_logic;
 
-  -- cpu reset
-  signal cpu_reset_n : std_logic;
+  -- reset
+  signal reset : std_logic;
 
   -- cpu clock enable
   signal cpu_cen : std_logic;
@@ -142,12 +142,15 @@ begin
   generic map (DIVISOR => 3)
   port map (clk => clk_12, cen => cen_4);
 
-  -- generate cpu reset pulse after powering on, or when KEY0 is pressed
+  -- Generate CPU reset pulse after powering on, or when KEY0 is pressed.
+  --
+  -- The Z80 needs to be reset after powering on, otherwise it may load garbage
+  -- data from the address and data buses.
   reset_gen : entity work.reset_gen
   port map (
-    clk     => clk_12,
-    reset   => not key(0),
-    reset_n => cpu_reset_n
+    clk   => clk_12,
+    data  => not key(0),
+    reset => reset
   );
 
   -- video sync generator
@@ -253,7 +256,7 @@ begin
   -- main cpu
   cpu : entity work.T80s
   port map (
-    RESET_n => cpu_reset_n,
+    RESET_n => not reset,
     CLK     => clk_12,
     CEN     => cen_4,
     WAIT_n  => '1',
@@ -311,7 +314,7 @@ begin
   -- character tilemap generator
   char_tilemap : entity work.char_tilemap
   port map (
-    reset    => not cpu_reset_n,
+    reset    => reset,
     clk      => clk_12,
     cen      => cen_6,
     ram_cs   => char_ram_cs,
