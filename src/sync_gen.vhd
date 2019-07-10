@@ -34,16 +34,13 @@ entity sync_gen is
     cen : in std_logic;
 
     -- horizontal and vertical counter
-    hcnt : out unsigned(8 downto 0);
-    vcnt : out unsigned(8 downto 0);
+    hcnt, vcnt : out unsigned(8 downto 0);
 
     -- horizontal and vertical sync
-    hsync : out std_logic;
-    vsync : out std_logic;
+    hsync, vsync : out std_logic;
 
     -- horizontal and vertical blank
-    hblank : out std_logic;
-    vblank : out std_logic
+    hblank, vblank : out std_logic
   );
 end sync_gen;
 

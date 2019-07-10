@@ -31,28 +31,22 @@ entity dual_port_ram is
   );
   port (
     -- clock
-    clk_a : in std_logic;
-    clk_b : in std_logic;
+    clk_a, clk_b : in std_logic;
 
     -- clock enable
-    cen_a : in std_logic := '1';
-    cen_b : in std_logic := '1';
+    cen_a, cen_b : in std_logic := '1';
 
     -- address
-    addr_a : in std_logic_vector(ADDR_WIDTH-1 downto 0);
-    addr_b : in std_logic_vector(ADDR_WIDTH-1 downto 0);
+    addr_a, addr_b : in std_logic_vector(ADDR_WIDTH-1 downto 0);
 
     -- data in
-    din_a : in std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    din_b : in std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+    din_a, din_b : in std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
 
     -- data out
-    dout_a : out std_logic_vector(DATA_WIDTH-1 downto 0);
-    dout_b : out std_logic_vector(DATA_WIDTH-1 downto 0);
+    dout_a, dout_b : out std_logic_vector(DATA_WIDTH-1 downto 0);
 
     -- write enable
-    we_a : in std_logic := '0';
-    we_b : in std_logic := '0'
+    we_a, we_b : in std_logic := '0'
   );
 end dual_port_ram;
 

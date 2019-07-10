@@ -65,25 +65,20 @@ architecture arch of char_tilemap is
   constant COLS : natural := 32;
   constant ROWS : natural := 32;
 
-  type state_type is (FETCH_LOW_BYTE_STATE, FETCH_HIGH_BYTE_STATE, LATCH_STATE);
-
   -- state
-  signal state      : state_type;
-  signal next_state : state_type;
+  type state_type is (FETCH_LOW_BYTE_STATE, FETCH_HIGH_BYTE_STATE, LATCH_STATE);
+  signal state, next_state : state_type;
 
   -- char RAM
   signal tile_ram_addr : std_logic_vector(CHAR_RAM_ADDR_WIDTH-1 downto 0);
   signal tile_ram_dout : std_logic_vector(7 downto 0);
 
   -- char ROM
-  signal tile_rom_addr      : std_logic_vector(CHAR_ROM_ADDR_WIDTH-1 downto 0);
-  signal next_tile_rom_addr : std_logic_vector(CHAR_ROM_ADDR_WIDTH-1 downto 0);
-  signal tile_rom_dout      : std_logic_vector(7 downto 0);
+  signal tile_rom_addr, next_tile_rom_addr : std_logic_vector(CHAR_ROM_ADDR_WIDTH-1 downto 0);
+  signal tile_rom_dout                     : std_logic_vector(7 downto 0);
 
-  signal high_byte      : std_logic_vector(7 downto 0);
-  signal next_high_byte : std_logic_vector(7 downto 0);
-  signal low_byte       : std_logic_vector(7 downto 0);
-  signal next_low_byte  : std_logic_vector(7 downto 0);
+  signal high_byte, next_high_byte : std_logic_vector(7 downto 0);
+  signal low_byte, next_low_byte   : std_logic_vector(7 downto 0);
 
   -- tile column and row
   alias col : unsigned(4 downto 0) is hcnt(7 downto 3);
