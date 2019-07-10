@@ -273,7 +273,7 @@ begin
     edge => vblank_falling
   );
 
-  -- An interrupt is triggered on the falling edge of the VBLANK signal.
+  -- Trigger an interrupt on the falling edge of the VBLANK signal.
   --
   -- Once the interrupt request has been accepted by the CPU, it is
   -- acknowledged by activating the IORQ signal during the M1 cycle. This
