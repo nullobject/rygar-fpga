@@ -23,9 +23,6 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 package rygar is
-  constant SCREEN_WIDTH  : natural := 256;
-  constant SCREEN_HEIGHT : natural := 224;
-
   constant COLOR_DEPTH_R : natural := 4;
   constant COLOR_DEPTH_G : natural := 4;
   constant COLOR_DEPTH_B : natural := 4;

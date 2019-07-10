@@ -155,9 +155,6 @@ begin
   begin
     if rising_edge(clk) then
       if cen = '1' then
-        -- DEBUG: render all the tiles
-        -- tile_rom_addr <= std_logic_vector(row & col & vcnt(2 downto 0) & hcnt(2 downto 1));
-
         tile_rom_addr <= std_logic_vector(code & vcnt(2 downto 0) & hcnt(2 downto 1));
 
         -- select the low/high pixel

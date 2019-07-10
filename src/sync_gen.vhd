@@ -45,55 +45,104 @@ entity sync_gen is
 end sync_gen;
 
 architecture struct of sync_gen is
+  -- horizontal scan region widths
+  constant H_DISPLAY     : natural := 256;
+  constant H_FRONT_PORCH : natural := 48;
+  constant H_RETRACE     : natural := 32;
+  constant H_BACK_PORCH  : natural := 48;
+
+  -- vertical scan region widths
+  constant V_DISPLAY     : natural := 224;
+  constant V_FRONT_PORCH : natural := 16;
+  constant V_RETRACE     : natural := 8;
+  constant V_BACK_PORCH  : natural := 16;
+
+  -- horizontal and vertical scan widths
+  constant H_SCAN : natural := H_DISPLAY+H_FRONT_PORCH+H_RETRACE+H_BACK_PORCH;
+  constant V_SCAN : natural := V_DISPLAY+V_FRONT_PORCH+V_RETRACE+V_BACK_PORCH;
+
+  -- The horizontal blank offset is used to centre the frame horizontally on
+  -- the screen.
+  constant H_BLANK_OFFSET : natural := 9;
+
+  -- The vertical offset is used to skip the first two rows of tiles (16
+  -- lines). Rygar includes the first two rows of tiles in memory, but they
+  -- aren't actually rendered on the screen.
+  constant V_OFFSET : natural := 16;
+
   signal x : natural range 0 to 511;
   signal y : natural range 0 to 511;
 begin
-  hv_count : process(clk)
+  -- Generate horizontal timings.
+  --
+  -- visible:     256
+  -- back porch:  48
+  -- hsync:       32
+  -- front porch: 48
+  -- total:       384
+  --
+  -- 6Mhz / 384 = 15.625kHz
+  horizontal : process(clk)
   begin
     if rising_edge(clk) then
       if cen = '1' then
-        -- 6Mhz / 384 = 15.625 kHz
-        if x = 383 then
+        if x = H_SCAN-1 then
           x <= 0;
         else
           x <= x + 1;
         end if;
 
-        -- 15.625 kHz / 264 = 59.185 Hz
-        if x = 303 then
-          if y = 263 then
-            y <= 0;
-          else
-            y <= y + 1;
-          end if;
+        if x = H_BLANK_OFFSET then
+          hblank <= '0';
+        elsif x = H_DISPLAY+H_BLANK_OFFSET then
+          hblank <= '1';
+        end if;
+
+        if x = H_DISPLAY+H_FRONT_PORCH then
+          hsync <= '1';
+        elsif x = H_DISPLAY+H_FRONT_PORCH+H_RETRACE then
+          hsync <= '0';
         end if;
       end if;
     end if;
   end process;
 
-  sync : process(clk)
+  -- Generate vertical timings.
+  --
+  -- visible:     224
+  -- back porch:  16
+  -- vsync:       8
+  -- front porch: 16
+  -- total:       264
+  --
+  -- 15.625kHz / 264 = 59.185 Hz
+  vertical : process(clk)
   begin
     if rising_edge(clk) then
       if cen = '1' then
-        if x = 0 then hblank <= '0';
-        elsif x = SCREEN_WIDTH then hblank <= '1';
+        if x = H_DISPLAY+H_FRONT_PORCH-1 then
+          if y = V_SCAN-1 then
+            y <= 0;
+          else
+            y <= y + 1;
+          end if;
         end if;
 
-        if x = 303 then hsync <= '1';
-        elsif x = 335 then hsync <= '0';
+        if y = 0 then
+          vblank <= '0';
+        elsif y = V_DISPLAY then
+          vblank <= '1';
         end if;
 
-        if y = 0 then vblank <= '0';
-        elsif y = SCREEN_HEIGHT then vblank <= '1';
-        end if;
-
-        if y = 240 then vsync <= '1';
-        elsif y = 248 then vsync <= '0';
+        if y = V_DISPLAY+V_FRONT_PORCH then
+          vsync <= '1';
+        elsif y = V_DISPLAY+V_FRONT_PORCH+V_RETRACE then
+          vsync <= '0';
         end if;
       end if;
     end if;
   end process;
 
   hcnt <= to_unsigned(x, hcnt'length);
-  vcnt <= to_unsigned(y, vcnt'length);
+  vcnt <= to_unsigned(y+V_OFFSET, vcnt'length);
 end architecture;
