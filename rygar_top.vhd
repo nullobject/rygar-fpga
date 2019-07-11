@@ -304,7 +304,6 @@ begin
   -- character tilemap generator
   char_tilemap : entity work.char_tilemap
   port map (
-    reset    => reset,
     clk      => clk_12,
     cen      => cen_6,
     ram_cs   => char_ram_cs,
@@ -369,7 +368,10 @@ begin
   debug(22) <= cpu_m1_n;
   debug(23) <= cpu_ioreq_n;
 
+  -- video is on if we're not blanking
   video_on <= not (video_hblank or video_vblank);
+
+  -- composite sync
   vga_hs <= not (video_hsync xor video_vsync);
 
   process(clk_12)

@@ -37,8 +37,6 @@ use work.rygar.all;
 -- per bitplane).
 entity char_tilemap is
   port (
-    reset : in std_logic;
-
     -- input clock
     clk : in std_logic;
 
