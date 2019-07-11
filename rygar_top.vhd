@@ -143,8 +143,8 @@ begin
     rout => reset
   );
 
-  -- video sync generator
-  sync_gen : entity work.sync_gen
+  -- video timing generator
+  video_gen : entity work.video_gen
   port map (
     clk    => clk_12,
     cen    => cen_6,

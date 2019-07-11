@@ -137,4 +137,4 @@ set_global_assignment -name VHDL_FILE src/rygar.vhd
 set_global_assignment -name VHDL_FILE src/rygar_top.vhd
 set_global_assignment -name VHDL_FILE src/single_port_ram.vhd
 set_global_assignment -name VHDL_FILE src/single_port_rom.vhd
-set_global_assignment -name VHDL_FILE src/sync_gen.vhd
+set_global_assignment -name VHDL_FILE src/video_gen.vhd
