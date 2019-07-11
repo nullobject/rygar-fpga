@@ -46,15 +46,15 @@ entity char is
     -- char RAM
     ram_cs   : in std_logic;
     ram_addr : in std_logic_vector(CHAR_RAM_ADDR_WIDTH-1 downto 0);
-    ram_din  : in std_logic_vector(7 downto 0);
-    ram_dout : out std_logic_vector(7 downto 0);
+    ram_din  : in byte_t;
+    ram_dout : out byte_t;
     ram_we   : in std_logic;
 
     -- current position
     pos : in position_t;
 
     -- palette index output
-    data : out std_logic_vector(7 downto 0)
+    data : out byte_t
   );
 end char;
 
@@ -64,13 +64,13 @@ architecture arch of char is
 
   -- char RAM
   signal tile_ram_addr : std_logic_vector(CHAR_RAM_ADDR_WIDTH-1 downto 0);
-  signal tile_ram_dout : std_logic_vector(7 downto 0);
+  signal tile_ram_dout : byte_t;
 
   -- char ROM
   signal tile_rom_addr : std_logic_vector(CHAR_ROM_ADDR_WIDTH-1 downto 0);
-  signal tile_rom_dout : std_logic_vector(7 downto 0);
+  signal tile_rom_dout : byte_t;
 
-  signal hi_byte, lo_byte : std_logic_vector(7 downto 0);
+  signal hi_byte, lo_byte : byte_t;
 
   signal code  : unsigned(9 downto 0);
   signal pixel : std_logic_vector(3 downto 0);

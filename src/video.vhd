@@ -40,8 +40,9 @@ entity video is
     ram_we   : in std_logic;
 
     -- layer data
-    char_data : in std_logic_vector(7 downto 0);
+    char_data : in byte_t;
 
+    -- video on
     video_on : in std_logic;
 
     -- pixel data

@@ -64,4 +64,6 @@ package rygar is
     hsync : std_logic;
     vsync : std_logic;
   end record sync_t;
+
+  subtype byte_t is std_logic_vector(7 downto 0);
 end package rygar;

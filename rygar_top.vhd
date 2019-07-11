@@ -41,7 +41,7 @@ entity rygar_top is
     key : in std_logic_vector(1 downto 0);
 
     -- LEDs
-    led : out std_logic_vector(7 downto 0)
+    led : out byte_t
   );
 end rygar_top;
 
@@ -57,8 +57,8 @@ architecture arch of rygar_top is
   -- CPU signals
   signal cpu_cen     : std_logic;
   signal cpu_addr    : std_logic_vector(15 downto 0);
-  signal cpu_din     : std_logic_vector(7 downto 0);
-  signal cpu_dout    : std_logic_vector(7 downto 0);
+  signal cpu_din     : byte_t;
+  signal cpu_dout    : byte_t;
   signal cpu_ioreq_n : std_logic;
   signal cpu_mreq_n  : std_logic;
   signal cpu_rd_n    : std_logic;
@@ -81,15 +81,15 @@ architecture arch of rygar_top is
   signal bank_cs        : std_logic;
 
   -- chip data output signals
-  signal prog_rom_1_dout  : std_logic_vector(7 downto 0);
-  signal prog_rom_2_dout  : std_logic_vector(7 downto 0);
-  signal prog_rom_3_dout  : std_logic_vector(7 downto 0);
-  signal work_ram_dout    : std_logic_vector(7 downto 0);
-  signal char_ram_dout    : std_logic_vector(7 downto 0);
-  signal fg_ram_dout      : std_logic_vector(7 downto 0);
-  signal bg_ram_dout      : std_logic_vector(7 downto 0);
-  signal sprite_ram_dout  : std_logic_vector(7 downto 0);
-  signal palette_ram_dout : std_logic_vector(7 downto 0);
+  signal prog_rom_1_dout  : byte_t;
+  signal prog_rom_2_dout  : byte_t;
+  signal prog_rom_3_dout  : byte_t;
+  signal work_ram_dout    : byte_t;
+  signal char_ram_dout    : byte_t;
+  signal fg_ram_dout      : byte_t;
+  signal bg_ram_dout      : byte_t;
+  signal sprite_ram_dout  : byte_t;
+  signal palette_ram_dout : byte_t;
 
   -- currently selected bank for program ROM 3
   signal current_bank : unsigned(3 downto 0);
@@ -107,7 +107,7 @@ architecture arch of rygar_top is
   signal vblank_falling : std_logic;
 
   -- char layer signals
-  signal char_data : std_logic_vector(7 downto 0);
+  signal char_data : byte_t;
 begin
   my_pll : entity pll.pll
   port map (
