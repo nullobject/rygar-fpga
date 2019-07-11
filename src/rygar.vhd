@@ -65,6 +65,3 @@ package rygar is
     vsync : std_logic;
   end record sync_t;
 end package rygar;
-
-package body rygar is
-end package body rygar;
