@@ -83,7 +83,10 @@ architecture arch of char_tilemap is
 begin
   -- character tile RAM
   tile_ram : entity work.dual_port_ram
-  generic map (ADDR_WIDTH => CHAR_RAM_ADDR_WIDTH)
+  generic map (
+    ADDR_WIDTH_A => CHAR_RAM_ADDR_WIDTH,
+    ADDR_WIDTH_B => CHAR_RAM_ADDR_WIDTH
+  )
   port map (
     clk_a  => clk,
     cen_a  => ram_cs,
