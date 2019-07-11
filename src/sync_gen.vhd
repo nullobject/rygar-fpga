@@ -37,7 +37,7 @@ entity sync_gen is
     pos : out position_t;
 
     -- horizontal and vertical sync
-    hsync, vsync : out std_logic;
+    sync : out sync_t;
 
     -- horizontal and vertical blank
     hblank, vblank : out std_logic
@@ -99,9 +99,9 @@ begin
         end if;
 
         if x = H_DISPLAY+H_FRONT_PORCH then
-          hsync <= '1';
+          sync.hsync <= '1';
         elsif x = H_DISPLAY+H_FRONT_PORCH+H_RETRACE then
-          hsync <= '0';
+          sync.hsync <= '0';
         end if;
       end if;
     end if;
@@ -135,9 +135,9 @@ begin
         end if;
 
         if y = V_DISPLAY+V_FRONT_PORCH then
-          vsync <= '1';
+          sync.vsync <= '1';
         elsif y = V_DISPLAY+V_FRONT_PORCH+V_RETRACE then
-          vsync <= '0';
+          sync.vsync <= '0';
         end if;
       end if;
     end if;

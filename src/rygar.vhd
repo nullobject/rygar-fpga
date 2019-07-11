@@ -58,6 +58,12 @@ package rygar is
     g : std_logic_vector(COLOR_DEPTH_G-1 downto 0);
     b : std_logic_vector(COLOR_DEPTH_B-1 downto 0);
   end record rgb_t;
+
+  -- represents horizontal and vertical sync signals
+  type sync_t is record
+    hsync : std_logic;
+    vsync : std_logic;
+  end record sync_t;
 end package rygar;
 
 package body rygar is

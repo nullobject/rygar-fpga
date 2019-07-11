@@ -102,8 +102,7 @@ architecture arch of rygar_top is
 
   -- video signals
   signal video_pos    : position_t;
-  signal video_hsync  : std_logic;
-  signal video_vsync  : std_logic;
+  signal video_sync   : sync_t;
   signal video_hblank : std_logic;
   signal video_vblank : std_logic;
   signal video_on     : std_logic;
@@ -151,8 +150,7 @@ begin
     clk    => clk_12,
     cen    => cen_6,
     pos    => video_pos,
-    hsync  => video_hsync,
-    vsync  => video_vsync,
+    sync   => video_sync,
     hblank => video_hblank,
     vblank => video_vblank
   );
@@ -365,7 +363,7 @@ begin
   debug(16) <= clk_12;
   debug(17) <= cen_4;
   debug(18) <= cen_6;
-  debug(19) <= video_vsync;
+  debug(19) <= video_sync.vsync;
   debug(20) <= video_vblank;
   debug(21) <= cpu_int_n;
   debug(22) <= cpu_m1_n;
@@ -375,7 +373,7 @@ begin
   video_on <= not (video_hblank or video_vblank);
 
   -- composite sync
-  vga_hs <= not (video_hsync xor video_vsync);
+  vga_hs <= not (video_sync.hsync xor video_sync.vsync);
 
   -- color output
   vga_r <= pixel.r & pixel.r(3 downto 2);
