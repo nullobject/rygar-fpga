@@ -63,8 +63,8 @@ architecture arch of char is
   constant ROWS : natural := 32;
 
   -- char RAM
-  signal tile_ram_addr : std_logic_vector(CHAR_RAM_ADDR_WIDTH-1 downto 0);
-  signal tile_ram_dout : byte_t;
+  signal char_ram_addr_b : std_logic_vector(CHAR_RAM_ADDR_WIDTH-1 downto 0);
+  signal char_ram_dout_b : byte_t;
 
   -- char ROM
   signal tile_rom_addr : std_logic_vector(CHAR_ROM_ADDR_WIDTH-1 downto 0);
@@ -94,8 +94,8 @@ begin
     dout_a => ram_dout,
     we_a   => ram_we,
     clk_b  => clk,
-    addr_b => tile_ram_addr,
-    dout_b => tile_ram_dout
+    addr_b => char_ram_addr_b,
+    dout_b => char_ram_dout_b
   );
 
   -- character tile ROM
@@ -122,19 +122,19 @@ begin
         case offset_x is
           -- fetch high byte
           when 3 =>
-            tile_ram_addr <= std_logic_vector('1' & row & col);
+            char_ram_addr_b <= std_logic_vector('1' & row & col);
 
           -- latch high byte
           when 4 =>
-            hi_byte <= tile_ram_dout;
+            hi_byte <= char_ram_dout_b;
 
           -- fetch low byte
           when 5 =>
-            tile_ram_addr <= std_logic_vector('0' & row & col);
+            char_ram_addr_b <= std_logic_vector('0' & row & col);
 
           -- latch low byte
           when 6 =>
-            lo_byte <= tile_ram_dout;
+            lo_byte <= char_ram_dout_b;
 
           -- latch tile data
           when 7 =>
