@@ -147,12 +147,13 @@ begin
   -- video timing generator
   sync_gen : entity work.sync_gen
   port map (
-    clk    => clk_12,
-    cen    => cen_6,
-    pos    => video_pos,
-    sync   => video_sync,
-    hblank => video_hblank,
-    vblank => video_vblank
+    clk      => clk_12,
+    cen      => cen_6,
+    pos      => video_pos,
+    sync     => video_sync,
+    hblank   => video_hblank,
+    vblank   => video_vblank,
+    video_on => video_on
   );
 
   -- program ROM 1
@@ -368,9 +369,6 @@ begin
   debug(21) <= cpu_int_n;
   debug(22) <= cpu_m1_n;
   debug(23) <= cpu_ioreq_n;
-
-  -- video is on if we're not blanking
-  video_on <= not (video_hblank or video_vblank);
 
   -- composite sync
   vga_hs <= not (video_sync.hsync xor video_sync.vsync);

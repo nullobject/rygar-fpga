@@ -40,7 +40,11 @@ entity sync_gen is
     sync : out sync_t;
 
     -- horizontal and vertical blank
-    hblank, vblank : out std_logic
+    hblank, vblank : buffer std_logic;
+
+    -- video on is active when the beam is visible (i.e. not in a blanking
+    -- region)
+    video_on : out std_logic
   );
 end sync_gen;
 
@@ -145,4 +149,6 @@ begin
 
   pos.x <= to_unsigned(x, pos.x'length);
   pos.y <= to_unsigned(y+V_OFFSET, pos.y'length);
+
+  video_on <= not (hblank or vblank);
 end architecture;
