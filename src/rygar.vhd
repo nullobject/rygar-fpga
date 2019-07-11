@@ -39,7 +39,12 @@ package rygar is
   constant BG_ROM_ADDR_WIDTH      : natural := 17; -- 128kB
   constant SPRITE_RAM_ADDR_WIDTH  : natural := 11; -- 2kB
   constant SPRITE_ROM_ADDR_WIDTH  : natural := 17; -- 128kB
-  constant PALETTE_RAM_ADDR_WIDTH : natural := 11; -- 2kB
+
+  -- palette RAM
+  constant PALETTE_RAM_ADDR_WIDTH_A : natural := 11;
+  constant PALETTE_RAM_ADDR_WIDTH_B : natural := 10;
+  constant PALETTE_RAM_DATA_WIDTH_A : natural := 8;
+  constant PALETTE_RAM_DATA_WIDTH_B : natural := 16;
 end package rygar;
 
 package body rygar is
