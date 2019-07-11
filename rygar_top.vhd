@@ -107,12 +107,15 @@ architecture arch of rygar_top is
   signal video_vsync  : std_logic;
   signal video_hblank : std_logic;
   signal video_vblank : std_logic;
+  signal video_r      : std_logic_vector(COLOR_DEPTH_R-1 downto 0);
+  signal video_g      : std_logic_vector(COLOR_DEPTH_G-1 downto 0);
+  signal video_b      : std_logic_vector(COLOR_DEPTH_B-1 downto 0);
   signal video_on     : std_logic;
 
   signal vblank_falling : std_logic;
 
-  -- char tilemap signals
-  signal char_tilemap_data : std_logic_vector(7 downto 0);
+  -- char signals
+  signal char_data : std_logic_vector(7 downto 0);
 begin
   my_pll : entity pll.pll
   port map (
@@ -231,18 +234,6 @@ begin
     we   => not cpu_wr_n
   );
 
-  -- palette ram
-  palette_ram : entity work.single_port_ram
-  generic map (ADDR_WIDTH => PALETTE_RAM_ADDR_WIDTH)
-  port map (
-    clk  => clk_12,
-    cen  => palette_ram_cs,
-    addr => cpu_addr(PALETTE_RAM_ADDR_WIDTH-1 downto 0),
-    din  => cpu_dout,
-    dout => palette_ram_dout,
-    we   => not cpu_wr_n
-  );
-
   -- main cpu
   cpu : entity work.T80s
   port map (
@@ -313,7 +304,24 @@ begin
     ram_we   => not cpu_wr_n,
     hcnt     => video_hcnt(7 downto 0),
     vcnt     => video_vcnt(7 downto 0),
-    data     => char_tilemap_data
+    data     => char_data
+  );
+
+  -- palette
+  palette : entity work.palette
+  port map (
+    clk       => clk_12,
+    cen       => cen_6,
+    ram_cs    => palette_ram_cs,
+    ram_addr  => cpu_addr(PALETTE_RAM_ADDR_WIDTH_A-1 downto 0),
+    ram_din   => cpu_dout,
+    ram_dout  => palette_ram_dout,
+    ram_we    => not cpu_wr_n,
+    char_data => char_data,
+    video_on  => video_on,
+    video_r   => video_r,
+    video_g   => video_g,
+    video_b   => video_b
   );
 
   -- $0000-$7fff PROGRAM ROM 1
@@ -374,18 +382,8 @@ begin
   -- composite sync
   vga_hs <= not (video_hsync xor video_vsync);
 
-  process(clk_12)
-  begin
-    if rising_edge(clk_12) then
-      if video_on = '1' then
-        vga_r <= char_tilemap_data(3 downto 0) & char_tilemap_data(3 downto 2);
-        vga_g <= char_tilemap_data(3 downto 0) & char_tilemap_data(3 downto 2);
-        vga_b <= char_tilemap_data(3 downto 0) & char_tilemap_data(3 downto 2);
-      else
-        vga_r <= (others => '0');
-        vga_g <= (others => '0');
-        vga_b <= (others => '0');
-      end if;
-    end if;
-  end process;
+  -- color output
+  vga_r <= video_r & video_r(3 downto 2);
+  vga_g <= video_g & video_g(3 downto 2);
+  vga_b <= video_b & video_b(3 downto 2);
 end arch;

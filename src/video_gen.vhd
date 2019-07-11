@@ -63,7 +63,7 @@ architecture struct of video_gen is
 
   -- The horizontal blank offset is used to centre the frame horizontally on
   -- the screen.
-  constant H_BLANK_OFFSET : natural := 9;
+  constant H_BLANK_OFFSET : natural := 10;
 
   -- The vertical offset is used to skip the first two rows of tiles (16
   -- lines). Rygar includes the first two rows of tiles in memory, but they
