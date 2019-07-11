@@ -101,8 +101,7 @@ architecture arch of rygar_top is
   signal current_bank : unsigned(3 downto 0);
 
   -- video signals
-  signal video_hcnt   : unsigned(8 downto 0);
-  signal video_vcnt   : unsigned(8 downto 0);
+  signal video_pos    : position_t;
   signal video_hsync  : std_logic;
   signal video_vsync  : std_logic;
   signal video_hblank : std_logic;
@@ -151,8 +150,7 @@ begin
   port map (
     clk    => clk_12,
     cen    => cen_6,
-    hcnt   => video_hcnt,
-    vcnt   => video_vcnt,
+    pos    => video_pos,
     hsync  => video_hsync,
     vsync  => video_vsync,
     hblank => video_hblank,
@@ -302,8 +300,7 @@ begin
     ram_din  => cpu_dout,
     ram_dout => char_ram_dout,
     ram_we   => not cpu_wr_n,
-    hcnt     => video_hcnt(7 downto 0),
-    vcnt     => video_vcnt(7 downto 0),
+    pos      => video_pos,
     data     => char_data
   );
 

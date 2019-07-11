@@ -50,9 +50,8 @@ entity char_tilemap is
     ram_dout : out std_logic_vector(7 downto 0);
     ram_we   : in std_logic;
 
-    -- horizontal and vertical counter
-    hcnt : in unsigned(7 downto 0);
-    vcnt : in unsigned(7 downto 0);
+    -- current position
+    pos : in position_t;
 
     -- palette index output
     data : out std_logic_vector(7 downto 0)
@@ -78,8 +77,8 @@ architecture arch of char_tilemap is
   signal color : std_logic_vector(3 downto 0);
 
   -- tile column and row aliases
-  alias col : unsigned(4 downto 0) is hcnt(7 downto 3);
-  alias row : unsigned(4 downto 0) is vcnt(7 downto 3);
+  alias col : unsigned(4 downto 0) is pos.x(7 downto 3);
+  alias row : unsigned(4 downto 0) is pos.y(7 downto 3);
 begin
   -- character tile RAM
   tile_ram : entity work.dual_port_ram
@@ -116,7 +115,7 @@ begin
   fetch_tile : process(clk)
     variable offset_x : natural range 0 to 7;
   begin
-    offset_x := to_integer(hcnt(2 downto 0));
+    offset_x := to_integer(pos.x(2 downto 0));
 
     if rising_edge(clk) then
       if cen = '1' then
@@ -156,10 +155,10 @@ begin
   begin
     if rising_edge(clk) then
       if cen = '1' then
-        tile_rom_addr <= std_logic_vector(code & vcnt(2 downto 0) & hcnt(2 downto 1));
+        tile_rom_addr <= std_logic_vector(code & pos.y(2 downto 0) & pos.x(2 downto 1));
 
         -- select the low/high pixel
-        if hcnt(0) = '0' then
+        if pos.x(0) = '0' then
           pixel <= tile_rom_dout(3 downto 0);
         else
           pixel <= tile_rom_dout(7 downto 4);

@@ -33,8 +33,8 @@ entity sync_gen is
     -- clock enable
     cen : in std_logic;
 
-    -- horizontal and vertical counter
-    hcnt, vcnt : out unsigned(8 downto 0);
+    -- current position
+    pos : out position_t;
 
     -- horizontal and vertical sync
     hsync, vsync : out std_logic;
@@ -143,6 +143,6 @@ begin
     end if;
   end process;
 
-  hcnt <= to_unsigned(x, hcnt'length);
-  vcnt <= to_unsigned(y+V_OFFSET, vcnt'length);
+  pos.x <= to_unsigned(x, pos.x'length);
+  pos.y <= to_unsigned(y+V_OFFSET, pos.y'length);
 end architecture;
