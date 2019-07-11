@@ -25,7 +25,7 @@ use ieee.numeric_std.all;
 use work.rygar.all;
 
 -- Generates the video timing signals.
-entity video_gen is
+entity sync_gen is
   port (
     -- input clock
     clk : in std_logic;
@@ -42,9 +42,9 @@ entity video_gen is
     -- horizontal and vertical blank
     hblank, vblank : out std_logic
   );
-end video_gen;
+end sync_gen;
 
-architecture struct of video_gen is
+architecture struct of sync_gen is
   -- horizontal scan region widths
   constant H_DISPLAY     : natural := 256;
   constant H_FRONT_PORCH : natural := 48;
