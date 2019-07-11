@@ -24,7 +24,7 @@ use ieee.numeric_std.all;
 
 use work.rygar.all;
 
-entity palette is
+entity video is
   port (
     -- input clock
     clk : in std_logic;
@@ -49,15 +49,15 @@ entity palette is
     video_g : out std_logic_vector(COLOR_DEPTH_G-1 downto 0);
     video_b : out std_logic_vector(COLOR_DEPTH_B-1 downto 0)
   );
-end palette;
+end video;
 
-architecture arch of palette is
-  signal palette_ram_addr : std_logic_vector(PALETTE_RAM_ADDR_WIDTH_B-1 downto 0);
-  signal palette_ram_dout : std_logic_vector(PALETTE_RAM_DATA_WIDTH_B-1 downto 0);
+architecture arch of video is
+  signal palette_ram_addr_b : std_logic_vector(PALETTE_RAM_ADDR_WIDTH_B-1 downto 0);
+  signal palette_ram_dout_b : std_logic_vector(PALETTE_RAM_DATA_WIDTH_B-1 downto 0);
 begin
-  -- The palette RAM is implemented as a 2kB dual-port RAM. Port A is connected
-  -- to the 8-bit CPU data bus, while port B is connected to the video output
-  -- circuit.
+  -- The palette RAM is implemented as a 2kB dual-port RAM. Port A is 8-bits
+  -- wide and is connected to the CPU data bus. Port B is 16-bits wide and is
+  -- connected to the video output circuit.
   --
   -- The color palette contains 1024 16-bit color values, stored in
   -- RRRRGGGGXXXXBBBB format.
@@ -76,8 +76,8 @@ begin
     dout_a => ram_dout,
     we_a   => ram_we,
     clk_b  => clk,
-    addr_b => palette_ram_addr,
-    dout_b => palette_ram_dout
+    addr_b => palette_ram_addr_b,
+    dout_b => palette_ram_dout_b
   );
 
   process(clk)
@@ -85,11 +85,11 @@ begin
     if rising_edge(clk) then
       if cen = '1' then
         if video_on = '1' then
-          palette_ram_addr <= "01" & char_data;
+          palette_ram_addr_b <= "01" & char_data;
 
-          video_r <= palette_ram_dout(15 downto 12);
-          video_g <= palette_ram_dout(11 downto 8);
-          video_b <= palette_ram_dout(3 downto 0);
+          video_r <= palette_ram_dout_b(15 downto 12);
+          video_g <= palette_ram_dout_b(11 downto 8);
+          video_b <= palette_ram_dout_b(3 downto 0);
         else
           video_r <= (others => '0');
           video_g <= (others => '0');
