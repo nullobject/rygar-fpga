@@ -35,7 +35,7 @@ use work.rygar.all;
 -- data stored in the tile ROM. The pixel data for each 8x8 tile in the ROM is
 -- made up of four bitplanes, and each tile takes up exactly 32 bytes (8 bytes
 -- per bitplane).
-entity char_tilemap is
+entity char is
   port (
     -- input clock
     clk : in std_logic;
@@ -56,9 +56,9 @@ entity char_tilemap is
     -- palette index output
     data : out std_logic_vector(7 downto 0)
   );
-end char_tilemap;
+end char;
 
-architecture arch of char_tilemap is
+architecture arch of char is
   constant COLS : natural := 32;
   constant ROWS : natural := 32;
 
@@ -80,7 +80,7 @@ architecture arch of char_tilemap is
   alias col : unsigned(4 downto 0) is pos.x(7 downto 3);
   alias row : unsigned(4 downto 0) is pos.y(7 downto 3);
 begin
-  -- character tile RAM
+  -- character RAM (2kB)
   tile_ram : entity work.dual_port_ram
   generic map (
     ADDR_WIDTH_A => CHAR_RAM_ADDR_WIDTH,

@@ -106,7 +106,7 @@ architecture arch of rygar_top is
 
   signal vblank_falling : std_logic;
 
-  -- char signals
+  -- char layer signals
   signal char_data : std_logic_vector(7 downto 0);
 begin
   my_pll : entity pll.pll
@@ -283,8 +283,8 @@ begin
     end if;
   end process;
 
-  -- character tilemap generator
-  char_tilemap : entity work.char_tilemap
+  -- character layer
+  char : entity work.char
   port map (
     clk      => clk_12,
     cen      => cen_6,
