@@ -107,10 +107,10 @@ architecture arch of rygar_top is
   signal video_vsync  : std_logic;
   signal video_hblank : std_logic;
   signal video_vblank : std_logic;
-  signal video_r      : std_logic_vector(COLOR_DEPTH_R-1 downto 0);
-  signal video_g      : std_logic_vector(COLOR_DEPTH_G-1 downto 0);
-  signal video_b      : std_logic_vector(COLOR_DEPTH_B-1 downto 0);
   signal video_on     : std_logic;
+
+  -- pixel data
+  signal pixel : rgb_t;
 
   signal vblank_falling : std_logic;
 
@@ -319,9 +319,7 @@ begin
     ram_we    => not cpu_wr_n,
     char_data => char_data,
     video_on  => video_on,
-    video_r   => video_r,
-    video_g   => video_g,
-    video_b   => video_b
+    pixel     => pixel
   );
 
   -- $0000-$7fff PROGRAM ROM 1
@@ -383,7 +381,7 @@ begin
   vga_hs <= not (video_hsync xor video_vsync);
 
   -- color output
-  vga_r <= video_r & video_r(3 downto 2);
-  vga_g <= video_g & video_g(3 downto 2);
-  vga_b <= video_b & video_b(3 downto 2);
+  vga_r <= pixel.r & pixel.r(3 downto 2);
+  vga_g <= pixel.g & pixel.g(3 downto 2);
+  vga_b <= pixel.b & pixel.b(3 downto 2);
 end arch;

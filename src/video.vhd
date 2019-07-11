@@ -44,10 +44,8 @@ entity video is
 
     video_on : in std_logic;
 
-    -- color outputs
-    video_r : out std_logic_vector(COLOR_DEPTH_R-1 downto 0);
-    video_g : out std_logic_vector(COLOR_DEPTH_G-1 downto 0);
-    video_b : out std_logic_vector(COLOR_DEPTH_B-1 downto 0)
+    -- pixel data
+    pixel : out rgb_t
   );
 end video;
 
@@ -87,13 +85,13 @@ begin
         if video_on = '1' then
           palette_ram_addr_b <= "01" & char_data;
 
-          video_r <= palette_ram_dout_b(15 downto 12);
-          video_g <= palette_ram_dout_b(11 downto 8);
-          video_b <= palette_ram_dout_b(3 downto 0);
+          pixel.r <= palette_ram_dout_b(15 downto 12);
+          pixel.g <= palette_ram_dout_b(11 downto 8);
+          pixel.b <= palette_ram_dout_b(3 downto 0);
         else
-          video_r <= (others => '0');
-          video_g <= (others => '0');
-          video_b <= (others => '0');
+          pixel.r <= (others => '0');
+          pixel.g <= (others => '0');
+          pixel.b <= (others => '0');
         end if;
       end if;
     end if;

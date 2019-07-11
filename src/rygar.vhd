@@ -23,10 +23,6 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 package rygar is
-  constant COLOR_DEPTH_R : natural := 4;
-  constant COLOR_DEPTH_G : natural := 4;
-  constant COLOR_DEPTH_B : natural := 4;
-
   constant PROG_ROM_1_ADDR_WIDTH  : natural := 15; -- 32kB
   constant PROG_ROM_2_ADDR_WIDTH  : natural := 14; -- 16kB
   constant PROG_ROM_3_ADDR_WIDTH  : natural := 15; -- 32kB
@@ -45,6 +41,23 @@ package rygar is
   constant PALETTE_RAM_ADDR_WIDTH_B : natural := 10;
   constant PALETTE_RAM_DATA_WIDTH_A : natural := 8;
   constant PALETTE_RAM_DATA_WIDTH_B : natural := 16;
+
+  constant COLOR_DEPTH_R : natural := 4;
+  constant COLOR_DEPTH_G : natural := 4;
+  constant COLOR_DEPTH_B : natural := 4;
+
+  -- represents a 2D position
+  type position_t is record
+    x : unsigned(8 downto 0);
+    y : unsigned(8 downto 0);
+  end record position_t;
+
+  -- represents a 4BBP RGB pixel
+  type rgb_t is record
+    r : std_logic_vector(COLOR_DEPTH_R-1 downto 0);
+    g : std_logic_vector(COLOR_DEPTH_G-1 downto 0);
+    b : std_logic_vector(COLOR_DEPTH_B-1 downto 0);
+  end record rgb_t;
 end package rygar;
 
 package body rygar is
