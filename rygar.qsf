@@ -64,8 +64,7 @@ set_location_assignment PIN_AF22 -to vga_b[3]
 set_location_assignment PIN_AH23 -to vga_b[4]
 set_location_assignment PIN_AH21 -to vga_b[5]
 
-set_location_assignment PIN_AH22 -to vga_hs
-set_location_assignment PIN_AG24 -to vga_vs
+set_location_assignment PIN_AH22 -to vga_csync
 
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to vga_*
 set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to vga_*

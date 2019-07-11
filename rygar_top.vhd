@@ -31,14 +31,11 @@ entity rygar_top is
     -- 50MHz input clock
     clk : in std_logic;
 
-    -- RGB colours
-    vga_r : out std_logic_vector(5 downto 0);
-    vga_g : out std_logic_vector(5 downto 0);
-    vga_b : out std_logic_vector(5 downto 0);
-
-    -- horizontal and vertical sync
-    vga_hs : out std_logic := '1';
-    vga_vs : out std_logic := '1';
+    -- VGA signals
+    vga_r     : out std_logic_vector(5 downto 0);
+    vga_g     : out std_logic_vector(5 downto 0);
+    vga_b     : out std_logic_vector(5 downto 0);
+    vga_csync : out std_logic;
 
     -- buttons
     key : in std_logic_vector(1 downto 0);
@@ -371,7 +368,7 @@ begin
   debug(23) <= cpu_ioreq_n;
 
   -- composite sync
-  vga_hs <= not (video_sync.hsync xor video_sync.vsync);
+  vga_csync <= not (video_sync.hsync xor video_sync.vsync);
 
   -- color output
   vga_r <= pixel.r & pixel.r(3 downto 2);
