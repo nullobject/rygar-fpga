@@ -41,10 +41,7 @@ entity rygar_top is
     key : in std_logic_vector(1 downto 0);
 
     -- LEDs
-    led : out std_logic_vector(7 downto 0);
-
-    -- debug GPIO
-    debug : out std_logic_vector(23 downto 0)
+    led : out std_logic_vector(7 downto 0)
   );
 end rygar_top;
 
@@ -349,23 +346,6 @@ begin
              (others => '0');
 
   led <= cpu_dout when work_ram_cs = '1' and cpu_wr_n = '0' else (others => '0');
-
-  -- output flags and 8 lsb address lines
-  debug(15 downto 0) <= (not cpu_m1_n) &
-                        (not cpu_mreq_n) &
-                        (not cpu_rd_n) &
-                        (not cpu_wr_n) &
-                        (not cpu_rfsh_n) &
-                        (not cpu_halt_n) &
-                        cpu_addr(9 downto 0);
-  debug(16) <= clk_12;
-  debug(17) <= cen_4;
-  debug(18) <= cen_6;
-  debug(19) <= video_sync.vsync;
-  debug(20) <= video_vblank;
-  debug(21) <= cpu_int_n;
-  debug(22) <= cpu_m1_n;
-  debug(23) <= cpu_ioreq_n;
 
   -- composite sync
   vga_csync <= not (video_sync.hsync xor video_sync.vsync);

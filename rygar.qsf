@@ -69,59 +69,6 @@ set_location_assignment PIN_AH22 -to vga_csync
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to vga_*
 set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to vga_*
 
-# debug
-set_location_assignment PIN_V12  -to debug[0]
-set_location_assignment PIN_E8   -to debug[1]
-set_location_assignment PIN_W12  -to debug[2]
-set_location_assignment PIN_D11  -to debug[3]
-set_location_assignment PIN_D8   -to debug[4]
-set_location_assignment PIN_AH13 -to debug[5]
-set_location_assignment PIN_AF7  -to debug[6]
-set_location_assignment PIN_AH14 -to debug[7]
-set_location_assignment PIN_AF4  -to debug[8]
-set_location_assignment PIN_AH3  -to debug[9]
-set_location_assignment PIN_AD5  -to debug[10]
-set_location_assignment PIN_AG14 -to debug[11]
-set_location_assignment PIN_AE23 -to debug[12]
-set_location_assignment PIN_AE6  -to debug[13]
-set_location_assignment PIN_AD23 -to debug[14]
-set_location_assignment PIN_AE24 -to debug[15]
-set_location_assignment PIN_D12  -to debug[16]
-set_location_assignment PIN_AD20 -to debug[17]
-set_location_assignment PIN_C12  -to debug[18]
-set_location_assignment PIN_AD17 -to debug[19]
-set_location_assignment PIN_AC23 -to debug[20]
-set_location_assignment PIN_AC22 -to debug[21]
-set_location_assignment PIN_Y19  -to debug[22]
-set_location_assignment PIN_AB23 -to debug[23]
-
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[0]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[1]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[2]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[3]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[4]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[5]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[6]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[7]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[8]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[9]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[10]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[11]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[12]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[13]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[14]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[15]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[16]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[17]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[18]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[19]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[20]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[21]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[22]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to debug[23]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to debug
-set_instance_assignment -name SLEW_RATE 1 -to debug
-
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
 set_global_assignment -name TOP_LEVEL_ENTITY rygar_top
 set_global_assignment -name SDC_FILE src/rygar.sdc
