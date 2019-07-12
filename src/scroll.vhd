@@ -58,6 +58,10 @@ architecture arch of scroll is
   constant COLS : natural := 32;
   constant ROWS : natural := 16;
 
+  -- column and row aliases
+  alias col : unsigned(4 downto 0) is pos.x(8 downto 4);
+  alias row : unsigned(3 downto 0) is pos.y(7 downto 4);
+
   -- tile RAM
   signal scroll_ram_addr_b : std_logic_vector(RAM_ADDR_WIDTH-1 downto 0);
   signal scroll_ram_dout_b : byte_t;
@@ -65,6 +69,13 @@ architecture arch of scroll is
   -- tile ROM
   signal tile_rom_addr : std_logic_vector(ROM_ADDR_WIDTH-1 downto 0);
   signal tile_rom_dout : byte_t;
+
+  -- registers
+  signal hi_byte : byte_t;
+  signal lo_byte : byte_t;
+  signal code    : unsigned(9 downto 0);
+  signal pixel   : std_logic_vector(3 downto 0);
+  signal color   : std_logic_vector(3 downto 0);
 begin
   -- The tile RAM (1kB) contains the code and colour for each tile in the 32x16
   -- tilemap. The tile code is used to look up the actual pixel data in the
@@ -110,5 +121,62 @@ begin
     dout => tile_rom_dout
   );
 
-  data <= (others => '0');
+  -- Fetch the tile code and colour from the scroll RAM.
+  --
+  -- The data for each tile needs to be fetched *before* rendering it to the
+  -- display. This means that as the current tile is being rendered, we need to
+  -- be fetching the data for the *next* tile.
+  fetch_tile_data : process(clk)
+    variable offset_x : natural range 0 to 15;
+  begin
+    offset_x := to_integer(pos.x(3 downto 0));
+
+    if rising_edge(clk) then
+      if cen = '1' then
+        case offset_x is
+          -- fetch high byte
+          when 11 =>
+            scroll_ram_addr_b <= std_logic_vector('1' & row & col);
+
+          -- latch high byte
+          when 12 =>
+            hi_byte <= scroll_ram_dout_b;
+
+          -- fetch low byte
+          when 13 =>
+            scroll_ram_addr_b <= std_logic_vector('0' & row & col);
+
+          -- latch low byte
+          when 14 =>
+            lo_byte <= scroll_ram_dout_b;
+
+          -- latch tile data
+          when 15 =>
+            color <= hi_byte(7 downto 4);
+            code <= unsigned(hi_byte(1 downto 0) & lo_byte);
+
+          when others => null;
+        end case;
+      end if;
+    end if;
+  end process;
+
+  -- Fetch the pixel data from the character ROM.
+  fetch_pixel_data : process(clk)
+  begin
+    if rising_edge(clk) then
+      if cen = '1' then
+        tile_rom_addr <= std_logic_vector(code & pos.y(3) & pos.x(3) & pos.y(2 downto 0) & pos.x(2 downto 1));
+
+        -- select the low/high pixel
+        if pos.x(0) = '0' then
+          pixel <= tile_rom_dout(3 downto 0);
+        else
+          pixel <= tile_rom_dout(7 downto 4);
+        end if;
+      end if;
+    end if;
+  end process;
+
+  data <= color & pixel;
 end architecture;

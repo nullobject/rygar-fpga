@@ -86,10 +86,14 @@ begin
   begin
     if rising_edge(clk) then
       if cen = '1' then
-        if video_on = '1' then
-          -- TODO: handle layer priority
-          palette_ram_addr_b <= "01" & (fg_data or char_data);
+        -- TODO: handle layer priority
+        if char_data(3 downto 0) /= "0000" then
+          palette_ram_addr_b <= "01" & char_data;
+        else
+          palette_ram_addr_b <= "10" & fg_data;
+        end if;
 
+        if video_on = '1' then
           pixel.r <= palette_ram_dout_b(15 downto 12);
           pixel.g <= palette_ram_dout_b(11 downto 8);
           pixel.b <= palette_ram_dout_b(3 downto 0);
