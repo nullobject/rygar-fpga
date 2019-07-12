@@ -152,7 +152,7 @@ begin
 
   -- program ROM 1
   prog_rom_1 : entity work.single_port_rom
-  generic map (ADDR_WIDTH => PROG_ROM_1_ADDR_WIDTH, INIT_FILE => "cpu_5p.mif")
+  generic map (ADDR_WIDTH => PROG_ROM_1_ADDR_WIDTH, INIT_FILE => "roms/cpu_5p.mif")
   port map (
     clk  => clk_12,
     addr => cpu_addr(PROG_ROM_1_ADDR_WIDTH-1 downto 0),
@@ -161,7 +161,7 @@ begin
 
   -- program ROM 2
   prog_rom_2 : entity work.single_port_rom
-  generic map (ADDR_WIDTH => PROG_ROM_2_ADDR_WIDTH, INIT_FILE => "cpu_5m.mif")
+  generic map (ADDR_WIDTH => PROG_ROM_2_ADDR_WIDTH, INIT_FILE => "roms/cpu_5m.mif")
   port map (
     clk  => clk_12,
     addr => cpu_addr(PROG_ROM_2_ADDR_WIDTH-1 downto 0),
@@ -170,7 +170,7 @@ begin
 
   -- program ROM 3
   prog_rom_3 : entity work.single_port_rom
-  generic map (ADDR_WIDTH => PROG_ROM_3_ADDR_WIDTH, INIT_FILE => "cpu_5j.mif")
+  generic map (ADDR_WIDTH => PROG_ROM_3_ADDR_WIDTH, INIT_FILE => "roms/cpu_5j.mif")
   port map (
     clk  => clk_12,
     addr => std_logic_vector(current_bank) & cpu_addr(10 downto 0),
