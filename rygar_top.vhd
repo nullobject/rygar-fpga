@@ -288,7 +288,11 @@ begin
 
   -- fg layer
   fg : entity work.scroll
-  generic map (RAM_ADDR_WIDTH => FG_RAM_ADDR_WIDTH)
+  generic map (
+    RAM_ADDR_WIDTH => FG_RAM_ADDR_WIDTH,
+    ROM_ADDR_WIDTH => FG_ROM_ADDR_WIDTH,
+    ROM_INIT_FILE  => "roms/fg.mif"
+  )
   port map (
     clk      => clk_12,
     cen      => cen_6,

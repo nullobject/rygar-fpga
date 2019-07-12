@@ -28,7 +28,9 @@ use work.rygar.all;
 -- the foreground and background graphics.
 entity scroll is
   generic (
-    RAM_ADDR_WIDTH : natural
+    RAM_ADDR_WIDTH : natural;
+    ROM_ADDR_WIDTH : natural;
+    ROM_INIT_FILE  : string
   );
   port (
     -- input clock
@@ -56,13 +58,17 @@ architecture arch of scroll is
   constant COLS : natural := 32;
   constant ROWS : natural := 16;
 
-  -- scroll RAM
+  -- tile RAM
   signal scroll_ram_addr_b : std_logic_vector(RAM_ADDR_WIDTH-1 downto 0);
   signal scroll_ram_dout_b : byte_t;
+
+  -- tile ROM
+  signal tile_rom_addr : std_logic_vector(ROM_ADDR_WIDTH-1 downto 0);
+  signal tile_rom_dout : byte_t;
 begin
-  -- The scroll RAM (1kB) contains the code and colour for each tile in the
-  -- 32x16 tilemap. The tile code is used to look up the actual pixel data in
-  -- the tile ROM.
+  -- The tile RAM (1kB) contains the code and colour for each tile in the 32x16
+  -- tilemap. The tile code is used to look up the actual pixel data in the
+  -- tile ROM.
   --
   -- It has been implemented as a dual-port RAM because both the CPU and the
   -- graphics pipeline need to access the RAM concurrently.
@@ -86,6 +92,22 @@ begin
     clk_b  => clk,
     addr_b => scroll_ram_addr_b,
     dout_b => scroll_ram_dout_b
+  );
+
+  -- The tile ROM contains the pixel data for the tiles.
+  --
+  -- Each 16x16 tile contains four bitplanes, and each bitplane takes up 32
+  -- bytes (one byte per row). This means that every tile takes up exactly 128
+  -- bytes in the ROM.
+  tile_rom : entity work.single_port_rom
+  generic map (
+    ADDR_WIDTH => ROM_ADDR_WIDTH,
+    INIT_FILE  => ROM_INIT_FILE
+  )
+  port map (
+    clk  => clk,
+    addr => tile_rom_addr,
+    dout => tile_rom_dout
   );
 
   data <= (others => '0');
