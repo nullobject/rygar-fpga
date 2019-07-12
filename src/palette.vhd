@@ -41,8 +41,9 @@ entity palette is
     ram_dout : out std_logic_vector(PALETTE_RAM_DATA_WIDTH_A-1 downto 0);
     ram_we   : in std_logic;
 
-    -- layer data
+    -- graphics layer data
     char_data : in byte_t;
+    fg_data   : in byte_t;
 
     -- video on
     video_on : in std_logic;
@@ -86,7 +87,8 @@ begin
     if rising_edge(clk) then
       if cen = '1' then
         if video_on = '1' then
-          palette_ram_addr_b <= "01" & char_data;
+          -- TODO: handle layer priority
+          palette_ram_addr_b <= "01" & (fg_data or char_data);
 
           pixel.r <= palette_ram_dout_b(15 downto 12);
           pixel.g <= palette_ram_dout_b(11 downto 8);
