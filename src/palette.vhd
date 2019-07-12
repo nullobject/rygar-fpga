@@ -24,7 +24,9 @@ use ieee.numeric_std.all;
 
 use work.rygar.all;
 
-entity video is
+-- The colour palette combines the pixel data from the different graphics
+-- layers, and looks up the RGB pixel color values in the palette RAM.
+entity palette is
   port (
     -- input clock
     clk : in std_logic;
@@ -48,9 +50,9 @@ entity video is
     -- pixel data
     pixel : out rgb_t
   );
-end video;
+end palette;
 
-architecture arch of video is
+architecture arch of palette is
   signal palette_ram_addr_b : std_logic_vector(PALETTE_RAM_ADDR_WIDTH_B-1 downto 0);
   signal palette_ram_dout_b : std_logic_vector(PALETTE_RAM_DATA_WIDTH_B-1 downto 0);
 begin

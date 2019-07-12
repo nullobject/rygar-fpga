@@ -24,12 +24,12 @@ use ieee.numeric_std.all;
 
 use work.rygar.all;
 
--- Generates the character tilemap.
+-- The character layer is a 32x32 grid of 8x8 tiles. It is used to render
+-- things like the logo, score, playfield, and other static graphics.
 --
--- The character tilemap is a 32x32 grid of 8x8 tiles. The CPU updates the
--- tilemap by writing data the character RAM. Each tile in the character RAM is
--- represented by two bytes, low byte and a high byte, which contain the tile
--- code and color data.
+-- This tile data is stored in the character RAM. Each tile is represented by
+-- two bytes, a high byte and a low byte, which contain the tile code and
+-- colour data. The CPU updates the tilemap by writing to the character RAM.
 --
 -- The tile code is a 10-bit value, which is used to look up the tile pixel
 -- data stored in the tile ROM. The pixel data for each 8x8 tile in the ROM is
@@ -62,26 +62,37 @@ architecture arch of char is
   constant COLS : natural := 32;
   constant ROWS : natural := 32;
 
+  -- column and row aliases
+  alias col : unsigned(4 downto 0) is pos.x(7 downto 3);
+  alias row : unsigned(4 downto 0) is pos.y(7 downto 3);
+
   -- char RAM
   signal char_ram_addr_b : std_logic_vector(CHAR_RAM_ADDR_WIDTH-1 downto 0);
   signal char_ram_dout_b : byte_t;
 
   -- char ROM
-  signal tile_rom_addr : std_logic_vector(CHAR_ROM_ADDR_WIDTH-1 downto 0);
-  signal tile_rom_dout : byte_t;
+  signal char_rom_addr : std_logic_vector(CHAR_ROM_ADDR_WIDTH-1 downto 0);
+  signal char_rom_dout : byte_t;
 
-  signal hi_byte, lo_byte : byte_t;
-
-  signal code  : unsigned(9 downto 0);
-  signal pixel : std_logic_vector(3 downto 0);
-  signal color : std_logic_vector(3 downto 0);
-
-  -- tile column and row aliases
-  alias col : unsigned(4 downto 0) is pos.x(7 downto 3);
-  alias row : unsigned(4 downto 0) is pos.y(7 downto 3);
+  -- registers
+  signal hi_byte : byte_t;
+  signal lo_byte : byte_t;
+  signal code    : unsigned(9 downto 0);
+  signal pixel   : std_logic_vector(3 downto 0);
+  signal color   : std_logic_vector(3 downto 0);
 begin
-  -- character RAM (2kB)
-  tile_ram : entity work.dual_port_ram
+  -- The character RAM (2kB) contains the code and colour for each tile in the
+  -- 32x32 tilemap. The tile code is used to look up the actual pixel data in
+  -- the character tile ROM.
+  --
+  -- It has been implemented as a dual-port RAM because both the CPU and the
+  -- graphics pipeline need to access the RAM concurrently.
+  --
+  -- This differs from the original arcade hardware, which only contains
+  -- a single-port character RAM. Using a dual-port RAM means we can simplify
+  -- things by doing away with all additional logic required to coordinate
+  -- access to the RAM.
+  char_ram : entity work.dual_port_ram
   generic map (
     ADDR_WIDTH_A => CHAR_RAM_ADDR_WIDTH,
     ADDR_WIDTH_B => CHAR_RAM_ADDR_WIDTH
@@ -98,21 +109,28 @@ begin
     dout_b => char_ram_dout_b
   );
 
-  -- character tile ROM
-  tile_rom : entity work.single_port_rom
-  generic map (ADDR_WIDTH => CHAR_ROM_ADDR_WIDTH, INIT_FILE => "cpu_8k.mif")
+  -- The character tile ROM contains the pixel data for the tiles.
+  --
+  -- Each 8x8 tile contains four bitplanes, and each bitplane takes up eight
+  -- bytes (one byte per row). This means that every tile takes up exactly 32
+  -- bytes in the ROM.
+  char_tile_rom : entity work.single_port_rom
+  generic map (
+    ADDR_WIDTH => CHAR_ROM_ADDR_WIDTH,
+    INIT_FILE => "cpu_8k.mif"
+  )
   port map (
     clk  => clk,
-    addr => tile_rom_addr,
-    dout => tile_rom_dout
+    addr => char_rom_addr,
+    dout => char_rom_dout
   );
 
-  -- Fetch tile data from the character RAM.
+  -- Fetch the tile code and colour from the character RAM.
   --
   -- The data for each tile needs to be fetched *before* rendering it to the
-  -- display. This means that we need to be reading the next tile, as the
-  -- current one is being rendered.
-  fetch_tile : process(clk)
+  -- display. This means that as the current tile is being rendered, we need to
+  -- be fetching the data for the *next* tile.
+  fetch_tile_data : process(clk)
     variable offset_x : natural range 0 to 7;
   begin
     offset_x := to_integer(pos.x(2 downto 0));
@@ -147,21 +165,18 @@ begin
     end if;
   end process;
 
-  -- Fetch pixel data from the character ROM.
-  --
-  -- Every byte in the character ROM represents two pixels, each with four
-  -- bitplanes.
-  fetch_bitplane : process(clk)
+  -- Fetch the pixel data from the character ROM.
+  fetch_pixel_data : process(clk)
   begin
     if rising_edge(clk) then
       if cen = '1' then
-        tile_rom_addr <= std_logic_vector(code & pos.y(2 downto 0) & pos.x(2 downto 1));
+        char_rom_addr <= std_logic_vector(code & pos.y(2 downto 0) & pos.x(2 downto 1));
 
         -- select the low/high pixel
         if pos.x(0) = '0' then
-          pixel <= tile_rom_dout(3 downto 0);
+          pixel <= char_rom_dout(3 downto 0);
         else
-          pixel <= tile_rom_dout(7 downto 4);
+          pixel <= char_rom_dout(7 downto 4);
         end if;
       end if;
     end if;

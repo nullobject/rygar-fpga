@@ -297,8 +297,8 @@ begin
     data     => char_data
   );
 
-  -- video
-  video : entity work.video
+  -- colour palette
+  palette : entity work.palette
   port map (
     clk       => clk_12,
     cen       => cen_6,
