@@ -117,7 +117,7 @@ begin
   char_tile_rom : entity work.single_port_rom
   generic map (
     ADDR_WIDTH => CHAR_ROM_ADDR_WIDTH,
-    INIT_FILE  => "roms/cpu_8k.mif"
+    INIT_FILE  => "rom/cpu_8k.mif"
   )
   port map (
     clk  => clk,
