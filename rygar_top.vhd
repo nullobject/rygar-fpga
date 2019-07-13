@@ -106,8 +106,9 @@ architecture arch of rygar_top is
 
   signal vblank_falling : std_logic;
 
-  -- char layer signals
+  -- graphics layer data
   signal char_data : byte_t;
+  signal fg_data : byte_t;
 begin
   my_pll : entity pll.pll
   port map (
@@ -152,7 +153,7 @@ begin
 
   -- program ROM 1
   prog_rom_1 : entity work.single_port_rom
-  generic map (ADDR_WIDTH => PROG_ROM_1_ADDR_WIDTH, INIT_FILE => "cpu_5p.mif")
+  generic map (ADDR_WIDTH => PROG_ROM_1_ADDR_WIDTH, INIT_FILE => "rom/cpu_5p.mif")
   port map (
     clk  => clk_12,
     addr => cpu_addr(PROG_ROM_1_ADDR_WIDTH-1 downto 0),
@@ -161,7 +162,7 @@ begin
 
   -- program ROM 2
   prog_rom_2 : entity work.single_port_rom
-  generic map (ADDR_WIDTH => PROG_ROM_2_ADDR_WIDTH, INIT_FILE => "cpu_5m.mif")
+  generic map (ADDR_WIDTH => PROG_ROM_2_ADDR_WIDTH, INIT_FILE => "rom/cpu_5m.mif")
   port map (
     clk  => clk_12,
     addr => cpu_addr(PROG_ROM_2_ADDR_WIDTH-1 downto 0),
@@ -170,7 +171,7 @@ begin
 
   -- program ROM 3
   prog_rom_3 : entity work.single_port_rom
-  generic map (ADDR_WIDTH => PROG_ROM_3_ADDR_WIDTH, INIT_FILE => "cpu_5j.mif")
+  generic map (ADDR_WIDTH => PROG_ROM_3_ADDR_WIDTH, INIT_FILE => "rom/cpu_5j.mif")
   port map (
     clk  => clk_12,
     addr => std_logic_vector(current_bank) & cpu_addr(10 downto 0),
@@ -186,18 +187,6 @@ begin
     addr => cpu_addr(WORK_RAM_ADDR_WIDTH-1 downto 0),
     din  => cpu_dout,
     dout => work_ram_dout,
-    we   => not cpu_wr_n
-  );
-
-  -- fg ram
-  fg_ram : entity work.single_port_ram
-  generic map (ADDR_WIDTH => FG_RAM_ADDR_WIDTH)
-  port map (
-    clk  => clk_12,
-    cen  => fg_ram_cs,
-    addr => cpu_addr(FG_RAM_ADDR_WIDTH-1 downto 0),
-    din  => cpu_dout,
-    dout => fg_ram_dout,
     we   => not cpu_wr_n
   );
 
@@ -297,6 +286,25 @@ begin
     data     => char_data
   );
 
+  -- fg layer
+  fg : entity work.scroll
+  generic map (
+    RAM_ADDR_WIDTH => FG_RAM_ADDR_WIDTH,
+    ROM_ADDR_WIDTH => FG_ROM_ADDR_WIDTH,
+    ROM_INIT_FILE  => "rom/fg.mif"
+  )
+  port map (
+    clk      => clk_12,
+    cen      => cen_6,
+    ram_cs   => fg_ram_cs,
+    ram_addr => cpu_addr(FG_RAM_ADDR_WIDTH-1 downto 0),
+    ram_din  => cpu_dout,
+    ram_dout => fg_ram_dout,
+    ram_we   => not cpu_wr_n,
+    pos      => video_pos,
+    data     => fg_data
+  );
+
   -- colour palette
   palette : entity work.palette
   port map (
@@ -308,6 +316,7 @@ begin
     ram_dout  => palette_ram_dout,
     ram_we    => not cpu_wr_n,
     char_data => char_data,
+    fg_data   => fg_data,
     video_on  => video_on,
     pixel     => pixel
   );
