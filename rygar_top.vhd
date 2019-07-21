@@ -237,10 +237,10 @@ begin
 
   -- detect falling edges of the VBLANK signal
   vblank_edge_detector : entity work.edge_detector
-  generic map (RISING => false)
+  generic map (FALLING => true)
   port map (
     clk  => clk_12,
-    data => video_vblank,
+    data => video_blank.vblank,
     edge => vblank_falling
   );
 
