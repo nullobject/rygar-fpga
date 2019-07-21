@@ -65,5 +65,11 @@ package rygar is
     vsync : std_logic;
   end record sync_t;
 
+  -- represents the horizontal and vertical blank signals
+  type blank_t is record
+    hblank : std_logic;
+    vblank : std_logic;
+  end record blank_t;
+
   subtype byte_t is std_logic_vector(7 downto 0);
 end package rygar;

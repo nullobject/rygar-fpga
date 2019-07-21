@@ -45,8 +45,8 @@ entity palette is
     char_data : in byte_t;
     fg_data   : in byte_t;
 
-    -- video on
-    video_on : in std_logic;
+    -- horizontal and vertical blank
+    video_blank : in blank_t;
 
     -- pixel data
     pixel : out rgb_t
@@ -56,6 +56,8 @@ end palette;
 architecture arch of palette is
   signal palette_ram_addr_b : std_logic_vector(PALETTE_RAM_ADDR_WIDTH_B-1 downto 0);
   signal palette_ram_dout_b : std_logic_vector(PALETTE_RAM_DATA_WIDTH_B-1 downto 0);
+
+  signal video_on : std_logic;
 begin
   -- The palette RAM is implemented as a 2kB dual-port RAM. Port A is 8-bits
   -- wide and is connected to the CPU data bus. Port B is 16-bits wide and is
@@ -105,4 +107,7 @@ begin
       end if;
     end if;
   end process;
+
+  -- video output is enabled if it's not in a blanking region
+  video_on <= not (video_blank.hblank or video_blank.vblank);
 end architecture;

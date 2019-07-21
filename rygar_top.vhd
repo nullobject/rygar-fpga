@@ -95,11 +95,9 @@ architecture arch of rygar_top is
   signal current_bank : unsigned(3 downto 0);
 
   -- video signals
-  signal video_pos    : position_t;
-  signal video_sync   : sync_t;
-  signal video_hblank : std_logic;
-  signal video_vblank : std_logic;
-  signal video_on     : std_logic;
+  signal video_pos   : position_t;
+  signal video_sync  : sync_t;
+  signal video_blank : blank_t;
 
   -- pixel data
   signal pixel : rgb_t;
@@ -142,13 +140,11 @@ begin
   -- video timing generator
   sync_gen : entity work.sync_gen
   port map (
-    clk      => clk_12,
-    cen      => cen_6,
-    pos      => video_pos,
-    sync     => video_sync,
-    hblank   => video_hblank,
-    vblank   => video_vblank,
-    video_on => video_on
+    clk   => clk_12,
+    cen   => cen_6,
+    pos   => video_pos,
+    sync  => video_sync,
+    blank => video_blank
   );
 
   -- program ROM 1
@@ -308,17 +304,17 @@ begin
   -- colour palette
   palette : entity work.palette
   port map (
-    clk       => clk_12,
-    cen       => cen_6,
-    ram_cs    => palette_ram_cs,
-    ram_addr  => cpu_addr(PALETTE_RAM_ADDR_WIDTH_A-1 downto 0),
-    ram_din   => cpu_dout,
-    ram_dout  => palette_ram_dout,
-    ram_we    => not cpu_wr_n,
-    char_data => char_data,
-    fg_data   => fg_data,
-    video_on  => video_on,
-    pixel     => pixel
+    clk         => clk_12,
+    cen         => cen_6,
+    ram_cs      => palette_ram_cs,
+    ram_addr    => cpu_addr(PALETTE_RAM_ADDR_WIDTH_A-1 downto 0),
+    ram_din     => cpu_dout,
+    ram_dout    => palette_ram_dout,
+    ram_we      => not cpu_wr_n,
+    char_data   => char_data,
+    fg_data     => fg_data,
+    video_blank => video_blank,
+    pixel       => pixel
   );
 
   -- $0000-$7fff PROGRAM ROM 1

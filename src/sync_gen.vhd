@@ -40,11 +40,7 @@ entity sync_gen is
     sync : out sync_t;
 
     -- horizontal and vertical blank
-    hblank, vblank : buffer std_logic;
-
-    -- video on is active when the beam is visible (i.e. not in a blanking
-    -- region)
-    video_on : out std_logic
+    blank : out blank_t
   );
 end sync_gen;
 
@@ -65,24 +61,20 @@ architecture struct of sync_gen is
   constant H_SCAN : natural := H_DISPLAY+H_FRONT_PORCH+H_RETRACE+H_BACK_PORCH;
   constant V_SCAN : natural := V_DISPLAY+V_FRONT_PORCH+V_RETRACE+V_BACK_PORCH;
 
-  -- The horizontal blank offset is used to centre the frame horizontally on
-  -- the screen.
-  constant H_BLANK_OFFSET : natural := 10;
-
   -- The vertical offset is used to skip the first two rows of tiles (16
   -- lines). Rygar includes the first two rows of tiles in memory, but they
   -- aren't actually rendered on the screen.
   constant V_OFFSET : natural := 16;
 
-  signal x : natural range 0 to 511;
-  signal y : natural range 0 to 511;
+  signal x : natural range 0 to 511 := H_SCAN-1;
+  signal y : natural range 0 to 511 := V_SCAN-1;
 begin
   -- Generate horizontal timings.
   --
   -- visible:     256
-  -- back porch:  48
-  -- hsync:       32
   -- front porch: 48
+  -- hsync:       32
+  -- back porch:  48
   -- total:       384
   --
   -- 6Mhz / 384 = 15.625kHz
@@ -96,16 +88,16 @@ begin
           x <= x + 1;
         end if;
 
-        if x = H_BLANK_OFFSET then
-          hblank <= '0';
-        elsif x = H_DISPLAY+H_BLANK_OFFSET then
-          hblank <= '1';
+        if x = H_DISPLAY+H_FRONT_PORCH-1 then
+          sync.hsync <= '1';
+        elsif x = H_DISPLAY+H_FRONT_PORCH+H_RETRACE-1 then
+          sync.hsync <= '0';
         end if;
 
-        if x = H_DISPLAY+H_FRONT_PORCH then
-          sync.hsync <= '1';
-        elsif x = H_DISPLAY+H_FRONT_PORCH+H_RETRACE then
-          sync.hsync <= '0';
+        if x = H_SCAN-1 then
+          blank.hblank <= '0';
+        elsif x = H_DISPLAY-1 then
+          blank.hblank <= '1';
         end if;
       end if;
     end if;
@@ -114,9 +106,9 @@ begin
   -- Generate vertical timings.
   --
   -- visible:     224
-  -- back porch:  16
-  -- vsync:       8
   -- front porch: 16
+  -- vsync:       8
+  -- back porch:  16
   -- total:       264
   --
   -- 15.625kHz / 264 = 59.185 Hz
@@ -130,18 +122,18 @@ begin
           else
             y <= y + 1;
           end if;
-        end if;
 
-        if y = 0 then
-          vblank <= '0';
-        elsif y = V_DISPLAY then
-          vblank <= '1';
-        end if;
+          if y = V_DISPLAY+V_FRONT_PORCH-1 then
+            sync.vsync <= '1';
+          elsif y = V_DISPLAY+V_FRONT_PORCH+V_RETRACE-1 then
+            sync.vsync <= '0';
+          end if;
 
-        if y = V_DISPLAY+V_FRONT_PORCH then
-          sync.vsync <= '1';
-        elsif y = V_DISPLAY+V_FRONT_PORCH+V_RETRACE then
-          sync.vsync <= '0';
+          if y = V_SCAN-1 then
+            blank.vblank <= '0';
+          elsif y = V_DISPLAY-1 then
+            blank.vblank <= '1';
+          end if;
         end if;
       end if;
     end if;
@@ -149,6 +141,4 @@ begin
 
   pos.x <= to_unsigned(x, pos.x'length);
   pos.y <= to_unsigned(y+V_OFFSET, pos.y'length);
-
-  video_on <= not (hblank or vblank);
 end architecture;
