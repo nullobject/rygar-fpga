@@ -53,6 +53,9 @@ entity scroll is
     -- video position
     video_pos : in position_t;
 
+    -- horizontal offset (in pixels)
+    offset : in unsigned(8 downto 0);
+
     -- palette index output
     data : out byte_t
   );

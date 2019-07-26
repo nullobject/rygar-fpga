@@ -94,6 +94,9 @@ architecture arch of rygar_top is
   -- currently selected bank for program ROM 3
   signal current_bank : unsigned(3 downto 0);
 
+  -- fg horizontal offset
+  signal fg_offset : unsigned(8 downto 0);
+
   -- video signals
   signal video_pos   : position_t;
   signal video_sync  : sync_t;
@@ -298,6 +301,7 @@ begin
     ram_dout  => fg_ram_dout,
     ram_we    => not cpu_wr_n,
     video_pos => video_pos,
+    offset    => fg_offset,
     data      => fg_data
   );
 
