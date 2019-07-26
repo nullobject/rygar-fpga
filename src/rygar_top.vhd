@@ -24,7 +24,7 @@ use ieee.numeric_std.all;
 
 library pll;
 
-use work.rygar.all;
+use work.types.all;
 
 entity rygar_top is
   port (

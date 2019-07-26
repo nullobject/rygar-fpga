@@ -22,7 +22,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-use work.rygar.all;
+use work.types.all;
 
 -- The character layer is a 32x32 tilemap of 8x8 tiles. It is used to render
 -- things like the logo, score, playfield, and other static graphics.

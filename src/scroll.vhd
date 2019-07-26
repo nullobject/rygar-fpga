@@ -22,7 +22,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-use work.rygar.all;
+use work.types.all;
 
 -- The scroll layer is a 32x16 grid of 16x16 tiles. It is used to render the
 -- foreground and background scrolling graphics layers.

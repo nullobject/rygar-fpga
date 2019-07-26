@@ -22,7 +22,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-package rygar is
+package types is
   constant PROG_ROM_1_ADDR_WIDTH  : natural := 15; -- 32kB
   constant PROG_ROM_2_ADDR_WIDTH  : natural := 14; -- 16kB
   constant PROG_ROM_3_ADDR_WIDTH  : natural := 15; -- 32kB
@@ -72,4 +72,4 @@ package rygar is
   end record blank_t;
 
   subtype byte_t is std_logic_vector(7 downto 0);
-end package rygar;
+end package types;

@@ -22,7 +22,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-use work.rygar.all;
+use work.types.all;
 
 -- The colour palette combines the pixel data from the different graphics
 -- layers, and looks up the RGB pixel color values in the palette RAM.
