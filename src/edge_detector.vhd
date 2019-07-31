@@ -44,7 +44,7 @@ end edge_detector;
 architecture arch of edge_detector is
   signal t0, t1 : std_logic;
 begin
-  process(clk)
+  process (clk)
   begin
     if rising_edge(clk) then
       t0 <= data;

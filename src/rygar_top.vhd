@@ -248,7 +248,7 @@ begin
   -- Once the interrupt request has been accepted by the CPU, it is
   -- acknowledged by activating the IORQ signal during the M1 cycle. This
   -- disables the interrupt signal, and the cycle starts over.
-  irq : process(clk_12)
+  irq : process (clk_12)
   begin
     if rising_edge(clk_12) then
       if cpu_m1_n = '0' and cpu_ioreq_n = '0' then
@@ -261,7 +261,7 @@ begin
 
   -- Setting the bank register changes the currently selected bank of program
   -- ROM 3.
-  bank_register : process(clk_12)
+  bank_register : process (clk_12)
   begin
     if rising_edge(clk_12) then
       if bank_cs = '1' and cpu_wr_n = '0' then

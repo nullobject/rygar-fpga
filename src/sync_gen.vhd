@@ -78,7 +78,7 @@ begin
   -- total:       384
   --
   -- 6Mhz / 384 = 15.625kHz
-  horizontal : process(clk)
+  horizontal_timing : process (clk)
   begin
     if rising_edge(clk) then
       if cen = '1' then
@@ -112,7 +112,7 @@ begin
   -- total:       264
   --
   -- 15.625kHz / 264 = 59.185 Hz
-  vertical : process(clk)
+  vertical_timing : process (clk)
   begin
     if rising_edge(clk) then
       if cen = '1' then

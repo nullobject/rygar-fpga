@@ -133,7 +133,7 @@ begin
   -- The tile data needs to be fetched *before* rendering it to the display.
   -- This means that as the current tile is being rendered, we need to be
   -- fetching the data for the *next* tile.
-  fetch_tile_data : process(clk)
+  fetch_tile_data : process (clk)
     variable offset_x : natural range 0 to 15;
   begin
     offset_x := to_integer(video_pos.x(3 downto 0));
@@ -159,7 +159,7 @@ begin
 
   -- Latch the pixel pair from the tile ROM when rendering odd pixels (i.e. the
   -- second pixel in every pair of pixels).
-  latch_pixel_pair : process(clk)
+  latch_pixel_pair : process (clk)
   begin
     if rising_edge(clk) then
       if cen = '1' then

@@ -84,7 +84,7 @@ begin
     dout_b => palette_ram_dout_b
   );
 
-  process(clk)
+  process (clk)
   begin
     if rising_edge(clk) then
       if cen = '1' then
