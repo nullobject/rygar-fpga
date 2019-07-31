@@ -58,9 +58,6 @@ entity char is
 end char;
 
 architecture arch of char is
-  constant COLS : natural := 32;
-  constant ROWS : natural := 32;
-
   -- column and row aliases
   alias col : unsigned(4 downto 0) is video_pos.x(7 downto 3);
   alias row : unsigned(4 downto 0) is video_pos.y(7 downto 3);

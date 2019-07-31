@@ -62,9 +62,6 @@ entity scroll is
 end scroll;
 
 architecture arch of scroll is
-  constant COLS : natural := 32;
-  constant ROWS : natural := 16;
-
   -- column and row aliases
   alias col : unsigned(4 downto 0) is video_pos.x(8 downto 4);
   alias row : unsigned(3 downto 0) is video_pos.y(7 downto 4);
