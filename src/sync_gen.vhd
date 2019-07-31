@@ -24,7 +24,20 @@ use ieee.numeric_std.all;
 
 use work.types.all;
 
--- Generates the video timing signals.
+-- This module generates the video timing signals for a 256x224 screen
+-- resolution. This is a very common resolution for older arcade games.
+--
+-- The sync signals tell the CRT when to start and stop scanning. The
+-- horizontal sync tells the CRT when to start a new scanline, and the vertical
+-- sync tells it when to start a new field.
+--
+-- The blanking signals indicate whether the beam is in the horizontal or
+-- vertical blanking (non-visible) regions. Video output should be disabled
+-- while the beam is in these regions, they are also used to do things like
+-- fetch graphics data.
+--
+-- horizontal frequency: 6Mhz / 384 = 15.625kHz
+-- vertical frequency: 15.625kHz / 264 = 59.185 Hz
 entity sync_gen is
   port (
     -- input clock
@@ -45,39 +58,35 @@ entity sync_gen is
 end sync_gen;
 
 architecture struct of sync_gen is
-  -- horizontal scan region widths
+  -- horizontal regions
   constant H_DISPLAY     : natural := 256;
   constant H_FRONT_PORCH : natural := 48;
   constant H_RETRACE     : natural := 32;
   constant H_BACK_PORCH  : natural := 48;
+  constant H_SCAN        : natural := H_DISPLAY+H_FRONT_PORCH+H_RETRACE+H_BACK_PORCH; -- 384
 
-  -- vertical scan region widths
+  -- vertical regions
   constant V_DISPLAY     : natural := 224;
   constant V_FRONT_PORCH : natural := 16;
   constant V_RETRACE     : natural := 8;
   constant V_BACK_PORCH  : natural := 16;
+  constant V_SCAN        : natural := V_DISPLAY+V_FRONT_PORCH+V_RETRACE+V_BACK_PORCH; -- 264
 
-  -- horizontal and vertical scan widths
-  constant H_SCAN : natural := H_DISPLAY+H_FRONT_PORCH+H_RETRACE+H_BACK_PORCH;
-  constant V_SCAN : natural := V_DISPLAY+V_FRONT_PORCH+V_RETRACE+V_BACK_PORCH;
+  -- The horizontal position is offset by 8, because the graphics data for the
+  -- first 8x8 tile in the scanline needs to be preloaded. i.e. When rendering
+  -- the current tile, we want to fetch the graphics data for the next tile
+  -- ahead.
+  constant H_OFFSET : natural := 8;
 
-  -- The vertical offset is used to skip the first two rows of tiles (16
-  -- lines). Rygar includes the first two rows of tiles in memory, but they
-  -- aren't actually rendered on the screen.
+  -- The vertical position is offset by 16, because the first two rows of 8x8
+  -- tiles aren't actually visible on the screen.
   constant V_OFFSET : natural := 16;
 
+  -- horizontal/vertical counters
   signal x : natural range 0 to 511 := H_SCAN-1;
   signal y : natural range 0 to 511 := V_SCAN-1;
 begin
-  -- Generate horizontal timings.
-  --
-  -- visible:     256
-  -- front porch: 48
-  -- hsync:       32
-  -- back porch:  48
-  -- total:       384
-  --
-  -- 6Mhz / 384 = 15.625kHz
+  -- generate horizontal timings
   horizontal_timing : process (clk)
   begin
     if rising_edge(clk) then
@@ -103,15 +112,7 @@ begin
     end if;
   end process;
 
-  -- Generate vertical timings.
-  --
-  -- visible:     224
-  -- front porch: 16
-  -- vsync:       8
-  -- back porch:  16
-  -- total:       264
-  --
-  -- 15.625kHz / 264 = 59.185 Hz
+  -- generate vertical timings
   vertical_timing : process (clk)
   begin
     if rising_edge(clk) then
@@ -139,6 +140,6 @@ begin
     end if;
   end process;
 
-  pos.x <= to_unsigned(x, pos.x'length);
+  pos.x <= to_unsigned(x+H_OFFSET, pos.x'length);
   pos.y <= to_unsigned(y+V_OFFSET, pos.y'length);
 end architecture;
