@@ -36,9 +36,9 @@ entity palette is
 
     -- palette RAM
     ram_cs   : in std_logic;
-    ram_addr : in std_logic_vector(PALETTE_RAM_ADDR_WIDTH_A-1 downto 0);
-    ram_din  : in std_logic_vector(PALETTE_RAM_DATA_WIDTH_A-1 downto 0);
-    ram_dout : out std_logic_vector(PALETTE_RAM_DATA_WIDTH_A-1 downto 0);
+    ram_addr : in std_logic_vector(PALETTE_RAM_ADDR_WIDTH-1 downto 0);
+    ram_din  : in byte_t;
+    ram_dout : out byte_t;
     ram_we   : in std_logic;
 
     -- graphics layer data
@@ -54,22 +54,31 @@ entity palette is
 end palette;
 
 architecture arch of palette is
+  constant PALETTE_RAM_ADDR_WIDTH_B : natural := 10;
+  constant PALETTE_RAM_DATA_WIDTH_B : natural := 16;
+
+  -- palette RAM (port B)
   signal palette_ram_addr_b : std_logic_vector(PALETTE_RAM_ADDR_WIDTH_B-1 downto 0);
   signal palette_ram_dout_b : std_logic_vector(PALETTE_RAM_DATA_WIDTH_B-1 downto 0);
 
   signal video_on : std_logic;
 begin
-  -- The palette RAM is implemented as a 2kB dual-port RAM. Port A is 8-bits
-  -- wide and is connected to the CPU data bus. Port B is 16-bits wide and is
-  -- connected to the video output circuit.
-  --
-  -- The color palette contains 1024 16-bit color values, stored in
+  -- The palette RAM contains 1024 16-bit RGB colour values, stored in
   -- RRRRGGGGXXXXBBBB format.
+  --
+  -- It has been implemented as a dual-port RAM because both the CPU and the
+  -- graphics pipeline need to access the RAM concurrently. Port A is 8-bits
+  -- wide and is connected to the CPU data bus. Port B is 16-bits wide and is
+  -- connected to the graphics pipeine.
+  --
+  -- This differs from the original arcade hardware, which only contains
+  -- a single-port palette RAM. Using a dual-port RAM instead simplifies
+  -- things, because we don't need all additional logic required to coordinate
+  -- RAM access.
   palette_ram : entity work.dual_port_ram
   generic map (
-    ADDR_WIDTH_A => PALETTE_RAM_ADDR_WIDTH_A,
+    ADDR_WIDTH_A => PALETTE_RAM_ADDR_WIDTH,
     ADDR_WIDTH_B => PALETTE_RAM_ADDR_WIDTH_B,
-    DATA_WIDTH_A => PALETTE_RAM_DATA_WIDTH_A,
     DATA_WIDTH_B => PALETTE_RAM_DATA_WIDTH_B
   )
   port map (
@@ -108,6 +117,6 @@ begin
     end if;
   end process;
 
-  -- video output is enabled if it's not in a blanking region
+  -- enable the video output if we're not in a blanking region
   video_on <= not (video_blank.hblank or video_blank.vblank);
 end architecture;

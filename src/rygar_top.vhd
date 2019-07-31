@@ -311,7 +311,7 @@ begin
     clk         => clk_12,
     cen         => cen_6,
     ram_cs      => palette_ram_cs,
-    ram_addr    => cpu_addr(PALETTE_RAM_ADDR_WIDTH_A-1 downto 0),
+    ram_addr    => cpu_addr(PALETTE_RAM_ADDR_WIDTH-1 downto 0),
     ram_din     => cpu_dout,
     ram_dout    => palette_ram_dout,
     ram_we      => not cpu_wr_n,
