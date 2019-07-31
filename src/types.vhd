@@ -23,6 +23,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 package types is
+  -- memory sizes
   constant PROG_ROM_1_ADDR_WIDTH  : natural := 15; -- 32kB
   constant PROG_ROM_2_ADDR_WIDTH  : natural := 14; -- 16kB
   constant PROG_ROM_3_ADDR_WIDTH  : natural := 15; -- 32kB
@@ -37,7 +38,7 @@ package types is
   constant SPRITE_ROM_ADDR_WIDTH  : natural := 17; -- 128kB
   constant PALETTE_RAM_ADDR_WIDTH : natural := 11; -- 2kB
 
-
+  -- colour depth
   constant COLOR_DEPTH_R : natural := 4;
   constant COLOR_DEPTH_G : natural := 4;
   constant COLOR_DEPTH_B : natural := 4;
@@ -51,24 +52,22 @@ package types is
     y : unsigned(8 downto 0);
   end record pos_t;
 
-  -- represents a 4BBP RGB pixel
-  type rgb_t is record
-    r : std_logic_vector(COLOR_DEPTH_R-1 downto 0);
-    g : std_logic_vector(COLOR_DEPTH_G-1 downto 0);
-    b : std_logic_vector(COLOR_DEPTH_B-1 downto 0);
-  end record rgb_t;
-
   -- represents horizontal and vertical sync signals
   type sync_t is record
     hsync : std_logic;
     vsync : std_logic;
   end record sync_t;
 
-  -- represents the horizontal and vertical blank signals
+  -- represents horizontal and vertical blank signals
   type blank_t is record
     hblank : std_logic;
     vblank : std_logic;
   end record blank_t;
 
-  subtype byte_t is std_logic_vector(7 downto 0);
+  -- represents a RGB colour value
+  type rgb_t is record
+    r : std_logic_vector(COLOR_DEPTH_R-1 downto 0);
+    g : std_logic_vector(COLOR_DEPTH_G-1 downto 0);
+    b : std_logic_vector(COLOR_DEPTH_B-1 downto 0);
+  end record rgb_t;
 end package types;
