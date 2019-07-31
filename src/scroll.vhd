@@ -66,7 +66,7 @@ architecture arch of scroll is
   alias col : unsigned(4 downto 0) is video_pos.x(8 downto 4);
   alias row : unsigned(3 downto 0) is video_pos.y(7 downto 4);
 
-  -- tile RAM
+  -- tile RAM (port B)
   signal scroll_ram_addr_b : std_logic_vector(RAM_ADDR_WIDTH-1 downto 0);
   signal scroll_ram_dout_b : byte_t;
 
