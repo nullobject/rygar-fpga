@@ -33,8 +33,8 @@ entity sync_gen is
     -- clock enable
     cen : in std_logic;
 
-    -- current position
-    pos : out position_t;
+    -- horizontal and vertical position
+    pos : out pos_t;
 
     -- horizontal and vertical sync
     sync : out sync_t;

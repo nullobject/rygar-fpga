@@ -51,7 +51,7 @@ entity scroll is
     ram_we   : in std_logic;
 
     -- video position
-    video_pos : in position_t;
+    video_pos : in pos_t;
 
     -- horizontal offset (in pixels)
     offset : in unsigned(8 downto 0);

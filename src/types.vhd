@@ -46,11 +46,14 @@ package types is
   constant COLOR_DEPTH_G : natural := 4;
   constant COLOR_DEPTH_B : natural := 4;
 
-  -- represents a 2D position
-  type position_t is record
+  subtype byte_t is std_logic_vector(7 downto 0);
+  subtype nibble_t is std_logic_vector(3 downto 0);
+
+  -- represents horizontal and vertical position
+  type pos_t is record
     x : unsigned(8 downto 0);
     y : unsigned(8 downto 0);
-  end record position_t;
+  end record pos_t;
 
   -- represents a 4BBP RGB pixel
   type rgb_t is record

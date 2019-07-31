@@ -98,7 +98,7 @@ architecture arch of rygar_top is
   signal fg_offset : unsigned(8 downto 0);
 
   -- video signals
-  signal video_pos   : position_t;
+  signal video_pos   : pos_t;
   signal video_sync  : sync_t;
   signal video_blank : blank_t;
 
