@@ -345,17 +345,16 @@ begin
   prog_rom_3_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"f000" and unsigned(cpu_addr) <= x"f7ff" else '0';
   bank_cs        <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) = x"f808" else '0';
 
-  -- Connect the selected devices to the CPU data input bus.
-  cpu_din <= prog_rom_1_dout when prog_rom_1_cs = '1' else
-             prog_rom_2_dout when prog_rom_2_cs = '1' else
-             prog_rom_3_dout when prog_rom_3_cs = '1' else
-             work_ram_dout when work_ram_cs = '1' else
-             char_ram_dout when char_ram_cs = '1' else
-             fg_ram_dout when fg_ram_cs = '1' else
-             bg_ram_dout when bg_ram_cs = '1' else
-             sprite_ram_dout when sprite_ram_cs = '1' else
-             palette_ram_dout when palette_ram_cs = '1' else
-             (others => '0');
+  -- CPU data input bus
+  cpu_din <= prog_rom_1_dout or
+             prog_rom_2_dout or
+             prog_rom_3_dout or
+             work_ram_dout or
+             char_ram_dout or
+             fg_ram_dout or
+             bg_ram_dout or
+             sprite_ram_dout or
+             palette_ram_dout;
 
   led <= cpu_dout when work_ram_cs = '1' and cpu_wr_n = '0' else (others => '0');
 
