@@ -78,34 +78,34 @@ architecture struct of sync_gen is
   -- ahead.
   constant H_OFFSET : natural := 8;
 
-  -- The vertical position is offset by 16, because the first two rows of 8x8
-  -- tiles aren't actually visible on the screen.
-  constant V_OFFSET : natural := 16;
+  -- horizontal/vertical counter starting values
+  constant H_START : natural := 128;
+  constant V_START : natural := 248;
 
   -- horizontal/vertical counters
-  signal x : natural range 0 to 511 := H_SCAN-1;
-  signal y : natural range 0 to 511 := V_SCAN-1;
+  signal x : natural range 0 to 511 := H_START;
+  signal y : natural range 0 to 511 := V_START;
 begin
   -- generate horizontal timings
   horizontal_timing : process (clk)
   begin
     if rising_edge(clk) then
       if cen = '1' then
-        if x = H_SCAN-1 then
-          x <= 0;
+        if x = 511 then
+          x <= H_START;
         else
           x <= x + 1;
         end if;
 
-        if x = H_DISPLAY+H_FRONT_PORCH-1 then
-          sync.hsync <= '1';
-        elsif x = H_DISPLAY+H_FRONT_PORCH+H_RETRACE-1 then
+        if x = H_START+H_FRONT_PORCH+H_RETRACE-1 then
           sync.hsync <= '0';
+        elsif x = H_START+H_FRONT_PORCH-1 then
+          sync.hsync <= '1';
         end if;
 
-        if x = H_SCAN-1 then
+        if x = H_START+H_FRONT_PORCH+H_RETRACE+H_BACK_PORCH-1 then
           blank.hblank <= '0';
-        elsif x = H_DISPLAY-1 then
+        elsif x = H_START+H_SCAN-1 then
           blank.hblank <= '1';
         end if;
       end if;
@@ -117,22 +117,22 @@ begin
   begin
     if rising_edge(clk) then
       if cen = '1' then
-        if x = H_DISPLAY+H_FRONT_PORCH-1 then
-          if y = V_SCAN-1 then
-            y <= 0;
+        if x = H_START+H_FRONT_PORCH-1 then
+          if y = 511 then
+            y <= V_START;
           else
             y <= y + 1;
           end if;
 
-          if y = V_DISPLAY+V_FRONT_PORCH-1 then
-            sync.vsync <= '1';
-          elsif y = V_DISPLAY+V_FRONT_PORCH+V_RETRACE-1 then
+          if y = V_START+V_RETRACE-1 then
             sync.vsync <= '0';
+          elsif y = V_START+V_SCAN-1 then
+            sync.vsync <= '1';
           end if;
 
-          if y = V_SCAN-1 then
+          if y = V_START+V_RETRACE+V_BACK_PORCH-1 then
             blank.vblank <= '0';
-          elsif y = V_DISPLAY-1 then
+          elsif y = V_START+V_RETRACE+V_BACK_PORCH+V_DISPLAY-1 then
             blank.vblank <= '1';
           end if;
         end if;
@@ -141,5 +141,5 @@ begin
   end process;
 
   pos.x <= to_unsigned(x+H_OFFSET, pos.x'length);
-  pos.y <= to_unsigned(y+V_OFFSET, pos.y'length);
+  pos.y <= to_unsigned(y, pos.y'length);
 end architecture;
