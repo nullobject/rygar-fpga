@@ -180,7 +180,7 @@ begin
     dout => prog_rom_3_dout
   );
 
-  -- work ram
+  -- work RAM
   work_ram : entity work.single_port_ram
   generic map (ADDR_WIDTH => WORK_RAM_ADDR_WIDTH)
   port map (
@@ -192,7 +192,7 @@ begin
     we   => not cpu_wr_n
   );
 
-  -- bg ram
+  -- background RAM
   bg_ram : entity work.single_port_ram
   generic map (ADDR_WIDTH => BG_RAM_ADDR_WIDTH)
   port map (
@@ -204,7 +204,7 @@ begin
     we   => not cpu_wr_n
   );
 
-  -- sprite ram
+  -- sprite RAM
   sprite_ram : entity work.single_port_ram
   generic map (ADDR_WIDTH => SPRITE_RAM_ADDR_WIDTH)
   port map (
@@ -216,7 +216,7 @@ begin
     we   => not cpu_wr_n
   );
 
-  -- main cpu
+  -- main CPU
   cpu : entity work.T80s
   port map (
     RESET_n => not reset,
@@ -288,7 +288,7 @@ begin
     data      => char_data
   );
 
-  -- fg layer
+  -- foreground layer
   fg : entity work.scroll
   generic map (
     RAM_ADDR_WIDTH => FG_RAM_ADDR_WIDTH,
