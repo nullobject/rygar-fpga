@@ -35,8 +35,8 @@ entity dual_port_ram is
     -- clock
     clk_a, clk_b : in std_logic;
 
-    -- clock enable
-    cen_a, cen_b : in std_logic := '1';
+    -- chip select
+    cs_a, cs_b : in std_logic := '1';
 
     -- address
     addr_a : in std_logic_vector(ADDR_WIDTH_A-1 downto 0);
@@ -56,12 +56,14 @@ entity dual_port_ram is
 end dual_port_ram;
 
 architecture arch of dual_port_ram is
+  signal q_a : std_logic_vector(DATA_WIDTH_A-1 downto 0);
+  signal q_b : std_logic_vector(DATA_WIDTH_B-1 downto 0);
 begin
   altsyncram_component : altsyncram
   generic map (
     address_reg_b                 => "CLOCK1",
-    clock_enable_input_a          => "NORMAL",
-    clock_enable_input_b          => "NORMAL",
+    clock_enable_input_a          => "BYPASS",
+    clock_enable_input_b          => "BYPASS",
     clock_enable_output_a         => "BYPASS",
     clock_enable_output_b         => "BYPASS",
     indata_reg_b                  => "CLOCK1",
@@ -90,13 +92,14 @@ begin
     address_b => addr_b,
     clock0    => clk_a,
     clock1    => clk_b,
-    clocken0  => cen_a,
-    clocken1  => cen_b,
     data_a    => din_a,
     data_b    => din_b,
-    wren_a    => we_a,
-    wren_b    => we_b,
-    q_a       => dout_a,
-    q_b       => dout_b
+    wren_a    => cs_a and we_a,
+    wren_b    => cs_b and we_b,
+    q_a       => q_a,
+    q_b       => q_b
   );
+
+  dout_a <= q_a when cs_a = '1' else (others => '0');
+  dout_b <= q_b when cs_b = '1' else (others => '0');
 end arch;

@@ -112,7 +112,7 @@ begin
   )
   port map (
     clk_a  => clk,
-    cen_a  => ram_cs,
+    cs_a   => ram_cs,
     addr_a => ram_addr,
     din_a  => ram_din,
     dout_a => ram_dout,

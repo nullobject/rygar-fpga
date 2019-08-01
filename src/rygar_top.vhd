@@ -155,6 +155,7 @@ begin
   generic map (ADDR_WIDTH => PROG_ROM_1_ADDR_WIDTH, INIT_FILE => "rom/cpu_5p.mif")
   port map (
     clk  => clk_12,
+    cs   => prog_rom_1_cs,
     addr => cpu_addr(PROG_ROM_1_ADDR_WIDTH-1 downto 0),
     dout => prog_rom_1_dout
   );
@@ -164,6 +165,7 @@ begin
   generic map (ADDR_WIDTH => PROG_ROM_2_ADDR_WIDTH, INIT_FILE => "rom/cpu_5m.mif")
   port map (
     clk  => clk_12,
+    cs   => prog_rom_2_cs,
     addr => cpu_addr(PROG_ROM_2_ADDR_WIDTH-1 downto 0),
     dout => prog_rom_2_dout
   );
@@ -173,6 +175,7 @@ begin
   generic map (ADDR_WIDTH => PROG_ROM_3_ADDR_WIDTH, INIT_FILE => "rom/cpu_5j.mif")
   port map (
     clk  => clk_12,
+    cs   => prog_rom_3_cs,
     addr => std_logic_vector(current_bank) & cpu_addr(10 downto 0),
     dout => prog_rom_3_dout
   );
@@ -182,7 +185,7 @@ begin
   generic map (ADDR_WIDTH => WORK_RAM_ADDR_WIDTH)
   port map (
     clk  => clk_12,
-    cen  => work_ram_cs,
+    cs   => work_ram_cs,
     addr => cpu_addr(WORK_RAM_ADDR_WIDTH-1 downto 0),
     din  => cpu_dout,
     dout => work_ram_dout,
@@ -194,7 +197,7 @@ begin
   generic map (ADDR_WIDTH => BG_RAM_ADDR_WIDTH)
   port map (
     clk  => clk_12,
-    cen  => bg_ram_cs,
+    cs   => bg_ram_cs,
     addr => cpu_addr(BG_RAM_ADDR_WIDTH-1 downto 0),
     din  => cpu_dout,
     dout => bg_ram_dout,
@@ -206,7 +209,7 @@ begin
   generic map (ADDR_WIDTH => SPRITE_RAM_ADDR_WIDTH)
   port map (
     clk  => clk_12,
-    cen  => sprite_ram_cs,
+    cs   => sprite_ram_cs,
     addr => cpu_addr(SPRITE_RAM_ADDR_WIDTH-1 downto 0),
     din  => cpu_dout,
     dout => sprite_ram_dout,
