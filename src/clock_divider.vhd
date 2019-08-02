@@ -39,7 +39,7 @@ end clock_divider;
 architecture arch of clock_divider is
   signal count : natural range 0 to DIVISOR-1;
 begin
-  process(clk)
+  process (clk)
   begin
     if rising_edge(clk) then
       if count < DIVISOR-1 then

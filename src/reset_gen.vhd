@@ -41,7 +41,7 @@ end reset_gen;
 architecture arch of reset_gen is
   signal t1 : std_logic := '1';
 begin
-  process(clk, rin)
+  process (clk, rin)
   begin
     if rin = '1' then
       t1 <= '1';

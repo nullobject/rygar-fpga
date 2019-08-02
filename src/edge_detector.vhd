@@ -26,7 +26,8 @@ use ieee.numeric_std.all;
 -- signal.
 entity edge_detector is
   generic (
-    RISING : boolean := true
+    RISING  : boolean := true;
+    FALLING : boolean := false
   );
   port (
     -- input clock
@@ -43,7 +44,7 @@ end edge_detector;
 architecture arch of edge_detector is
   signal t0, t1 : std_logic;
 begin
-  process(clk)
+  process (clk)
   begin
     if rising_edge(clk) then
       t0 <= data;
@@ -51,5 +52,7 @@ begin
     end if;
   end process;
 
-  edge <= (not t1 and t0) WHEN rising else (not t0 and t1);
+  edge <= (not t1 and t0) when RISING else
+          (t1 and not t0) when FALLING else
+          '0';
 end architecture;

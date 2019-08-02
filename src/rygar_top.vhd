@@ -24,7 +24,7 @@ use ieee.numeric_std.all;
 
 library pll;
 
-use work.rygar.all;
+use work.types.all;
 
 entity rygar_top is
   port (
@@ -94,12 +94,13 @@ architecture arch of rygar_top is
   -- currently selected bank for program ROM 3
   signal current_bank : unsigned(3 downto 0);
 
+  -- fg horizontal offset
+  signal fg_offset : unsigned(8 downto 0);
+
   -- video signals
-  signal video_pos    : position_t;
-  signal video_sync   : sync_t;
-  signal video_hblank : std_logic;
-  signal video_vblank : std_logic;
-  signal video_on     : std_logic;
+  signal video_pos   : pos_t;
+  signal video_sync  : sync_t;
+  signal video_blank : blank_t;
 
   -- pixel data
   signal pixel : rgb_t;
@@ -142,13 +143,11 @@ begin
   -- video timing generator
   sync_gen : entity work.sync_gen
   port map (
-    clk      => clk_12,
-    cen      => cen_6,
-    pos      => video_pos,
-    sync     => video_sync,
-    hblank   => video_hblank,
-    vblank   => video_vblank,
-    video_on => video_on
+    clk   => clk_12,
+    cen   => cen_6,
+    pos   => video_pos,
+    sync  => video_sync,
+    blank => video_blank
   );
 
   -- program ROM 1
@@ -156,6 +155,7 @@ begin
   generic map (ADDR_WIDTH => PROG_ROM_1_ADDR_WIDTH, INIT_FILE => "rom/cpu_5p.mif")
   port map (
     clk  => clk_12,
+    cs   => prog_rom_1_cs,
     addr => cpu_addr(PROG_ROM_1_ADDR_WIDTH-1 downto 0),
     dout => prog_rom_1_dout
   );
@@ -165,6 +165,7 @@ begin
   generic map (ADDR_WIDTH => PROG_ROM_2_ADDR_WIDTH, INIT_FILE => "rom/cpu_5m.mif")
   port map (
     clk  => clk_12,
+    cs   => prog_rom_2_cs,
     addr => cpu_addr(PROG_ROM_2_ADDR_WIDTH-1 downto 0),
     dout => prog_rom_2_dout
   );
@@ -174,47 +175,48 @@ begin
   generic map (ADDR_WIDTH => PROG_ROM_3_ADDR_WIDTH, INIT_FILE => "rom/cpu_5j.mif")
   port map (
     clk  => clk_12,
+    cs   => prog_rom_3_cs,
     addr => std_logic_vector(current_bank) & cpu_addr(10 downto 0),
     dout => prog_rom_3_dout
   );
 
-  -- work ram
+  -- work RAM
   work_ram : entity work.single_port_ram
   generic map (ADDR_WIDTH => WORK_RAM_ADDR_WIDTH)
   port map (
     clk  => clk_12,
-    cen  => work_ram_cs,
+    cs   => work_ram_cs,
     addr => cpu_addr(WORK_RAM_ADDR_WIDTH-1 downto 0),
     din  => cpu_dout,
     dout => work_ram_dout,
     we   => not cpu_wr_n
   );
 
-  -- bg ram
+  -- background RAM
   bg_ram : entity work.single_port_ram
   generic map (ADDR_WIDTH => BG_RAM_ADDR_WIDTH)
   port map (
     clk  => clk_12,
-    cen  => bg_ram_cs,
+    cs   => bg_ram_cs,
     addr => cpu_addr(BG_RAM_ADDR_WIDTH-1 downto 0),
     din  => cpu_dout,
     dout => bg_ram_dout,
     we   => not cpu_wr_n
   );
 
-  -- sprite ram
+  -- sprite RAM
   sprite_ram : entity work.single_port_ram
   generic map (ADDR_WIDTH => SPRITE_RAM_ADDR_WIDTH)
   port map (
     clk  => clk_12,
-    cen  => sprite_ram_cs,
+    cs   => sprite_ram_cs,
     addr => cpu_addr(SPRITE_RAM_ADDR_WIDTH-1 downto 0),
     din  => cpu_dout,
     dout => sprite_ram_dout,
     we   => not cpu_wr_n
   );
 
-  -- main cpu
+  -- main CPU
   cpu : entity work.T80s
   port map (
     RESET_n => not reset,
@@ -237,10 +239,10 @@ begin
 
   -- detect falling edges of the VBLANK signal
   vblank_edge_detector : entity work.edge_detector
-  generic map (RISING => false)
+  generic map (FALLING => true)
   port map (
     clk  => clk_12,
-    data => video_vblank,
+    data => video_blank.vblank,
     edge => vblank_falling
   );
 
@@ -249,7 +251,7 @@ begin
   -- Once the interrupt request has been accepted by the CPU, it is
   -- acknowledged by activating the IORQ signal during the M1 cycle. This
   -- disables the interrupt signal, and the cycle starts over.
-  irq : process(clk_12)
+  irq : process (clk_12)
   begin
     if rising_edge(clk_12) then
       if cpu_m1_n = '0' and cpu_ioreq_n = '0' then
@@ -262,7 +264,7 @@ begin
 
   -- Setting the bank register changes the currently selected bank of program
   -- ROM 3.
-  bank_register : process(clk_12)
+  bank_register : process (clk_12)
   begin
     if rising_edge(clk_12) then
       if bank_cs = '1' and cpu_wr_n = '0' then
@@ -275,18 +277,18 @@ begin
   -- character layer
   char : entity work.char
   port map (
-    clk      => clk_12,
-    cen      => cen_6,
-    ram_cs   => char_ram_cs,
-    ram_addr => cpu_addr(CHAR_RAM_ADDR_WIDTH-1 downto 0),
-    ram_din  => cpu_dout,
-    ram_dout => char_ram_dout,
-    ram_we   => not cpu_wr_n,
-    pos      => video_pos,
-    data     => char_data
+    clk       => clk_12,
+    cen       => cen_6,
+    ram_cs    => char_ram_cs,
+    ram_addr  => cpu_addr(CHAR_RAM_ADDR_WIDTH-1 downto 0),
+    ram_din   => cpu_dout,
+    ram_dout  => char_ram_dout,
+    ram_we    => not cpu_wr_n,
+    video_pos => video_pos,
+    data      => char_data
   );
 
-  -- fg layer
+  -- foreground layer
   fg : entity work.scroll
   generic map (
     RAM_ADDR_WIDTH => FG_RAM_ADDR_WIDTH,
@@ -294,31 +296,32 @@ begin
     ROM_INIT_FILE  => "rom/fg.mif"
   )
   port map (
-    clk      => clk_12,
-    cen      => cen_6,
-    ram_cs   => fg_ram_cs,
-    ram_addr => cpu_addr(FG_RAM_ADDR_WIDTH-1 downto 0),
-    ram_din  => cpu_dout,
-    ram_dout => fg_ram_dout,
-    ram_we   => not cpu_wr_n,
-    pos      => video_pos,
-    data     => fg_data
+    clk       => clk_12,
+    cen       => cen_6,
+    ram_cs    => fg_ram_cs,
+    ram_addr  => cpu_addr(FG_RAM_ADDR_WIDTH-1 downto 0),
+    ram_din   => cpu_dout,
+    ram_dout  => fg_ram_dout,
+    ram_we    => not cpu_wr_n,
+    video_pos => video_pos,
+    offset    => fg_offset,
+    data      => fg_data
   );
 
   -- colour palette
   palette : entity work.palette
   port map (
-    clk       => clk_12,
-    cen       => cen_6,
-    ram_cs    => palette_ram_cs,
-    ram_addr  => cpu_addr(PALETTE_RAM_ADDR_WIDTH_A-1 downto 0),
-    ram_din   => cpu_dout,
-    ram_dout  => palette_ram_dout,
-    ram_we    => not cpu_wr_n,
-    char_data => char_data,
-    fg_data   => fg_data,
-    video_on  => video_on,
-    pixel     => pixel
+    clk         => clk_12,
+    cen         => cen_6,
+    ram_cs      => palette_ram_cs,
+    ram_addr    => cpu_addr(PALETTE_RAM_ADDR_WIDTH-1 downto 0),
+    ram_din     => cpu_dout,
+    ram_dout    => palette_ram_dout,
+    ram_we      => not cpu_wr_n,
+    char_data   => char_data,
+    fg_data     => fg_data,
+    video_blank => video_blank,
+    pixel       => pixel
   );
 
   -- $0000-$7fff PROGRAM ROM 1
@@ -342,17 +345,16 @@ begin
   prog_rom_3_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"f000" and unsigned(cpu_addr) <= x"f7ff" else '0';
   bank_cs        <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) = x"f808" else '0';
 
-  -- Connect the selected devices to the CPU data input bus.
-  cpu_din <= prog_rom_1_dout when prog_rom_1_cs = '1' else
-             prog_rom_2_dout when prog_rom_2_cs = '1' else
-             prog_rom_3_dout when prog_rom_3_cs = '1' else
-             work_ram_dout when work_ram_cs = '1' else
-             char_ram_dout when char_ram_cs = '1' else
-             fg_ram_dout when fg_ram_cs = '1' else
-             bg_ram_dout when bg_ram_cs = '1' else
-             sprite_ram_dout when sprite_ram_cs = '1' else
-             palette_ram_dout when palette_ram_cs = '1' else
-             (others => '0');
+  -- CPU data input bus
+  cpu_din <= prog_rom_1_dout or
+             prog_rom_2_dout or
+             prog_rom_3_dout or
+             work_ram_dout or
+             char_ram_dout or
+             fg_ram_dout or
+             bg_ram_dout or
+             sprite_ram_dout or
+             palette_ram_dout;
 
   led <= cpu_dout when work_ram_cs = '1' and cpu_wr_n = '0' else (others => '0');
 

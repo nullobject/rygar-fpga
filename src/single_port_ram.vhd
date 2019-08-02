@@ -33,8 +33,8 @@ entity single_port_ram is
     -- clock
     clk : in std_logic := '1';
 
-    -- clock enable
-    cen : in std_logic := '1';
+    -- chip select
+    cs : in std_logic := '1';
 
     -- address
     addr : in std_logic_vector(ADDR_WIDTH-1 downto 0);
@@ -51,10 +51,11 @@ entity single_port_ram is
 end single_port_ram;
 
 architecture arch of single_port_ram is
+  signal q : std_logic_vector(DATA_WIDTH-1 downto 0);
 begin
   altsyncram_component : altsyncram
   generic map (
-    clock_enable_input_a          => "NORMAL",
+    clock_enable_input_a          => "BYPASS",
     clock_enable_output_a         => "BYPASS",
     intended_device_family        => "Cyclone V",
     lpm_hint                      => "ENABLE_RUNTIME_MOD=NO",
@@ -72,9 +73,10 @@ begin
   port map (
     address_a => addr,
     clock0    => clk,
-    clocken0  => cen,
     data_a    => din,
-    wren_a    => we,
-    q_a       => dout
+    wren_a    => cs and we,
+    q_a       => q
   );
+
+  dout <= q when cs = '1' else (others => '0');
 end arch;

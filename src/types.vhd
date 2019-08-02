@@ -22,7 +22,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-package rygar is
+package types is
+  -- memory sizes
   constant PROG_ROM_1_ADDR_WIDTH  : natural := 15; -- 32kB
   constant PROG_ROM_2_ADDR_WIDTH  : natural := 14; -- 16kB
   constant PROG_ROM_3_ADDR_WIDTH  : natural := 15; -- 32kB
@@ -35,29 +36,21 @@ package rygar is
   constant BG_ROM_ADDR_WIDTH      : natural := 17; -- 128kB
   constant SPRITE_RAM_ADDR_WIDTH  : natural := 11; -- 2kB
   constant SPRITE_ROM_ADDR_WIDTH  : natural := 17; -- 128kB
+  constant PALETTE_RAM_ADDR_WIDTH : natural := 11; -- 2kB
 
-  -- palette RAM
-  constant PALETTE_RAM_ADDR_WIDTH_A : natural := 11;
-  constant PALETTE_RAM_ADDR_WIDTH_B : natural := 10;
-  constant PALETTE_RAM_DATA_WIDTH_A : natural := 8;
-  constant PALETTE_RAM_DATA_WIDTH_B : natural := 16;
-
+  -- colour depth
   constant COLOR_DEPTH_R : natural := 4;
   constant COLOR_DEPTH_G : natural := 4;
   constant COLOR_DEPTH_B : natural := 4;
 
-  -- represents a 2D position
-  type position_t is record
+  subtype byte_t is std_logic_vector(7 downto 0);
+  subtype nibble_t is std_logic_vector(3 downto 0);
+
+  -- represents horizontal and vertical position
+  type pos_t is record
     x : unsigned(8 downto 0);
     y : unsigned(8 downto 0);
-  end record position_t;
-
-  -- represents a 4BBP RGB pixel
-  type rgb_t is record
-    r : std_logic_vector(COLOR_DEPTH_R-1 downto 0);
-    g : std_logic_vector(COLOR_DEPTH_G-1 downto 0);
-    b : std_logic_vector(COLOR_DEPTH_B-1 downto 0);
-  end record rgb_t;
+  end record pos_t;
 
   -- represents horizontal and vertical sync signals
   type sync_t is record
@@ -65,5 +58,16 @@ package rygar is
     vsync : std_logic;
   end record sync_t;
 
-  subtype byte_t is std_logic_vector(7 downto 0);
-end package rygar;
+  -- represents horizontal and vertical blank signals
+  type blank_t is record
+    hblank : std_logic;
+    vblank : std_logic;
+  end record blank_t;
+
+  -- represents a RGB colour value
+  type rgb_t is record
+    r : std_logic_vector(COLOR_DEPTH_R-1 downto 0);
+    g : std_logic_vector(COLOR_DEPTH_G-1 downto 0);
+    b : std_logic_vector(COLOR_DEPTH_B-1 downto 0);
+  end record rgb_t;
+end package types;
