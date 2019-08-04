@@ -50,11 +50,13 @@ entity scroll is
     ram_dout : out byte_t;
     ram_we   : in std_logic;
 
-    -- video position
-    video_pos : in pos_t;
+    -- video signals
+    video_pos  : in pos_t;
+    video_sync : in sync_t;
 
-    -- horizontal scroll position
-    scroll_pos : in unsigned(8 downto 0);
+    -- scroll position
+    scroll_hpos : in unsigned(8 downto 0);
+    scroll_vpos : in unsigned(7 downto 0);
 
     -- palette index output
     data : out byte_t
@@ -90,18 +92,16 @@ architecture arch of scroll is
   -- pixel data
   signal pixel : nibble_t;
 
-  signal pos_x : unsigned(2 downto 0);
-
+  -- horizontal/vertical counters
   signal hpos : unsigned(8 downto 0);
+  signal vpos : unsigned(7 downto 0);
 
   -- extract the components of the video position vectors
   alias col      : unsigned(4 downto 0) is hpos(8 downto 4);
-  alias row      : unsigned(3 downto 0) is video_pos.y(7 downto 4);
+  alias row      : unsigned(3 downto 0) is vpos(7 downto 4);
   alias offset_x : unsigned(3 downto 0) is hpos(3 downto 0);
-  alias offset_y : unsigned(3 downto 0) is video_pos.y(3 downto 0);
+  alias offset_y : unsigned(3 downto 0) is vpos(3 downto 0);
 begin
-  hpos <= video_pos.x(7 downto 0) + scroll_pos + 48;
-
   -- The tile RAM (1kB) contains the code and colour of each tile in the
   -- tilemap.
   --
@@ -186,10 +186,33 @@ begin
     end if;
   end process;
 
-  pos_x <= offset_x(3 downto 1)+1;
+  -- horizontal position counter
+  hpos_counter : process (clk)
+  begin
+    if rising_edge(clk) then
+      if cen = '1' then
+        if video_sync.hsync = '1' then
+          -- initialise horizontal position with the current scroll position
+          hpos <= scroll_hpos + 16;
+        else
+          hpos <= hpos + 1;
+        end if;
+      end if;
+    end if;
+  end process;
+
+  -- calculate vertical position
+  vpos <= video_pos.y(7 downto 0) + scroll_vpos;
 
   -- load graphics data from the tile ROM
-  tile_rom_addr <= std_logic_vector(code & video_pos.y(3) & pos_x(2) & video_pos.y(2 downto 0) & pos_x(1 downto 0));
+  tile_rom_block : block
+    signal x : unsigned(2 downto 0);
+    signal y : unsigned(3 downto 0);
+  begin
+    x <= offset_x(3 downto 1)+1;
+    y <= offset_y(3 downto 0);
+    tile_rom_addr <= std_logic_vector(code & y(3) & x(2) & y(2 downto 0) & x(1 downto 0));
+  end block;
 
   -- Latch the graphics data from the tile ROM when rendering odd pixels (i.e.
   -- the second pixel in every pair of pixels).

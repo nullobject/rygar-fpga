@@ -97,8 +97,10 @@ architecture arch of rygar_top is
   signal current_bank : unsigned(3 downto 0);
 
   -- scroll position registers
-  signal fg_scroll_pos : unsigned(15 downto 0);
-  signal bg_scroll_pos : unsigned(15 downto 0);
+  signal fg_scroll_hpos : unsigned(8 downto 0);
+  signal fg_scroll_vpos : unsigned(7 downto 0);
+  signal bg_scroll_hpos : unsigned(8 downto 0);
+  signal bg_scroll_vpos : unsigned(7 downto 0);
 
   -- video signals
   signal video_pos   : pos_t;
@@ -267,7 +269,7 @@ begin
 
   -- Setting the bank register changes the currently selected bank of program
   -- ROM 3.
-  bank_register : process (clk_12)
+  current_bank_register : process (clk_12)
   begin
     if rising_edge(clk_12) then
       if bank_cs = '1' and cpu_wr_n = '0' then
@@ -277,32 +279,32 @@ begin
     end if;
   end process;
 
-  -- The foreground scroll position is stored in a 16-bit register. The high
-  -- and low bytes are written separately by the CPU.
-  fg_scroll_register : process (clk_12)
+  -- Set the foreground horizontal and vertical scroll position registers.
+  fg_scroll_pos_register : process (clk_12)
   begin
     if rising_edge(clk_12) then
       if fg_scroll_cs = '1' and cpu_wr_n = '0' then
-        if cpu_addr(0) = '1' then
-          fg_scroll_pos(15 downto 8) <= unsigned(cpu_dout(7 downto 0));
-        else
-          fg_scroll_pos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
-        end if;
+        case cpu_addr(1 downto 0) is
+          when "00" => fg_scroll_hpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
+          when "01" => fg_scroll_hpos(8 downto 8) <= unsigned(cpu_dout(0 downto 0));
+          when "10" => fg_scroll_vpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
+          when others => null;
+        end case;
       end if;
     end if;
   end process;
 
-  -- The background scroll position is stored in a 16-bit register. The high
-  -- and low bytes are written separately by the CPU.
-  bg_scroll_register : process (clk_12)
+  -- Set the background horizontal and vertical scroll position registers.
+  bg_scroll_pos_register : process (clk_12)
   begin
     if rising_edge(clk_12) then
       if bg_scroll_cs = '1' and cpu_wr_n = '0' then
-        if cpu_addr(0) = '1' then
-          bg_scroll_pos(15 downto 8) <= unsigned(cpu_dout(7 downto 0));
-        else
-          bg_scroll_pos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
-        end if;
+        case cpu_addr(1 downto 0) is
+          when "00" => bg_scroll_hpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
+          when "01" => bg_scroll_hpos(8 downto 8) <= unsigned(cpu_dout(0 downto 0));
+          when "10" => bg_scroll_vpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
+          when others => null;
+        end case;
       end if;
     end if;
   end process;
@@ -329,16 +331,18 @@ begin
     ROM_INIT_FILE  => "rom/fg.mif"
   )
   port map (
-    clk        => clk_12,
-    cen        => cen_6,
-    ram_cs     => fg_ram_cs,
-    ram_addr   => cpu_addr(FG_RAM_ADDR_WIDTH-1 downto 0),
-    ram_din    => cpu_dout,
-    ram_dout   => fg_ram_dout,
-    ram_we     => not cpu_wr_n,
-    video_pos  => video_pos,
-    scroll_pos => fg_scroll_pos(8 downto 0),
-    data       => fg_data
+    clk         => clk_12,
+    cen         => cen_6,
+    ram_cs      => fg_ram_cs,
+    ram_addr    => cpu_addr(FG_RAM_ADDR_WIDTH-1 downto 0),
+    ram_din     => cpu_dout,
+    ram_dout    => fg_ram_dout,
+    ram_we      => not cpu_wr_n,
+    video_pos   => video_pos,
+    video_sync  => video_sync,
+    scroll_hpos => fg_scroll_hpos,
+    scroll_vpos => fg_scroll_vpos,
+    data        => fg_data
   );
 
   -- colour palette
