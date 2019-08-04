@@ -79,6 +79,8 @@ architecture arch of rygar_top is
   signal sprite_ram_cs  : std_logic;
   signal palette_ram_cs : std_logic;
   signal bank_cs        : std_logic;
+  signal fg_scroll_cs   : std_logic;
+  signal bg_scroll_cs   : std_logic;
 
   -- chip data output signals
   signal prog_rom_1_dout  : byte_t;
@@ -94,8 +96,11 @@ architecture arch of rygar_top is
   -- currently selected bank for program ROM 3
   signal current_bank : unsigned(3 downto 0);
 
-  -- fg horizontal offset
-  signal fg_offset : unsigned(8 downto 0);
+  -- scroll position registers
+  signal fg_scroll_hpos : unsigned(8 downto 0);
+  signal fg_scroll_vpos : unsigned(7 downto 0);
+  signal bg_scroll_hpos : unsigned(8 downto 0);
+  signal bg_scroll_vpos : unsigned(7 downto 0);
 
   -- video signals
   signal video_pos   : pos_t;
@@ -262,14 +267,43 @@ begin
     end if;
   end process;
 
-  -- Setting the bank register changes the currently selected bank of program
-  -- ROM 3.
-  bank_register : process (clk_12)
+  -- set current bank register
+  set_current_bank : process (clk_12)
   begin
     if rising_edge(clk_12) then
       if bank_cs = '1' and cpu_wr_n = '0' then
         -- flip-flop 6J uses data lines 3 to 6
         current_bank <= unsigned(cpu_dout(6 downto 3));
+      end if;
+    end if;
+  end process;
+
+  -- set foreground horizontal and vertical scroll position registers
+  set_fg_scroll_pos : process (clk_12)
+  begin
+    if rising_edge(clk_12) then
+      if fg_scroll_cs = '1' and cpu_wr_n = '0' then
+        case cpu_addr(1 downto 0) is
+          when "00" => fg_scroll_hpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
+          when "01" => fg_scroll_hpos(8 downto 8) <= unsigned(cpu_dout(0 downto 0));
+          when "10" => fg_scroll_vpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
+          when others => null;
+        end case;
+      end if;
+    end if;
+  end process;
+
+  -- set background horizontal and vertical scroll position registers
+  set_bg_scroll_pos : process (clk_12)
+  begin
+    if rising_edge(clk_12) then
+      if bg_scroll_cs = '1' and cpu_wr_n = '0' then
+        case cpu_addr(1 downto 0) is
+          when "00" => bg_scroll_hpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
+          when "01" => bg_scroll_hpos(8 downto 8) <= unsigned(cpu_dout(0 downto 0));
+          when "10" => bg_scroll_vpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
+          when others => null;
+        end case;
       end if;
     end if;
   end process;
@@ -296,16 +330,18 @@ begin
     ROM_INIT_FILE  => "rom/fg.mif"
   )
   port map (
-    clk       => clk_12,
-    cen       => cen_6,
-    ram_cs    => fg_ram_cs,
-    ram_addr  => cpu_addr(FG_RAM_ADDR_WIDTH-1 downto 0),
-    ram_din   => cpu_dout,
-    ram_dout  => fg_ram_dout,
-    ram_we    => not cpu_wr_n,
-    video_pos => video_pos,
-    offset    => fg_offset,
-    data      => fg_data
+    clk         => clk_12,
+    cen         => cen_6,
+    ram_cs      => fg_ram_cs,
+    ram_addr    => cpu_addr(FG_RAM_ADDR_WIDTH-1 downto 0),
+    ram_din     => cpu_dout,
+    ram_dout    => fg_ram_dout,
+    ram_we      => not cpu_wr_n,
+    video_pos   => video_pos,
+    video_sync  => video_sync,
+    scroll_hpos => fg_scroll_hpos,
+    scroll_vpos => fg_scroll_vpos,
+    data        => fg_data
   );
 
   -- colour palette
@@ -343,6 +379,8 @@ begin
   sprite_ram_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"e000" and unsigned(cpu_addr) <= x"e7ff" else '0';
   palette_ram_cs <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"e800" and unsigned(cpu_addr) <= x"efff" else '0';
   prog_rom_3_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"f000" and unsigned(cpu_addr) <= x"f7ff" else '0';
+  fg_scroll_cs   <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"f800" and unsigned(cpu_addr) <= x"f801" else '0';
+  bg_scroll_cs   <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"f803" and unsigned(cpu_addr) <= x"f804" else '0';
   bank_cs        <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) = x"f808" else '0';
 
   -- CPU data input bus

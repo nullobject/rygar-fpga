@@ -24,12 +24,13 @@ use ieee.numeric_std.all;
 
 use work.types.all;
 
--- The scroll layer is a 32x16 grid of 16x16 tiles. It is used to render the
--- foreground and background scrolling graphics layers.
+-- This module handles the scrolling layers in the graphics pipeline. It is
+-- a 32x16 grid of 16x16 tiles, used to render the foreground and background
+-- scrolling layers.
 --
--- Because the scroll layer is twice the width of the screen, not all it is
--- visible on the screen at once. The scroll offset is used to offset the
--- visible area on the horizontal axis.
+-- Because a scrolling layer is twice the width of the screen, it can never be
+-- entirely visible on the screen at once. The horizontal and vertical scroll
+-- positions are used to set the position of the visible area.
 entity scroll is
   generic (
     RAM_ADDR_WIDTH : natural;
@@ -50,11 +51,13 @@ entity scroll is
     ram_dout : out byte_t;
     ram_we   : in std_logic;
 
-    -- video position
-    video_pos : in pos_t;
+    -- video signals
+    video_pos  : in pos_t;
+    video_sync : in sync_t;
 
-    -- horizontal offset (in pixels)
-    offset : in unsigned(8 downto 0);
+    -- horizontal and vertical scroll positions
+    scroll_hpos : in unsigned(8 downto 0);
+    scroll_vpos : in unsigned(7 downto 0);
 
     -- palette index output
     data : out byte_t
@@ -70,15 +73,10 @@ architecture arch of scroll is
   signal tile_rom_addr : std_logic_vector(ROM_ADDR_WIDTH-1 downto 0);
   signal tile_rom_dout : byte_t;
 
-  -- The register that contains the colour and code of the next tile to be
-  -- rendered.
-  --
-  -- The 16-bit tile data words aren't stored contiguously in RAM, instead they
-  -- are split into high and low bytes. The high bytes are stored in the
-  -- upper-half of the RAM, while the low bytes are stored in the lower-half.
+  -- tile colour and code
   signal tile_data : std_logic_vector(15 downto 0);
 
-  -- The register that contains next two 4-bit pixels to be rendered.
+  -- graphics data
   signal gfx_data : byte_t;
 
   -- tile code
@@ -90,16 +88,21 @@ architecture arch of scroll is
   -- pixel data
   signal pixel : nibble_t;
 
-  signal pos_x : unsigned(2 downto 0);
+  -- horizontal and vertical position
+  signal hpos : unsigned(8 downto 0);
+  signal vpos : unsigned(7 downto 0);
 
-  -- extract the components of the video position vectors
-  alias col      : unsigned(3 downto 0) is video_pos.x(7 downto 4);
-  alias row      : unsigned(3 downto 0) is video_pos.y(7 downto 4);
-  alias offset_x : unsigned(3 downto 0) is video_pos.x(3 downto 0);
-  alias offset_y : unsigned(3 downto 0) is video_pos.y(3 downto 0);
+  -- aliases to extract the components of the horizontal and vertical position
+  alias col      : unsigned(4 downto 0) is hpos(8 downto 4);
+  alias row      : unsigned(3 downto 0) is vpos(7 downto 4);
+  alias offset_x : unsigned(3 downto 0) is hpos(3 downto 0);
+  alias offset_y : unsigned(3 downto 0) is vpos(3 downto 0);
 begin
   -- The tile RAM (1kB) contains the code and colour of each tile in the
   -- tilemap.
+  --
+  -- Each tile in the tilemap is represented by two bytes in the character RAM,
+  -- a high byte and a low byte, which contains the tile colour and code.
   --
   -- It has been implemented as a dual-port RAM because both the CPU and the
   -- graphics pipeline need to access the RAM concurrently. Ports A and B are
@@ -129,11 +132,14 @@ begin
     dout_b => scroll_ram_dout_b
   );
 
-  -- The tile ROM contains the pixel data for the tiles.
+  -- The tile ROM contains the actual pixel data for the tiles.
   --
-  -- Each 16x16 tile contains four bitplanes, and each bitplane takes up 32
-  -- bytes (one byte per row). This means that every tile takes up exactly 128
-  -- bytes in the ROM.
+  -- Each 16x16 tile is made up of four separate 8x8 tiles, stored in
+  -- a left-to-right, top-to-bottom order.
+  --
+  -- Each 8x8 tile is composed of four layers of pixel data (bitplanes). This
+  -- means that each row in a 8x8 tile takes up exactly four bytes, for a total
+  -- of 32 bytes per tile.
   tile_rom : entity work.single_port_rom
   generic map (
     ADDR_WIDTH => ROM_ADDR_WIDTH,
@@ -145,25 +151,50 @@ begin
     dout => tile_rom_dout
   );
 
-  -- Load the tile data from the scroll RAM.
+  -- Update horizontal position.
   --
-  -- The tile data needs to be fetched *before* rendering it to the screen.
-  -- This means that we need to be fetching the data for the next tile, while
-  -- the current tile is being rendered.
+  -- During a HSYNC, the horizontal position is reset to the current horizontal
+  -- scroll position. Otherwise, we just increment it at every clock tick.
+  hpos_counter : process (clk)
+  begin
+    if rising_edge(clk) then
+      if cen = '1' then
+        if video_sync.hsync = '1' then
+          hpos <= scroll_hpos;
+        else
+          hpos <= hpos + 1;
+        end if;
+      end if;
+    end if;
+  end process;
+
+  -- Update vertical position.
+  --
+  -- This is just the sum of the vertical screen and scroll positions.
+  vpos <= video_pos.y(7 downto 0) + scroll_vpos;
+
+  -- Load tile data from the scroll RAM.
+  --
+  -- While the current tile is being rendered, we need to fetch data for the
+  -- next tile ahead, so that it is loaded in time to render it on the screen.
+  --
+  -- The 16-bit tile data words aren't stored contiguously in RAM, instead they
+  -- are split into high and low bytes. The high bytes are stored in the
+  -- upper-half of the RAM, while the low bytes are stored in the lower-half.
   tile_data_pipeline : process (clk)
   begin
     if rising_edge(clk) then
       case to_integer(offset_x) is
         when 10 =>
-          -- load high byte from the scroll RAM
-          scroll_ram_addr_b <= std_logic_vector('1' & row & '0' & col);
+          -- load high byte for the next tile
+          scroll_ram_addr_b <= std_logic_vector('1' & row & (col+1));
 
         when 11 =>
           -- latch high byte
           tile_data(15 downto 8) <= scroll_ram_dout_b;
 
-          -- load low byte from the scroll RAM
-          scroll_ram_addr_b <= std_logic_vector('0' & row & '0' & col);
+          -- load low byte for the next tile
+          scroll_ram_addr_b <= std_logic_vector('0' & row & (col+1));
 
         when 12 =>
           -- latch low byte
@@ -182,24 +213,34 @@ begin
     end if;
   end process;
 
-  pos_x <= offset_x(3 downto 1)+1;
+  -- Load graphics data from the tile ROM.
+  --
+  -- While the current two pixels are being rendered, we need to fetch data for
+  -- the next two pixels ahead, so they are loaded in time to render them
+  -- on the screen.
+  load_gfx_data : block
+    signal x : unsigned(2 downto 0);
+    signal y : unsigned(3 downto 0);
+  begin
+    x <= offset_x(3 downto 1)+1;
+    y <= offset_y(3 downto 0);
 
-  -- load graphics data from the tile ROM
-  tile_rom_addr <= std_logic_vector(code & video_pos.y(3) & pos_x(2) & video_pos.y(2 downto 0) & pos_x(1 downto 0));
+    tile_rom_addr <= std_logic_vector(code & y(3) & x(2) & y(2 downto 0) & x(1 downto 0));
+  end block;
 
   -- Latch the graphics data from the tile ROM when rendering odd pixels (i.e.
   -- the second pixel in every pair of pixels).
   latch_gfx_data : process (clk)
   begin
     if rising_edge(clk) then
-      if video_pos.x(0) = '1' then
+      if hpos(0) = '1' then
         gfx_data <= tile_rom_dout;
       end if;
     end if;
   end process;
 
   -- decode high/low pixels from the graphics data
-  pixel <= gfx_data(7 downto 4) when video_pos.x(0) = '1' else gfx_data(3 downto 0);
+  pixel <= gfx_data(7 downto 4) when hpos(0) = '1' else gfx_data(3 downto 0);
 
   -- output data
   data <= color & pixel;

@@ -24,18 +24,9 @@ use ieee.numeric_std.all;
 
 use work.types.all;
 
--- This module handles the character layer in the graphics pipeline.
---
--- The character layer is a 32x32 tilemap of 8x8 tiles, used to render things
--- like the logo, score, playfield, and other static graphics.
---
--- Each tile in the tilemap is represented by two bytes in the character RAM,
--- a high byte and a low byte, which contains both the tile colour and code.
---
--- The tile code points to the actual pixel data stored in the tile ROM. Each
--- 8x8 tile is composed of four layers of pixel data (bitplanes). This means
--- that each row in the 8x8 tile takes up exactly four bytes, for a total of 32
--- bytes per tile.
+-- This module handles the character layer in the graphics pipeline. It is
+-- a 32x32 grid of 8x8 tiles, used to render things like the logo, score,
+-- playfield, and other static graphics.
 entity char is
   port (
     -- input clock
@@ -68,15 +59,10 @@ architecture arch of char is
   signal tile_rom_addr : std_logic_vector(CHAR_ROM_ADDR_WIDTH-1 downto 0);
   signal tile_rom_dout : byte_t;
 
-  -- The register that contains the colour and code of the next tile to be
-  -- rendered.
-  --
-  -- The 16-bit tile data words aren't stored contiguously in RAM, instead they
-  -- are split into high and low bytes. The high bytes are stored in the
-  -- upper-half of the RAM, while the low bytes are stored in the lower-half.
+  -- tile colour and code
   signal tile_data : std_logic_vector(15 downto 0);
 
-  -- The register that contains next two 4-bit pixels to be rendered.
+  -- graphics data
   signal gfx_data : byte_t;
 
   -- tile code
@@ -88,7 +74,7 @@ architecture arch of char is
   -- pixel data
   signal pixel : nibble_t;
 
-  -- extract the components of the video position vectors
+  -- aliases to extract the components of the horizontal and vertical position
   alias col      : unsigned(4 downto 0) is video_pos.x(7 downto 3);
   alias row      : unsigned(4 downto 0) is video_pos.y(7 downto 3);
   alias offset_x : unsigned(2 downto 0) is video_pos.x(2 downto 0);
@@ -96,6 +82,9 @@ architecture arch of char is
 begin
   -- The character RAM (2kB) contains the code and colour of each tile in the
   -- tilemap.
+  --
+  -- Each tile in the tilemap is represented by two bytes in the character RAM,
+  -- a high byte and a low byte, which contains the tile colour and code.
   --
   -- It has been implemented as a dual-port RAM because both the CPU and the
   -- graphics pipeline need to access the RAM concurrently. Ports A and B are
@@ -125,7 +114,11 @@ begin
     dout_b => char_ram_dout_b
   );
 
-  -- The tile ROM contains the pixel data for the tiles.
+  -- The tile ROM contains the actual pixel data for the tiles.
+  --
+  -- Each 8x8 tile is composed of four layers of pixel data (bitplanes). This
+  -- means that each row in a 8x8 tile takes up exactly four bytes, for a total
+  -- of 32 bytes per tile.
   tile_rom : entity work.single_port_rom
   generic map (
     ADDR_WIDTH => CHAR_ROM_ADDR_WIDTH,
@@ -137,25 +130,24 @@ begin
     dout => tile_rom_dout
   );
 
-  -- Load the tile data from the character RAM.
+  -- Load tile data from the character RAM.
   --
-  -- The tile data needs to be fetched *before* rendering it to the screen.
-  -- This means that we need to be fetching the data for the next tile, while
-  -- the current tile is being rendered.
+  -- While the current tile is being rendered, we need to fetch data for the
+  -- next tile ahead, so that it is loaded in time to render it on the screen.
   tile_data_pipeline : process (clk)
   begin
     if rising_edge(clk) then
       case to_integer(offset_x) is
         when 2 =>
-          -- load high byte from the char RAM
-          char_ram_addr_b <= std_logic_vector('1' & row & col);
+          -- load high byte for the next tile
+          char_ram_addr_b <= std_logic_vector('1' & row & (col+1));
 
         when 3 =>
           -- latch high byte
           tile_data(15 downto 8) <= char_ram_dout_b;
 
-          -- load low byte from the char RAM
-          char_ram_addr_b <= std_logic_vector('0' & row & col);
+          -- load low byte for the next tile
+          char_ram_addr_b <= std_logic_vector('0' & row & (col+1));
 
         when 4 =>
           -- latch low byte
@@ -174,8 +166,20 @@ begin
     end if;
   end process;
 
-  -- load graphics data from the tile ROM
-  tile_rom_addr <= std_logic_vector(code & offset_y & (offset_x(2 downto 1)+1));
+  -- Load graphics data from the tile ROM.
+  --
+  -- While the current two pixels are being rendered, we need to fetch data for
+  -- the next two pixels ahead, so they are loaded in time to render them
+  -- on the screen.
+  load_gfx_data : block
+    signal x : unsigned(1 downto 0);
+    signal y : unsigned(2 downto 0);
+  begin
+    x <= offset_x(2 downto 1)+1;
+    y <= offset_y(2 downto 0);
+
+    tile_rom_addr <= std_logic_vector(code & y & x);
+  end block;
 
   -- Latch the graphics data from the tile ROM when rendering odd pixels (i.e.
   -- the second pixel in every pair of pixels).
