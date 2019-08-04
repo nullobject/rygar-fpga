@@ -209,18 +209,6 @@ begin
     we   => not cpu_wr_n
   );
 
-  -- sprite RAM
-  sprite_ram : entity work.single_port_ram
-  generic map (ADDR_WIDTH => SPRITE_RAM_ADDR_WIDTH)
-  port map (
-    clk  => clk_12,
-    cs   => sprite_ram_cs,
-    addr => cpu_addr(SPRITE_RAM_ADDR_WIDTH-1 downto 0),
-    din  => cpu_dout,
-    dout => sprite_ram_dout,
-    we   => not cpu_wr_n
-  );
-
   -- main CPU
   cpu : entity work.T80s
   port map (
@@ -342,6 +330,18 @@ begin
     scroll_hpos => fg_scroll_hpos,
     scroll_vpos => fg_scroll_vpos,
     data        => fg_data
+  );
+
+  -- sprite layer
+  sprite : entity work.sprite
+  port map (
+    clk       => clk_12,
+    cen       => cen_6,
+    ram_cs    => sprite_ram_cs,
+    ram_addr  => cpu_addr(SPRITE_RAM_ADDR_WIDTH-1 downto 0),
+    ram_din   => cpu_dout,
+    ram_dout  => sprite_ram_dout,
+    ram_we    => not cpu_wr_n
   );
 
   -- colour palette
