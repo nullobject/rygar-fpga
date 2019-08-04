@@ -72,12 +72,6 @@ architecture struct of sync_gen is
   constant V_BACK_PORCH  : natural := 16;
   constant V_SCAN        : natural := V_DISPLAY+V_FRONT_PORCH+V_RETRACE+V_BACK_PORCH; -- 264
 
-  -- The horizontal position is offset by 8, because the graphics data for the
-  -- first 8x8 tile in the scanline needs to be preloaded. i.e. When rendering
-  -- the current tile, we want to fetch the graphics data for the next tile
-  -- ahead.
-  constant H_OFFSET : natural := 8;
-
   -- horizontal/vertical counter starting values
   constant H_START : natural := 128;
   constant V_START : natural := 248;
@@ -140,6 +134,6 @@ begin
     end if;
   end process;
 
-  pos.x <= to_unsigned(x+H_OFFSET, pos.x'length);
+  pos.x <= to_unsigned(x, pos.x'length);
   pos.y <= to_unsigned(y, pos.y'length);
 end architecture;

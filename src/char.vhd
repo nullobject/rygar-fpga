@@ -140,14 +140,14 @@ begin
       case to_integer(offset_x) is
         when 2 =>
           -- load high byte for the next tile
-          char_ram_addr_b <= std_logic_vector('1' & row & col);
+          char_ram_addr_b <= std_logic_vector('1' & row & (col+1));
 
         when 3 =>
           -- latch high byte
           tile_data(15 downto 8) <= char_ram_dout_b;
 
           -- load low byte for the next tile
-          char_ram_addr_b <= std_logic_vector('0' & row & col);
+          char_ram_addr_b <= std_logic_vector('0' & row & (col+1));
 
         when 4 =>
           -- latch low byte
