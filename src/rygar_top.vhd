@@ -80,6 +80,7 @@ architecture arch of rygar_top is
   signal palette_ram_cs : std_logic;
   signal bank_cs        : std_logic;
   signal fg_scroll_cs   : std_logic;
+  signal bg_scroll_cs   : std_logic;
 
   -- chip data output signals
   signal prog_rom_1_dout  : byte_t;
@@ -95,8 +96,9 @@ architecture arch of rygar_top is
   -- currently selected bank for program ROM 3
   signal current_bank : unsigned(3 downto 0);
 
-  -- fg horizontal scroll position
+  -- scroll position registers
   signal fg_scroll_pos : unsigned(15 downto 0);
+  signal bg_scroll_pos : unsigned(15 downto 0);
 
   -- video signals
   signal video_pos   : pos_t;
@@ -290,6 +292,21 @@ begin
     end if;
   end process;
 
+  -- The background scroll position is stored in a 16-bit register. The high
+  -- and low bytes are written separately by the CPU.
+  bg_scroll_register : process (clk_12)
+  begin
+    if rising_edge(clk_12) then
+      if bg_scroll_cs = '1' and cpu_wr_n = '0' then
+        if cpu_addr(0) = '1' then
+          bg_scroll_pos(15 downto 8) <= unsigned(cpu_dout(7 downto 0));
+        else
+          bg_scroll_pos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
+        end if;
+      end if;
+    end if;
+  end process;
+
   -- character layer
   char : entity work.char
   port map (
@@ -360,6 +377,7 @@ begin
   palette_ram_cs <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"e800" and unsigned(cpu_addr) <= x"efff" else '0';
   prog_rom_3_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"f000" and unsigned(cpu_addr) <= x"f7ff" else '0';
   fg_scroll_cs   <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"f800" and unsigned(cpu_addr) <= x"f801" else '0';
+  bg_scroll_cs   <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"f803" and unsigned(cpu_addr) <= x"f804" else '0';
   bank_cs        <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) = x"f808" else '0';
 
   -- CPU data input bus
