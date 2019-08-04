@@ -28,7 +28,7 @@ use work.types.all;
 -- foreground and background scrolling graphics layers.
 --
 -- Because the scroll layer is twice the width of the screen, not all it is
--- visible on the screen at once. The scroll offset is used to offset the
+-- visible on the screen at once. The scroll position is used to offset the
 -- visible area on the horizontal axis.
 entity scroll is
   generic (
@@ -53,8 +53,8 @@ entity scroll is
     -- video position
     video_pos : in pos_t;
 
-    -- horizontal offset (in pixels)
-    offset : in unsigned(8 downto 0);
+    -- horizontal scroll position
+    scroll_pos : in unsigned(8 downto 0);
 
     -- palette index output
     data : out byte_t
@@ -92,12 +92,16 @@ architecture arch of scroll is
 
   signal pos_x : unsigned(2 downto 0);
 
+  signal hpos : unsigned(8 downto 0);
+
   -- extract the components of the video position vectors
-  alias col      : unsigned(3 downto 0) is video_pos.x(7 downto 4);
+  alias col      : unsigned(4 downto 0) is hpos(8 downto 4);
   alias row      : unsigned(3 downto 0) is video_pos.y(7 downto 4);
-  alias offset_x : unsigned(3 downto 0) is video_pos.x(3 downto 0);
+  alias offset_x : unsigned(3 downto 0) is hpos(3 downto 0);
   alias offset_y : unsigned(3 downto 0) is video_pos.y(3 downto 0);
 begin
+  hpos <= video_pos.x(7 downto 0) + scroll_pos + 48;
+
   -- The tile RAM (1kB) contains the code and colour of each tile in the
   -- tilemap.
   --
@@ -156,14 +160,14 @@ begin
       case to_integer(offset_x) is
         when 10 =>
           -- load high byte from the scroll RAM
-          scroll_ram_addr_b <= std_logic_vector('1' & row & '0' & col);
+          scroll_ram_addr_b <= std_logic_vector('1' & row & col);
 
         when 11 =>
           -- latch high byte
           tile_data(15 downto 8) <= scroll_ram_dout_b;
 
           -- load low byte from the scroll RAM
-          scroll_ram_addr_b <= std_logic_vector('0' & row & '0' & col);
+          scroll_ram_addr_b <= std_logic_vector('0' & row & col);
 
         when 12 =>
           -- latch low byte
@@ -192,14 +196,14 @@ begin
   latch_gfx_data : process (clk)
   begin
     if rising_edge(clk) then
-      if video_pos.x(0) = '1' then
+      if hpos(0) = '1' then
         gfx_data <= tile_rom_dout;
       end if;
     end if;
   end process;
 
   -- decode high/low pixels from the graphics data
-  pixel <= gfx_data(7 downto 4) when video_pos.x(0) = '1' else gfx_data(3 downto 0);
+  pixel <= gfx_data(7 downto 4) when hpos(0) = '1' else gfx_data(3 downto 0);
 
   -- output data
   data <= color & pixel;
