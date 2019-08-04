@@ -267,9 +267,8 @@ begin
     end if;
   end process;
 
-  -- Setting the bank register changes the currently selected bank of program
-  -- ROM 3.
-  current_bank_register : process (clk_12)
+  -- set current bank register
+  set_current_bank : process (clk_12)
   begin
     if rising_edge(clk_12) then
       if bank_cs = '1' and cpu_wr_n = '0' then
@@ -279,8 +278,8 @@ begin
     end if;
   end process;
 
-  -- Set the foreground horizontal and vertical scroll position registers.
-  fg_scroll_pos_register : process (clk_12)
+  -- set foreground horizontal and vertical scroll position registers
+  set_fg_scroll_pos : process (clk_12)
   begin
     if rising_edge(clk_12) then
       if fg_scroll_cs = '1' and cpu_wr_n = '0' then
@@ -294,8 +293,8 @@ begin
     end if;
   end process;
 
-  -- Set the background horizontal and vertical scroll position registers.
-  bg_scroll_pos_register : process (clk_12)
+  -- set background horizontal and vertical scroll position registers
+  set_bg_scroll_pos : process (clk_12)
   begin
     if rising_edge(clk_12) then
       if bg_scroll_cs = '1' and cpu_wr_n = '0' then
