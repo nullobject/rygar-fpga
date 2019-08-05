@@ -73,6 +73,7 @@ package types is
 
   -- represents a sprite
   type sprite_t is record
+    bank     : unsigned(3 downto 0);
     code     : unsigned(7 downto 0);
     color    : unsigned(3 downto 0);
     enable   : std_logic;

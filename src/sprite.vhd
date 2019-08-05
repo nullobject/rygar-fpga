@@ -24,6 +24,29 @@ use ieee.numeric_std.all;
 
 use work.types.all;
 
+-- This module handles the sprite layer in the graphics pipeline.
+--
+-- All sprites are composed from multiple 8x8 tiles. There are three possible
+-- sprite sizes: 8x8, 16x16, and 32x32.
+--
+-- Each sprite is represented by eight bytes in the sprite RAM:
+--
+--  byte     bit        description
+-- --------+-76543210-+----------------
+--       0 | xxxx---- | bank
+--         | -----x-- | enable
+--         | ------x- | flip y
+--         | -------x | flip x
+--       1 | xxxxxxxx | code
+--       2 | ------xx | size
+--       3 | xx-------| priority
+--         | --x----- | hi position y
+--         | ---x---- | hi position x
+--         | ----xxxx | colour
+--       4 | xxxxxxxx | lo position x
+--       5 | xxxxxxxx | lo position y
+--       6 | -------- |
+--       7 | -------- |
 entity sprite is
   port (
     -- input clock
@@ -45,6 +68,55 @@ architecture arch of sprite is
   constant SPRITE_RAM_ADDR_WIDTH_B : natural := 8;
   constant SPRITE_RAM_DATA_WIDTH_B : natural := 64;
 
+  -- byte 0
+  constant SPRITE_BANK_HI_BIT : natural := 7;
+  constant SPRITE_BANK_LO_BIT : natural := 4;
+  constant SPRITE_ENABLE_BIT  : natural := 2;
+  constant SPRITE_FLIP_Y_BIT  : natural := 1;
+  constant SPRITE_FLIP_X_BIT  : natural := 0;
+
+  -- byte 1
+  constant SPRITE_CODE_HI_BIT : natural := 15;
+  constant SPRITE_CODE_LO_BIT : natural := 8;
+
+  -- byte 2
+  constant SPRITE_SIZE_HI_BIT : natural := 17;
+  constant SPRITE_SIZE_LO_BIT : natural := 16;
+
+  -- byte 3
+  constant SPRITE_PRIORITY_HI_BIT : natural := 31;
+  constant SPRITE_PRIORITY_LO_BIT : natural := 30;
+  constant SPRITE_HI_POS_Y_BIT    : natural := 29;
+  constant SPRITE_HI_POS_X_BIT    : natural := 28;
+  constant SPRITE_COLOR_HI_BIT    : natural := 27;
+  constant SPRITE_COLOR_LO_BIT    : natural := 24;
+
+  -- byte 4
+  constant SPRITE_LO_POS_X_HI_BIT : natural := 39;
+  constant SPRITE_LO_POS_X_LO_BIT : natural := 32;
+
+  -- byte 5
+  constant SPRITE_LO_POS_Y_HI_BIT : natural := 47;
+  constant SPRITE_LO_POS_Y_LO_BIT : natural := 40;
+
+  -- initialise sprite from a raw 64-bit value
+  function init_sprite(data : std_logic_vector(SPRITE_RAM_DATA_WIDTH_B-1 downto 0)) return sprite_t is
+    variable sprite : sprite_t;
+  begin
+    sprite.bank     := unsigned(data(SPRITE_BANK_HI_BIT downto SPRITE_BANK_LO_BIT));
+    sprite.code     := unsigned(data(SPRITE_CODE_HI_BIT downto SPRITE_CODE_LO_BIT));
+    sprite.color    := unsigned(data(SPRITE_COLOR_HI_BIT downto SPRITE_COLOR_LO_BIT));
+    sprite.enable   := data(SPRITE_ENABLE_BIT);
+    sprite.flip_x   := data(SPRITE_FLIP_X_BIT);
+    sprite.flip_y   := data(SPRITE_FLIP_Y_BIT);
+    sprite.pos_x    := data(SPRITE_HI_POS_X_BIT) & unsigned(data(SPRITE_LO_POS_X_HI_BIT downto SPRITE_LO_POS_X_LO_BIT));
+    sprite.pos_y    := data(SPRITE_HI_POS_Y_BIT) & unsigned(data(SPRITE_LO_POS_Y_HI_BIT downto SPRITE_LO_POS_Y_LO_BIT));
+    sprite.priority := unsigned(data(SPRITE_PRIORITY_HI_BIT downto SPRITE_PRIORITY_LO_BIT));
+    sprite.size     := unsigned(data(SPRITE_SIZE_HI_BIT downto SPRITE_SIZE_LO_BIT));
+
+    return sprite;
+  end init_sprite;
+
   -- sprite RAM (port B)
   signal sprite_ram_addr_b : std_logic_vector(SPRITE_RAM_ADDR_WIDTH_B-1 downto 0);
   signal sprite_ram_dout_b : std_logic_vector(SPRITE_RAM_DATA_WIDTH_B-1 downto 0);
@@ -60,28 +132,6 @@ begin
   -- a single-port palette RAM. Using a dual-port RAM instead simplifies
   -- things, because we don't need all additional logic required to coordinate
   -- RAM access.
-  --
-  -- Each sprite is represented by eight bytes in the sprite RAM:
-  --
-  --  byte     bit        description
-  -- --------+-76543210-+----------------
-  --       0 | xxxx---- | bank
-  --         | -----x-- | enable
-  --         | ------x- | flip y
-  --         | -------x | flip x
-  --       1 | xxxxxxxx | code
-  --       2 | ------xx | size
-  --       3 | xx-------| priority
-  --         | --x----- | position y (hi)
-  --         | ---x---- | position x (hi)
-  --         | ----xxxx | colour
-  --       4 | xxxxxxxx | position x (lo)
-  --       5 | xxxxxxxx | position y (lo)
-  --       6 | -------- |
-  --       7 | -------- |
-  --
-  -- There are three possible sprite sizes: 8x8, 16x16, and 32x32. All sprites
-  -- are composed from a number of 8x8 tiles.
   sprite_ram : entity work.dual_port_ram
   generic map (
     ADDR_WIDTH_A => SPRITE_RAM_ADDR_WIDTH,
