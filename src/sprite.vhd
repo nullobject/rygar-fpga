@@ -42,28 +42,41 @@ entity sprite is
 end sprite;
 
 architecture arch of sprite is
+  constant SPRITE_RAM_ADDR_WIDTH_B : natural := 8;
+  constant SPRITE_RAM_DATA_WIDTH_B : natural := 64;
+
   -- sprite RAM (port B)
-  signal sprite_ram_addr_b : std_logic_vector(SPRITE_RAM_ADDR_WIDTH-1 downto 0);
-  signal sprite_ram_dout_b : byte_t;
+  signal sprite_ram_addr_b : std_logic_vector(SPRITE_RAM_ADDR_WIDTH_B-1 downto 0);
+  signal sprite_ram_dout_b : std_logic_vector(SPRITE_RAM_DATA_WIDTH_B-1 downto 0);
 begin
   -- The sprite RAM (2kB) contains the sprite data.
+  --
+  -- It has been implemented as a dual-port RAM because both the CPU and the
+  -- graphics pipeline need to access the RAM concurrently. Port A is 8-bits
+  -- wide and is connected to the CPU data bus. Port B is 64-bits wide and is
+  -- connected to the graphics pipeine.
+  --
+  -- This differs from the original arcade hardware, which only contains
+  -- a single-port palette RAM. Using a dual-port RAM instead simplifies
+  -- things, because we don't need all additional logic required to coordinate
+  -- RAM access.
   --
   -- Each sprite is represented by eight bytes in the sprite RAM:
   --
   --  byte     bit        description
   -- --------+-76543210-+----------------
   --       0 | xxxx---- | bank
-  --         | -----x-- | visible
+  --         | -----x-- | enable
   --         | ------x- | flip y
   --         | -------x | flip x
-  --       1 | xxxxxxxx | tile code
+  --       1 | xxxxxxxx | code
   --       2 | ------xx | size
   --       3 | xx-------| priority
-  --         | --x----- | upper y co-ord
-  --         | ---x---- | upper x co-ord
+  --         | --x----- | position y (hi)
+  --         | ---x---- | position x (hi)
   --         | ----xxxx | colour
-  --       4 | xxxxxxxx | ypos
-  --       5 | xxxxxxxx | xpos
+  --       4 | xxxxxxxx | position x (lo)
+  --       5 | xxxxxxxx | position y (lo)
   --       6 | -------- |
   --       7 | -------- |
   --
@@ -72,7 +85,8 @@ begin
   sprite_ram : entity work.dual_port_ram
   generic map (
     ADDR_WIDTH_A => SPRITE_RAM_ADDR_WIDTH,
-    ADDR_WIDTH_B => SPRITE_RAM_ADDR_WIDTH
+    ADDR_WIDTH_B => SPRITE_RAM_ADDR_WIDTH_B,
+    DATA_WIDTH_B => SPRITE_RAM_DATA_WIDTH_B
   )
   port map (
     -- port A

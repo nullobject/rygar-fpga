@@ -73,13 +73,14 @@ package types is
 
   -- represents a sprite
   type sprite_t is record
-    code : unsigned(7 downto 0);
-    color : unsigned(3 downto 0);
-    size : unsigned(1 downto 0);
+    code     : unsigned(7 downto 0);
+    color    : unsigned(3 downto 0);
+    enable   : std_logic;
+    flip_x   : std_logic;
+    flip_y   : std_logic;
+    pos_x    : unsigned(8 downto 0);
+    pos_y    : unsigned(8 downto 0);
     priority : unsigned(1 downto 0);
-    flip_x : std_logic;
-    flip_y : std_logic;
-    pos_x : unsigned(8 downto 0);
-    pos_y : unsigned(8 downto 0);
+    size     : unsigned(1 downto 0);
   end record sprite_t;
 end package types;

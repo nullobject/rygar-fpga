@@ -82,12 +82,15 @@ begin
     DATA_WIDTH_B => PALETTE_RAM_DATA_WIDTH_B
   )
   port map (
+    -- port A
     clk_a  => clk,
     cs_a   => ram_cs,
     addr_a => ram_addr,
     din_a  => ram_din,
     dout_a => ram_dout,
     we_a   => ram_we,
+
+    -- port B
     clk_b  => clk,
     addr_b => palette_ram_addr_b,
     dout_b => palette_ram_dout_b
