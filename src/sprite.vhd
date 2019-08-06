@@ -60,7 +60,14 @@ entity sprite is
     ram_addr : in std_logic_vector(SPRITE_RAM_ADDR_WIDTH-1 downto 0);
     ram_din  : in byte_t;
     ram_dout : out byte_t;
-    ram_we   : in std_logic
+    ram_we   : in std_logic;
+
+    -- video signals
+    video_pos   : in pos_t;
+    video_blank : in blank_t;
+
+    -- palette index output
+    data : out byte_t
   );
 end sprite;
 
@@ -120,6 +127,19 @@ architecture arch of sprite is
   -- sprite RAM (port B)
   signal sprite_ram_addr_b : std_logic_vector(SPRITE_RAM_ADDR_WIDTH_B-1 downto 0);
   signal sprite_ram_dout_b : std_logic_vector(SPRITE_RAM_DATA_WIDTH_B-1 downto 0);
+
+  -- frame buffer
+  signal frame_buffer_addr_rd : std_logic_vector(15 downto 0);
+  signal frame_buffer_addr_wr : std_logic_vector(15 downto 0);
+  signal frame_buffer_din     : std_logic_vector(7 downto 0);
+  signal frame_buffer_dout    : std_logic_vector(7 downto 0);
+  signal frame_buffer_flip    : std_logic;
+  signal frame_buffer_we      : std_logic;
+
+  signal vblank_falling : std_logic;
+
+  signal x : unsigned(7 downto 0);
+  signal y : unsigned(7 downto 0);
 begin
   -- The sprite RAM (2kB) contains the sprite data.
   --
@@ -152,4 +172,58 @@ begin
     addr_b => sprite_ram_addr_b,
     dout_b => sprite_ram_dout_b
   );
+
+  -- The sprite frame buffer contains two (256x256) pages of pixel data, which
+  -- can be swapped. While the sprites are being rendered to one page, the
+  -- other page is copied to the screen.
+  --
+  -- This is necessary because if we rendered the sprites to the same page that
+  -- was being copied to the screen, then any changes to the sprites could
+  -- cause graphical glitches.
+  --
+  -- TODO: When a location is read, it should be cleared to zero. That way the
+  -- page will already be empty when it is flipped.
+  sprite_frame_buffer : entity work.frame_buffer
+  generic map (ADDR_WIDTH => 16, DATA_WIDTH => 8)
+  port map (
+    clk  => clk,
+    flip => frame_buffer_flip,
+
+    -- read-only port
+    addr_rd => frame_buffer_addr_rd,
+    dout    => frame_buffer_dout,
+
+    -- write-only port
+    addr_wr => frame_buffer_addr_wr,
+    din     => frame_buffer_din,
+    we      => frame_buffer_we
+  );
+
+  vblank_edge_detector : entity work.edge_detector
+  generic map (FALLING => true)
+  port map (
+    clk  => clk,
+    data => video_blank.vblank,
+    edge => vblank_falling
+  );
+
+  page_flipper : process (clk)
+  begin
+    if rising_edge(clk) then
+      if vblank_falling = '1' then
+        frame_buffer_flip <= not frame_buffer_flip;
+      end if;
+    end if;
+  end process;
+
+  x <= video_pos.x(7 downto 0);
+  y <= video_pos.y(7 downto 0);
+
+  frame_buffer_addr_rd <= std_logic_vector(y & x);
+  frame_buffer_addr_wr <= std_logic_vector(y & x);
+  frame_buffer_din <= (others => '1');
+  frame_buffer_we <= '1' when x >= 32 and x < 64 and y >= 32 and y < 64 else '0';
+
+  -- output
+  data <= frame_buffer_dout;
 end architecture;

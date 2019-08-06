@@ -42,8 +42,9 @@ entity palette is
     ram_we   : in std_logic;
 
     -- graphics layer data
-    char_data : in byte_t;
-    fg_data   : in byte_t;
+    char_data   : in byte_t;
+    fg_data     : in byte_t;
+    sprite_data : in byte_t;
 
     -- horizontal and vertical blank
     video_blank : in blank_t;
@@ -101,7 +102,9 @@ begin
     if rising_edge(clk) then
       if cen = '1' then
         -- TODO: handle layer priority
-        if char_data(3 downto 0) /= "0000" then
+        if sprite_data(3 downto 0) /= "0000" then
+          palette_ram_addr_b <= "00" & sprite_data;
+        elsif char_data(3 downto 0) /= "0000" then
           palette_ram_addr_b <= "01" & char_data;
         else
           palette_ram_addr_b <= "10" & fg_data;

@@ -103,18 +103,18 @@ architecture arch of rygar_top is
   signal bg_scroll_vpos : unsigned(7 downto 0);
 
   -- video signals
-  signal video_pos   : pos_t;
-  signal video_sync  : sync_t;
-  signal video_blank : blank_t;
+  signal video_pos      : pos_t;
+  signal video_sync     : sync_t;
+  signal video_blank    : blank_t;
+  signal vblank_falling : std_logic;
 
   -- pixel data
   signal pixel : rgb_t;
 
-  signal vblank_falling : std_logic;
-
   -- graphics layer data
-  signal char_data : byte_t;
-  signal fg_data : byte_t;
+  signal char_data   : byte_t;
+  signal fg_data     : byte_t;
+  signal sprite_data : byte_t;
 begin
   my_pll : entity pll.pll
   port map (
@@ -335,13 +335,16 @@ begin
   -- sprite layer
   sprite : entity work.sprite
   port map (
-    clk       => clk_12,
-    cen       => cen_6,
-    ram_cs    => sprite_ram_cs,
-    ram_addr  => cpu_addr(SPRITE_RAM_ADDR_WIDTH-1 downto 0),
-    ram_din   => cpu_dout,
-    ram_dout  => sprite_ram_dout,
-    ram_we    => not cpu_wr_n
+    clk         => clk_12,
+    cen         => cen_6,
+    ram_cs      => sprite_ram_cs,
+    ram_addr    => cpu_addr(SPRITE_RAM_ADDR_WIDTH-1 downto 0),
+    ram_din     => cpu_dout,
+    ram_dout    => sprite_ram_dout,
+    ram_we      => not cpu_wr_n,
+    video_pos   => video_pos,
+    video_blank => video_blank,
+    data        => sprite_data
   );
 
   -- colour palette
@@ -356,6 +359,7 @@ begin
     ram_we      => not cpu_wr_n,
     char_data   => char_data,
     fg_data     => fg_data,
+    sprite_data => sprite_data,
     video_blank => video_blank,
     pixel       => pixel
   );

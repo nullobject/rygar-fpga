@@ -100,6 +100,7 @@ begin
     q_b       => q_b
   );
 
+  -- output
   dout_a <= q_a when cs_a = '1' else (others => '0');
   dout_b <= q_b when cs_b = '1' else (others => '0');
 end arch;
