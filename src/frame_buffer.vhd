@@ -51,11 +51,11 @@ entity frame_buffer is
 
     -- read-only port
     addr_rd : in std_logic_vector(ADDR_WIDTH-1 downto 0);
-    din     : in std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+    dout    : out std_logic_vector(DATA_WIDTH-1 downto 0);
 
     -- write-only port
     addr_wr : in std_logic_vector(ADDR_WIDTH-1 downto 0);
-    dout    : out std_logic_vector(DATA_WIDTH-1 downto 0);
+    din     : in std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
     we      : in std_logic := '0'
   );
 end frame_buffer;
@@ -64,28 +64,44 @@ architecture arch of frame_buffer is
   signal addr_a, addr_b : std_logic_vector(ADDR_WIDTH-1 downto 0);
   signal dout_a, dout_b : std_logic_vector(DATA_WIDTH-1 downto 0);
 begin
-  ram : entity work.true_dual_port_ram
+  page_a : entity work.dual_port_ram
   generic map (
-    ADDR_WIDTH_A => ADDR_WIDTH + 1,
-    ADDR_WIDTH_B => ADDR_WIDTH + 1,
-    DATA_WIDTH_A => DATA_WIDTH,
-    DATA_WIDTH_B => DATA_WIDTH
+    ADDR_WIDTH => ADDR_WIDTH,
+    DATA_WIDTH => DATA_WIDTH
   )
   port map (
-    clk_a  => clk,
-    clk_b  => clk,
-    addr_a => '0' & addr_a,
-    addr_b => '1' & addr_b,
-    din_a  => din,
-    din_b  => din,
-    dout_a => dout_a,
-    dout_b => dout_b,
-    we_a   => cs and we and flip,
-    we_b   => cs and we and (not flip)
+    clk => clk,
+
+    -- write-only port
+    addr_wr => addr_a,
+    din     => din,
+    we      => cs and we and flip,
+
+    -- read-only port
+    addr_rd => addr_a,
+    dout    => dout_a
+  );
+
+  page_b : entity work.dual_port_ram
+  generic map (
+    ADDR_WIDTH => ADDR_WIDTH,
+    DATA_WIDTH => DATA_WIDTH
+  )
+  port map (
+    clk => clk,
+
+    -- write-only port
+    addr_wr => addr_b,
+    din     => din,
+    we      => cs and we and (not flip),
+
+    -- read-only port
+    addr_rd => addr_b,
+    dout    => dout_b
   );
 
   addr_a <= addr_rd when flip = '0' else addr_wr;
-  addr_b <= addr_wr when flip = '0' else addr_rd;
+  addr_b <= addr_rd when flip = '1' else addr_wr;
 
   -- output
   dout <= dout_a when cs = '1' and flip = '0' else

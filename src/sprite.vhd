@@ -189,14 +189,14 @@ begin
     clk  => clk,
     flip => frame_buffer_flip,
 
-    -- read-only port
-    addr_rd => frame_buffer_addr_rd,
-    dout    => frame_buffer_dout,
-
     -- write-only port
     addr_wr => frame_buffer_addr_wr,
     din     => frame_buffer_din,
-    we      => frame_buffer_we
+    we      => frame_buffer_we,
+
+    -- read-only port
+    addr_rd => frame_buffer_addr_rd,
+    dout    => frame_buffer_dout
   );
 
   vblank_edge_detector : entity work.edge_detector
