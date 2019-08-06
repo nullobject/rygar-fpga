@@ -64,7 +64,7 @@ architecture arch of frame_buffer is
   signal addr_a, addr_b : std_logic_vector(ADDR_WIDTH-1 downto 0);
   signal dout_a, dout_b : std_logic_vector(DATA_WIDTH-1 downto 0);
 begin
-  ram : entity work.dual_port_ram
+  ram : entity work.true_dual_port_ram
   generic map (
     ADDR_WIDTH_A => ADDR_WIDTH + 1,
     ADDR_WIDTH_B => ADDR_WIDTH + 1,

@@ -24,7 +24,7 @@ use ieee.std_logic_1164.all;
 library altera_mf;
 use altera_mf.altera_mf_components.all;
 
-entity dual_port_ram is
+entity true_dual_port_ram is
   generic (
     ADDR_WIDTH_A : natural := 8;
     ADDR_WIDTH_B : natural := 8;
@@ -53,9 +53,9 @@ entity dual_port_ram is
     -- write enable
     we_a, we_b : in std_logic := '0'
   );
-end dual_port_ram;
+end true_dual_port_ram;
 
-architecture arch of dual_port_ram is
+architecture arch of true_dual_port_ram is
   signal q_a : std_logic_vector(DATA_WIDTH_A-1 downto 0);
   signal q_b : std_logic_vector(DATA_WIDTH_B-1 downto 0);
 begin

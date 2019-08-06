@@ -152,7 +152,7 @@ begin
   -- a single-port palette RAM. Using a dual-port RAM instead simplifies
   -- things, because we don't need all additional logic required to coordinate
   -- RAM access.
-  sprite_ram : entity work.dual_port_ram
+  sprite_ram : entity work.true_dual_port_ram
   generic map (
     ADDR_WIDTH_A => SPRITE_RAM_ADDR_WIDTH,
     ADDR_WIDTH_B => SPRITE_RAM_ADDR_WIDTH_B,
