@@ -78,6 +78,7 @@ set_global_assignment -name VHDL_FILE src/char.vhd
 set_global_assignment -name VHDL_FILE src/clock_divider.vhd
 set_global_assignment -name VHDL_FILE src/dual_port_ram.vhd
 set_global_assignment -name VHDL_FILE src/edge_detector.vhd
+set_global_assignment -name VHDL_FILE src/frame_buffer.vhd
 set_global_assignment -name VHDL_FILE src/palette.vhd
 set_global_assignment -name VHDL_FILE src/reset_gen.vhd
 set_global_assignment -name VHDL_FILE src/rygar_top.vhd
