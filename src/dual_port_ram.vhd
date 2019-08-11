@@ -39,11 +39,12 @@ entity dual_port_ram is
     -- write-only port
     addr_wr : in std_logic_vector(ADDR_WIDTH-1 downto 0);
     din     : in std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    we      : in std_logic := '0';
+    wren    : in std_logic := '1';
 
     -- read-only port
     addr_rd : in std_logic_vector(ADDR_WIDTH-1 downto 0);
-    dout    : out std_logic_vector(DATA_WIDTH-1 downto 0)
+    dout    : out std_logic_vector(DATA_WIDTH-1 downto 0);
+    rden    : in std_logic := '1'
   );
 end dual_port_ram;
 
@@ -57,6 +58,7 @@ begin
     clock_enable_input_b               => "BYPASS",
     clock_enable_output_a              => "BYPASS",
     clock_enable_output_b              => "BYPASS",
+    indata_reg_b                       => "CLOCK0",
     intended_device_family             => "Cyclone V",
     lpm_type                           => "altsyncram",
     numwords_a                         => 2**ADDR_WIDTH,
@@ -67,6 +69,7 @@ begin
     outdata_reg_a                      => "UNREGISTERED",
     outdata_reg_b                      => "UNREGISTERED",
     power_up_uninitialized             => "FALSE",
+    rdcontrol_reg_b                    => "CLOCK0",
     read_during_write_mode_mixed_ports => "OLD_DATA",
     width_a                            => DATA_WIDTH,
     width_b                            => DATA_WIDTH,
@@ -79,8 +82,9 @@ begin
     address_a => addr_wr,
     address_b => addr_rd,
     clock0    => clk,
+    wren_a    => cs and wren,
+    rden_b    => cs and rden,
     data_a    => din,
-    wren_a    => cs and we,
     q_b       => q
   );
 

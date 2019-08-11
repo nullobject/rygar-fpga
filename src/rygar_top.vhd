@@ -111,7 +111,7 @@ architecture arch of rygar_top is
   -- graphics layer data
   signal char_data   : byte_t;
   signal fg_data     : byte_t;
-  signal sprite_data : byte_t;
+  signal sprite_data : std_logic_vector(SPRITE_DATA_WIDTH-1 downto 0);
 
   -- control signals
   signal vblank_falling : std_logic;
@@ -333,7 +333,6 @@ begin
   sprite : entity work.sprite
   port map (
     clk      => clk_12,
-    cen      => cen_6,
     ram_cs   => sprite_ram_cs,
     ram_addr => cpu_addr(SPRITE_RAM_ADDR_WIDTH-1 downto 0),
     ram_din  => cpu_dout,
@@ -355,7 +354,7 @@ begin
     ram_we      => not cpu_wr_n,
     char_data   => char_data,
     fg_data     => fg_data,
-    sprite_data => sprite_data,
+    sprite_data => sprite_data(7 downto 0),
     video       => video,
     pixel       => pixel
   );

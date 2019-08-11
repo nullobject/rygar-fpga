@@ -86,6 +86,7 @@ set_global_assignment -name VHDL_FILE src/scroll.vhd
 set_global_assignment -name VHDL_FILE src/single_port_ram.vhd
 set_global_assignment -name VHDL_FILE src/single_port_rom.vhd
 set_global_assignment -name VHDL_FILE src/sprite.vhd
+set_global_assignment -name VHDL_FILE src/sprite_blitter.vhd
 set_global_assignment -name VHDL_FILE src/sync_gen.vhd
 set_global_assignment -name VHDL_FILE src/true_dual_port_ram.vhd
 set_global_assignment -name VHDL_FILE src/types.vhd

@@ -25,15 +25,16 @@ use ieee.numeric_std.all;
 -- The frame buffer is a memory device used for caching graphics data. It is
 -- used by the sprite renderer to ensure glitch-free graphics.
 --
--- Internally, it contains two *pages* which are accessed alternately for
--- reading and writing, so that while on page is being written to, the other is
--- being read from.
+-- Internally, it contains two memory pages which are accessed alternately for
+-- reading and writing, so that while one page is being written to, the other
+-- is being read from.
 --
--- When the pages are *flipped*, the page that was previously being written to
--- will be read from, and the page that was being read from will be written to.
+-- When the flip signal is asserted, the pages are swapped. The page that was
+-- previously being written to will be read from, and the page that was being
+-- read from will be written to.
 --
--- The frame buffer interface provides two ports: a read-only port, and
--- a write-only port.
+-- The frame buffer automatically clears pixels during read operations, so that
+-- the write page is clean when it is flipped.
 entity frame_buffer is
   generic (
     ADDR_WIDTH : natural := 8;
@@ -49,20 +50,24 @@ entity frame_buffer is
     -- flip the pages
     flip : in std_logic := '0';
 
-    -- read-only port
-    addr_rd : in std_logic_vector(ADDR_WIDTH-1 downto 0);
-    dout    : out std_logic_vector(DATA_WIDTH-1 downto 0);
-
     -- write-only port
     addr_wr : in std_logic_vector(ADDR_WIDTH-1 downto 0);
     din     : in std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    we      : in std_logic := '0'
+    wren    : in std_logic := '0';
+
+    -- read-only port
+    addr_rd : in std_logic_vector(ADDR_WIDTH-1 downto 0);
+    dout    : out std_logic_vector(DATA_WIDTH-1 downto 0);
+    rden    : in std_logic := '1'
   );
 end frame_buffer;
 
 architecture arch of frame_buffer is
   signal addr_a, addr_b : std_logic_vector(ADDR_WIDTH-1 downto 0);
+  signal din_a, din_b   : std_logic_vector(DATA_WIDTH-1 downto 0);
   signal dout_a, dout_b : std_logic_vector(DATA_WIDTH-1 downto 0);
+  signal rden_a, rden_b : std_logic;
+  signal wren_a, wren_b : std_logic;
 begin
   page_a : entity work.dual_port_ram
   generic map (
@@ -70,16 +75,14 @@ begin
     DATA_WIDTH => DATA_WIDTH
   )
   port map (
-    clk => clk,
-
-    -- write-only port
+    clk     => clk,
+    cs      => cs,
     addr_wr => addr_a,
-    din     => din,
-    we      => cs and we and flip,
-
-    -- read-only port
+    din     => din_a,
+    wren    => wren_a,
     addr_rd => addr_a,
-    dout    => dout_a
+    dout    => dout_a,
+    rden    => rden_a
   );
 
   page_b : entity work.dual_port_ram
@@ -88,23 +91,30 @@ begin
     DATA_WIDTH => DATA_WIDTH
   )
   port map (
-    clk => clk,
-
-    -- write-only port
+    clk     => clk,
+    cs      => cs,
     addr_wr => addr_b,
-    din     => din,
-    we      => cs and we and (not flip),
-
-    -- read-only port
+    din     => din_b,
+    wren    => wren_b,
     addr_rd => addr_b,
-    dout    => dout_b
+    dout    => dout_b,
+    rden    => rden_b
   );
 
   addr_a <= addr_rd when flip = '0' else addr_wr;
   addr_b <= addr_rd when flip = '1' else addr_wr;
 
+  rden_a <= rden;
+  rden_b <= rden;
+
+  wren_a <= wren when flip = '1' else rden;
+  wren_b <= wren when flip = '0' else rden;
+
+  din_a <= din when wren = '1' and flip = '1' else (others => '0');
+  din_b <= din when wren = '1' and flip = '0' else (others => '0');
+
   -- output
-  dout <= dout_a when cs = '1' and flip = '0' else
-          dout_b when cs = '1' and flip = '1' else
+  dout <= dout_a when rden = '1' and flip = '0' else
+          dout_b when rden = '1' and flip = '1' else
           (others => '0');
 end arch;
