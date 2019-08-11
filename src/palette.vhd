@@ -46,8 +46,8 @@ entity palette is
     fg_data     : in byte_t;
     sprite_data : in byte_t;
 
-    -- horizontal and vertical blank
-    video_blank : in blank_t;
+    -- video signals
+    video : in video_t;
 
     -- pixel data
     pixel : out rgb_t
@@ -61,8 +61,6 @@ architecture arch of palette is
   -- palette RAM (port B)
   signal palette_ram_addr_b : std_logic_vector(PALETTE_RAM_ADDR_WIDTH_B-1 downto 0);
   signal palette_ram_dout_b : std_logic_vector(PALETTE_RAM_DATA_WIDTH_B-1 downto 0);
-
-  signal video_on : std_logic;
 begin
   -- The palette RAM contains 1024 16-bit RGB colour values, stored in
   -- RRRRGGGGXXXXBBBB format.
@@ -110,7 +108,7 @@ begin
           palette_ram_addr_b <= "10" & fg_data;
         end if;
 
-        if video_on = '1' then
+        if video.enable = '1' then
           pixel.r <= palette_ram_dout_b(15 downto 12);
           pixel.g <= palette_ram_dout_b(11 downto 8);
           pixel.b <= palette_ram_dout_b(3 downto 0);
@@ -122,7 +120,4 @@ begin
       end if;
     end if;
   end process;
-
-  -- enable the video output if we're not in a blanking region
-  video_on <= not (video_blank.hblank or video_blank.vblank);
 end architecture;

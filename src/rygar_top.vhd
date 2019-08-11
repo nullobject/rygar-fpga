@@ -103,10 +103,7 @@ architecture arch of rygar_top is
   signal bg_scroll_vpos : unsigned(7 downto 0);
 
   -- video signals
-  signal video_pos      : pos_t;
-  signal video_sync     : sync_t;
-  signal video_blank    : blank_t;
-  signal vblank_falling : std_logic;
+  signal video : video_t;
 
   -- pixel data
   signal pixel : rgb_t;
@@ -115,6 +112,9 @@ architecture arch of rygar_top is
   signal char_data   : byte_t;
   signal fg_data     : byte_t;
   signal sprite_data : byte_t;
+
+  -- control signals
+  signal vblank_falling : std_logic;
 begin
   my_pll : entity pll.pll
   port map (
@@ -150,9 +150,7 @@ begin
   port map (
     clk   => clk_12,
     cen   => cen_6,
-    pos   => video_pos,
-    sync  => video_sync,
-    blank => video_blank
+    video => video
   );
 
   -- program ROM 1
@@ -235,7 +233,7 @@ begin
   generic map (FALLING => true)
   port map (
     clk  => clk_12,
-    data => video_blank.vblank,
+    data => video.vblank,
     edge => vblank_falling
   );
 
@@ -299,15 +297,15 @@ begin
   -- character layer
   char : entity work.char
   port map (
-    clk       => clk_12,
-    cen       => cen_6,
-    ram_cs    => char_ram_cs,
-    ram_addr  => cpu_addr(CHAR_RAM_ADDR_WIDTH-1 downto 0),
-    ram_din   => cpu_dout,
-    ram_dout  => char_ram_dout,
-    ram_we    => not cpu_wr_n,
-    video_pos => video_pos,
-    data      => char_data
+    clk      => clk_12,
+    cen      => cen_6,
+    ram_cs   => char_ram_cs,
+    ram_addr => cpu_addr(CHAR_RAM_ADDR_WIDTH-1 downto 0),
+    ram_din  => cpu_dout,
+    ram_dout => char_ram_dout,
+    ram_we   => not cpu_wr_n,
+    video    => video,
+    data     => char_data
   );
 
   -- foreground layer
@@ -325,8 +323,7 @@ begin
     ram_din     => cpu_dout,
     ram_dout    => fg_ram_dout,
     ram_we      => not cpu_wr_n,
-    video_pos   => video_pos,
-    video_sync  => video_sync,
+    video       => video,
     scroll_hpos => fg_scroll_hpos,
     scroll_vpos => fg_scroll_vpos,
     data        => fg_data
@@ -335,16 +332,15 @@ begin
   -- sprite layer
   sprite : entity work.sprite
   port map (
-    clk         => clk_12,
-    cen         => cen_6,
-    ram_cs      => sprite_ram_cs,
-    ram_addr    => cpu_addr(SPRITE_RAM_ADDR_WIDTH-1 downto 0),
-    ram_din     => cpu_dout,
-    ram_dout    => sprite_ram_dout,
-    ram_we      => not cpu_wr_n,
-    video_pos   => video_pos,
-    video_blank => video_blank,
-    data        => sprite_data
+    clk      => clk_12,
+    cen      => cen_6,
+    ram_cs   => sprite_ram_cs,
+    ram_addr => cpu_addr(SPRITE_RAM_ADDR_WIDTH-1 downto 0),
+    ram_din  => cpu_dout,
+    ram_dout => sprite_ram_dout,
+    ram_we   => not cpu_wr_n,
+    video    => video,
+    data     => sprite_data
   );
 
   -- colour palette
@@ -360,7 +356,7 @@ begin
     char_data   => char_data,
     fg_data     => fg_data,
     sprite_data => sprite_data,
-    video_blank => video_blank,
+    video       => video,
     pixel       => pixel
   );
 
@@ -401,7 +397,7 @@ begin
   led <= cpu_dout when work_ram_cs = '1' and cpu_wr_n = '0' else (others => '0');
 
   -- composite sync
-  vga_csync <= not (video_sync.hsync xor video_sync.vsync);
+  vga_csync <= video.csync;
 
   -- color output
   vga_r <= pixel.r & pixel.r(3 downto 2);

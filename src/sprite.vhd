@@ -63,8 +63,7 @@ entity sprite is
     ram_we   : in std_logic;
 
     -- video signals
-    video_pos   : in pos_t;
-    video_blank : in blank_t;
+    video : in video_t;
 
     -- palette index output
     data : out byte_t
@@ -203,7 +202,7 @@ begin
   generic map (FALLING => true)
   port map (
     clk  => clk,
-    data => video_blank.vblank,
+    data => video.vblank,
     edge => vblank_falling
   );
 
@@ -216,8 +215,8 @@ begin
     end if;
   end process;
 
-  x <= video_pos.x(7 downto 0);
-  y <= video_pos.y(7 downto 0);
+  x <= video.x(7 downto 0);
+  y <= video.y(7 downto 0);
 
   frame_buffer_addr_rd <= std_logic_vector(y & x);
   frame_buffer_addr_wr <= std_logic_vector(y & x);

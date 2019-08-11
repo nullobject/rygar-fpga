@@ -23,6 +23,9 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 package types is
+  subtype byte_t is std_logic_vector(7 downto 0);
+  subtype nibble_t is std_logic_vector(3 downto 0);
+
   -- memory sizes
   constant PROG_ROM_1_ADDR_WIDTH  : natural := 15; -- 32kB
   constant PROG_ROM_2_ADDR_WIDTH  : natural := 14; -- 16kB
@@ -43,26 +46,30 @@ package types is
   constant COLOR_DEPTH_G : natural := 4;
   constant COLOR_DEPTH_B : natural := 4;
 
-  subtype byte_t is std_logic_vector(7 downto 0);
-  subtype nibble_t is std_logic_vector(3 downto 0);
-
-  -- represents horizontal and vertical position
+  -- represents a position
   type pos_t is record
     x : unsigned(8 downto 0);
     y : unsigned(8 downto 0);
   end record pos_t;
 
-  -- represents horizontal and vertical sync signals
-  type sync_t is record
+  -- represents the video signals
+  type video_t is record
+    -- position
+    x : unsigned(8 downto 0);
+    y : unsigned(8 downto 0);
+
+    -- sync signals
     hsync : std_logic;
     vsync : std_logic;
-  end record sync_t;
+    csync : std_logic;
 
-  -- represents horizontal and vertical blank signals
-  type blank_t is record
+    -- blank signals
     hblank : std_logic;
     vblank : std_logic;
-  end record blank_t;
+
+    -- enable video output
+    enable : std_logic;
+  end record video_t;
 
   -- represents a RGB colour value
   type rgb_t is record

@@ -42,8 +42,8 @@ entity char is
     ram_dout : out byte_t;
     ram_we   : in std_logic;
 
-    -- video position
-    video_pos : in pos_t;
+    -- video signals
+    video : in video_t;
 
     -- palette index output
     data : out byte_t
@@ -75,10 +75,10 @@ architecture arch of char is
   signal pixel : nibble_t;
 
   -- aliases to extract the components of the horizontal and vertical position
-  alias col      : unsigned(4 downto 0) is video_pos.x(7 downto 3);
-  alias row      : unsigned(4 downto 0) is video_pos.y(7 downto 3);
-  alias offset_x : unsigned(2 downto 0) is video_pos.x(2 downto 0);
-  alias offset_y : unsigned(2 downto 0) is video_pos.y(2 downto 0);
+  alias col      : unsigned(4 downto 0) is video.x(7 downto 3);
+  alias row      : unsigned(4 downto 0) is video.y(7 downto 3);
+  alias offset_x : unsigned(2 downto 0) is video.x(2 downto 0);
+  alias offset_y : unsigned(2 downto 0) is video.y(2 downto 0);
 begin
   -- The character RAM (2kB) contains the code and colour of each tile in the
   -- tilemap.
@@ -186,14 +186,14 @@ begin
   latch_gfx_data : process (clk)
   begin
     if rising_edge(clk) then
-      if video_pos.x(0) = '1' then
+      if video.x(0) = '1' then
         gfx_data <= tile_rom_dout;
       end if;
     end if;
   end process;
 
   -- decode high/low pixels from the graphics data
-  pixel <= gfx_data(7 downto 4) when video_pos.x(0) = '1' else gfx_data(3 downto 0);
+  pixel <= gfx_data(7 downto 4) when video.x(0) = '1' else gfx_data(3 downto 0);
 
   -- output data
   data <= color & pixel;
