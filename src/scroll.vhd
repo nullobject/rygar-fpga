@@ -24,9 +24,8 @@ use ieee.numeric_std.all;
 
 use work.types.all;
 
--- This module handles the scrolling layers in the graphics pipeline. It is
--- a 32x16 grid of 16x16 tiles, used to render the foreground and background
--- scrolling layers.
+-- This module handles the scrolling foreground and background layers in the
+-- graphics pipeline. It consists of of a 32x16 grid of 16x16 tiles.
 --
 -- Because a scrolling layer is twice the width of the screen, it can never be
 -- entirely visible on the screen at once. The horizontal and vertical scroll

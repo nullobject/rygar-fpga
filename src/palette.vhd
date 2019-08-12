@@ -24,8 +24,8 @@ use ieee.numeric_std.all;
 
 use work.types.all;
 
--- The palette combines the data from the different graphics layers to produce
--- actual RGB pixel data.
+-- The palette combines data from the different graphics layers to produce an
+-- actual RGB pixel, that can be rendered on the screen.
 entity palette is
   port (
     -- clock

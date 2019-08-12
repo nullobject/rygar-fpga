@@ -194,6 +194,13 @@ package body types is
     return sprite;
   end init_sprite;
 
+  -- This function determines which graphics layer should be rendered, based on
+  -- the sprite priority and the graphics layer data.
+  --
+  -- This differs from the original arcade hardware, which uses a priority
+  -- encoder and some other logic gates to choose the correct layer to render.
+  -- A giant conditional is way more verbose, but it's easy to understand how
+  -- it works.
   function mux_layers(
     sprite_priority : priority_t;
     sprite_data     : byte_t;
@@ -203,6 +210,7 @@ package body types is
   ) return layer_t is
   begin
     case sprite_priority is
+      -- sprites have the highest priority
       when "00" =>
         if sprite_data(3 downto 0) /= "0000" then
           return SPRITE_LAYER;
@@ -216,6 +224,7 @@ package body types is
           return FILL_LAYER;
         end if;
 
+      -- sprites are obscured by the character layer
       when "01" =>
         if char_data(3 downto 0) /= "0000" then
           return CHAR_LAYER;
@@ -229,6 +238,7 @@ package body types is
           return FILL_LAYER;
         end if;
 
+      -- sprites are obscured by the character and foreground layers
       when "10" =>
         if char_data(3 downto 0) /= "0000" then
           return CHAR_LAYER;
@@ -242,6 +252,7 @@ package body types is
           return FILL_LAYER;
         end if;
 
+      -- sprites are obscured by the character, foreground, and background layers
       when "11" =>
         if char_data(3 downto 0) /= "0000" then
           return CHAR_LAYER;

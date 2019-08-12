@@ -28,15 +28,17 @@ use work.types.all;
 -- elements you see on the screen.
 --
 -- They can be placed anywhere on the screen with per-pixel precision, can be
--- flipped about thier horizontal and/or vertical axes, and can even overlap
+-- flipped about their horizontal and/or vertical axes, and can even overlap
 -- each other.
 --
 -- There are four different sprite sizes – 8x8, 16x16, 32x32, and 64x64 – which
 -- are all composed from one or more 8x8 tiles.
 --
 -- The data which describes the characteristics of each sprite – such as
--- position, size, etc. – is stored in the sprite RAM. The pixel data for the
--- 8x8 tiles which make up each sprite is stored in the sprite tile ROM.
+-- position, size, etc. – is stored in the sprite RAM.
+--
+-- The pixel data for the 8x8 tiles which make up each sprite is stored in the
+-- sprite tile ROM.
 entity sprite is
   port (
     -- clock
@@ -275,7 +277,7 @@ begin
   frame_done <= '1' when sprite_counter = sprite_counter'high else '0';
 
   -- set frame buffer read address
-  frame_buffer_addr_rd <= std_logic_vector(video.pos.y(7 downto 0) & video.pos.x(7 downto 0));
+  frame_buffer_addr_rd <= std_logic_vector(video.pos.y(7 downto 0) & (video.pos.x(7 downto 0)));
 
   -- read from the frame buffer when video output is enabled
   frame_buffer_rden <= video.enable;
