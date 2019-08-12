@@ -29,7 +29,7 @@ use work.types.all;
 -- playfield, and other static graphics.
 entity char is
   port (
-    -- input clock
+    -- clock
     clk : in std_logic;
 
     -- clock enable
@@ -42,10 +42,10 @@ entity char is
     ram_dout : out byte_t;
     ram_we   : in std_logic;
 
-    -- video position
-    video_pos : in pos_t;
+    -- video signals
+    video : in video_t;
 
-    -- palette index output
+    -- layer data
     data : out byte_t
   );
 end char;
@@ -75,10 +75,10 @@ architecture arch of char is
   signal pixel : nibble_t;
 
   -- aliases to extract the components of the horizontal and vertical position
-  alias col      : unsigned(4 downto 0) is video_pos.x(7 downto 3);
-  alias row      : unsigned(4 downto 0) is video_pos.y(7 downto 3);
-  alias offset_x : unsigned(2 downto 0) is video_pos.x(2 downto 0);
-  alias offset_y : unsigned(2 downto 0) is video_pos.y(2 downto 0);
+  alias col      : unsigned(4 downto 0) is video.x(7 downto 3);
+  alias row      : unsigned(4 downto 0) is video.y(7 downto 3);
+  alias offset_x : unsigned(2 downto 0) is video.x(2 downto 0);
+  alias offset_y : unsigned(2 downto 0) is video.y(2 downto 0);
 begin
   -- The character RAM (2kB) contains the code and colour of each tile in the
   -- tilemap.
@@ -92,15 +92,15 @@ begin
   --
   -- This differs from the original arcade hardware, which only contains
   -- a single-port character RAM. Using a dual-port RAM instead simplifies
-  -- things, because we don't need all additional logic required to coordinate
-  -- RAM access.
-  char_ram : entity work.dual_port_ram
+  -- things, because we don't need all the additional logic required to
+  -- coordinate RAM access.
+  char_ram : entity work.true_dual_port_ram
   generic map (
     ADDR_WIDTH_A => CHAR_RAM_ADDR_WIDTH,
     ADDR_WIDTH_B => CHAR_RAM_ADDR_WIDTH
   )
   port map (
-    -- port A
+    -- port A (CPU)
     clk_a  => clk,
     cs_a   => ram_cs,
     addr_a => ram_addr,
@@ -108,7 +108,7 @@ begin
     dout_a => ram_dout,
     we_a   => ram_we,
 
-    -- port B
+    -- port B (GPU)
     clk_b  => clk,
     addr_b => char_ram_addr_b,
     dout_b => char_ram_dout_b
@@ -186,15 +186,15 @@ begin
   latch_gfx_data : process (clk)
   begin
     if rising_edge(clk) then
-      if video_pos.x(0) = '1' then
+      if video.x(0) = '1' then
         gfx_data <= tile_rom_dout;
       end if;
     end if;
   end process;
 
   -- decode high/low pixels from the graphics data
-  pixel <= gfx_data(7 downto 4) when video_pos.x(0) = '1' else gfx_data(3 downto 0);
+  pixel <= gfx_data(7 downto 4) when video.x(0) = '1' else gfx_data(3 downto 0);
 
-  -- output data
+  -- set layer data
   data <= color & pixel;
-end architecture;
+end architecture arch;

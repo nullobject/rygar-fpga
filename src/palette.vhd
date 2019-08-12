@@ -24,11 +24,11 @@ use ieee.numeric_std.all;
 
 use work.types.all;
 
--- The colour palette combines the pixel data from the different graphics
--- layers, and looks up the RGB pixel color values in the palette RAM.
+-- The palette combines the data from the different graphics layers to produce
+-- actual RGB pixel data.
 entity palette is
   port (
-    -- input clock
+    -- clock
     clk : in std_logic;
 
     -- clock enable
@@ -41,12 +41,17 @@ entity palette is
     ram_dout : out byte_t;
     ram_we   : in std_logic;
 
-    -- graphics layer data
-    char_data : in byte_t;
-    fg_data   : in byte_t;
+    -- video signals
+    video : in video_t;
 
-    -- horizontal and vertical blank
-    video_blank : in blank_t;
+    -- sprite priority data
+    sprite_priority : in std_logic_vector(SPRITE_PRIORITY_WIDTH-1 downto 0);
+
+    -- graphics layer data
+    sprite_data : in byte_t;
+    char_data   : in byte_t;
+    fg_data     : in byte_t;
+    bg_data     : in byte_t;
 
     -- pixel data
     pixel : out rgb_t
@@ -60,8 +65,6 @@ architecture arch of palette is
   -- palette RAM (port B)
   signal palette_ram_addr_b : std_logic_vector(PALETTE_RAM_ADDR_WIDTH_B-1 downto 0);
   signal palette_ram_dout_b : std_logic_vector(PALETTE_RAM_DATA_WIDTH_B-1 downto 0);
-
-  signal video_on : std_logic;
 begin
   -- The palette RAM contains 1024 16-bit RGB colour values, stored in
   -- RRRRGGGGXXXXBBBB format.
@@ -73,38 +76,48 @@ begin
   --
   -- This differs from the original arcade hardware, which only contains
   -- a single-port palette RAM. Using a dual-port RAM instead simplifies
-  -- things, because we don't need all additional logic required to coordinate
-  -- RAM access.
-  palette_ram : entity work.dual_port_ram
+  -- things, because we don't need all the additional logic required to
+  -- coordinate RAM access.
+  palette_ram : entity work.true_dual_port_ram
   generic map (
     ADDR_WIDTH_A => PALETTE_RAM_ADDR_WIDTH,
     ADDR_WIDTH_B => PALETTE_RAM_ADDR_WIDTH_B,
     DATA_WIDTH_B => PALETTE_RAM_DATA_WIDTH_B
   )
   port map (
+    -- port A (CPU)
     clk_a  => clk,
     cs_a   => ram_cs,
     addr_a => ram_addr,
     din_a  => ram_din,
     dout_a => ram_dout,
     we_a   => ram_we,
+
+    -- port B (GPU)
     clk_b  => clk,
     addr_b => palette_ram_addr_b,
     dout_b => palette_ram_dout_b
   );
 
-  process (clk)
+  -- TODO: refactor into multiple processes
+  load_palette_data : process (clk)
+    variable layer : layer_t;
   begin
     if rising_edge(clk) then
       if cen = '1' then
-        -- TODO: handle layer priority
-        if char_data(3 downto 0) /= "0000" then
-          palette_ram_addr_b <= "01" & char_data;
-        else
-          palette_ram_addr_b <= "10" & fg_data;
-        end if;
+        layer := mux_layers(sprite_priority, sprite_data, char_data, fg_data, bg_data);
 
-        if video_on = '1' then
+        -- set palette RAM address
+        case layer is
+          when SPRITE_LAYER => palette_ram_addr_b <= "00" & sprite_data;
+          when CHAR_LAYER   => palette_ram_addr_b <= "01" & char_data;
+          when FG_LAYER     => palette_ram_addr_b <= "10" & fg_data;
+          when BG_LAYER     => palette_ram_addr_b <= "11" & bg_data;
+          when FILL_LAYER   => palette_ram_addr_b <= "0100000000";
+        end case;
+
+        -- set pixel data
+        if video.enable = '1' then
           pixel.r <= palette_ram_dout_b(15 downto 12);
           pixel.g <= palette_ram_dout_b(11 downto 8);
           pixel.b <= palette_ram_dout_b(3 downto 0);
@@ -116,7 +129,4 @@ begin
       end if;
     end if;
   end process;
-
-  -- enable the video output if we're not in a blanking region
-  video_on <= not (video_blank.hblank or video_blank.vblank);
-end architecture;
+end arch;

@@ -38,7 +38,7 @@ entity scroll is
     ROM_INIT_FILE  : string
   );
   port (
-    -- input clock
+    -- clock
     clk : in std_logic;
 
     -- clock enable
@@ -52,14 +52,13 @@ entity scroll is
     ram_we   : in std_logic;
 
     -- video signals
-    video_pos  : in pos_t;
-    video_sync : in sync_t;
+    video : in video_t;
 
     -- horizontal and vertical scroll positions
     scroll_hpos : in unsigned(8 downto 0);
     scroll_vpos : in unsigned(7 downto 0);
 
-    -- palette index output
+    -- layer data
     data : out byte_t
   );
 end scroll;
@@ -110,15 +109,15 @@ begin
   --
   -- This differs from the original arcade hardware, which only contains
   -- a single-port character RAM. Using a dual-port RAM instead simplifies
-  -- things, because we don't need all additional logic required to coordinate
-  -- RAM access.
-  scroll_ram : entity work.dual_port_ram
+  -- things, because we don't need all the additional logic required to
+  -- coordinate RAM access.
+  scroll_ram : entity work.true_dual_port_ram
   generic map (
     ADDR_WIDTH_A => RAM_ADDR_WIDTH,
     ADDR_WIDTH_B => RAM_ADDR_WIDTH
   )
   port map (
-    -- port A
+    -- port A (CPU)
     clk_a  => clk,
     cs_a   => ram_cs,
     addr_a => ram_addr,
@@ -126,7 +125,7 @@ begin
     dout_a => ram_dout,
     we_a   => ram_we,
 
-    -- port B
+    -- port B (GPU)
     clk_b  => clk,
     addr_b => scroll_ram_addr_b,
     dout_b => scroll_ram_dout_b
@@ -159,7 +158,7 @@ begin
   begin
     if rising_edge(clk) then
       if cen = '1' then
-        if video_sync.hsync = '1' then
+        if video.hsync = '1' then
           hpos <= scroll_hpos;
         else
           hpos <= hpos + 1;
@@ -171,7 +170,7 @@ begin
   -- Update vertical position.
   --
   -- This is just the sum of the vertical screen and scroll positions.
-  vpos <= video_pos.y(7 downto 0) + scroll_vpos;
+  vpos <= video.y(7 downto 0) + scroll_vpos;
 
   -- Load tile data from the scroll RAM.
   --
@@ -216,8 +215,8 @@ begin
   -- Load graphics data from the tile ROM.
   --
   -- While the current two pixels are being rendered, we need to fetch data for
-  -- the next two pixels ahead, so they are loaded in time to render them
-  -- on the screen.
+  -- the next two pixels, so they are loaded in time to render them on the
+  -- screen.
   load_gfx_data : block
     signal x : unsigned(2 downto 0);
     signal y : unsigned(3 downto 0);
@@ -242,6 +241,6 @@ begin
   -- decode high/low pixels from the graphics data
   pixel <= gfx_data(7 downto 4) when hpos(0) = '1' else gfx_data(3 downto 0);
 
-  -- output data
+  -- set layer data
   data <= color & pixel;
-end architecture;
+end architecture arch;

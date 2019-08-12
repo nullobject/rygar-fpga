@@ -40,24 +40,18 @@ use work.types.all;
 -- vertical frequency: 15.625kHz / 264 = 59.185 Hz
 entity sync_gen is
   port (
-    -- input clock
+    -- clock
     clk : in std_logic;
 
     -- clock enable
     cen : in std_logic;
 
-    -- horizontal and vertical position
-    pos : out pos_t;
-
-    -- horizontal and vertical sync
-    sync : out sync_t;
-
-    -- horizontal and vertical blank
-    blank : out blank_t
+    -- video signals
+    video : out video_t
   );
 end sync_gen;
 
-architecture struct of sync_gen is
+architecture arch of sync_gen is
   -- horizontal regions
   constant H_DISPLAY     : natural := 256;
   constant H_FRONT_PORCH : natural := 48;
@@ -72,15 +66,21 @@ architecture struct of sync_gen is
   constant V_BACK_PORCH  : natural := 16;
   constant V_SCAN        : natural := V_DISPLAY+V_FRONT_PORCH+V_RETRACE+V_BACK_PORCH; -- 264
 
-  -- horizontal/vertical counter starting values
+  -- initial counter values
   constant H_START : natural := 128;
   constant V_START : natural := 248;
 
-  -- horizontal/vertical counters
+  -- position counters
   signal x : natural range 0 to 511 := H_START;
   signal y : natural range 0 to 511 := V_START;
+
+  -- sync signals
+  signal hsync, vsync : std_logic;
+
+  -- blank signals
+  signal hblank, vblank : std_logic;
 begin
-  -- generate horizontal timings
+  -- generate horizontal timing signals
   horizontal_timing : process (clk)
   begin
     if rising_edge(clk) then
@@ -92,21 +92,21 @@ begin
         end if;
 
         if x = H_START+H_FRONT_PORCH+H_RETRACE-1 then
-          sync.hsync <= '0';
+          hsync <= '0';
         elsif x = H_START+H_FRONT_PORCH-1 then
-          sync.hsync <= '1';
+          hsync <= '1';
         end if;
 
         if x = H_START+H_FRONT_PORCH+H_RETRACE+H_BACK_PORCH-1 then
-          blank.hblank <= '0';
+          hblank <= '0';
         elsif x = H_START+H_SCAN-1 then
-          blank.hblank <= '1';
+          hblank <= '1';
         end if;
       end if;
     end if;
   end process;
 
-  -- generate vertical timings
+  -- generate vertical timing signals
   vertical_timing : process (clk)
   begin
     if rising_edge(clk) then
@@ -119,21 +119,34 @@ begin
           end if;
 
           if y = V_START+V_RETRACE-1 then
-            sync.vsync <= '0';
+            vsync <= '0';
           elsif y = V_START+V_SCAN-1 then
-            sync.vsync <= '1';
+            vsync <= '1';
           end if;
 
           if y = V_START+V_RETRACE+V_BACK_PORCH-1 then
-            blank.vblank <= '0';
+            vblank <= '0';
           elsif y = V_START+V_RETRACE+V_BACK_PORCH+V_DISPLAY-1 then
-            blank.vblank <= '1';
+            vblank <= '1';
           end if;
         end if;
       end if;
     end if;
   end process;
 
-  pos.x <= to_unsigned(x, pos.x'length);
-  pos.y <= to_unsigned(y, pos.y'length);
-end architecture;
+  -- set video position
+  video.x <= to_unsigned(x, video.x'length);
+  video.y <= to_unsigned(y, video.y'length);
+
+  -- set sync signals
+  video.hsync <= hsync;
+  video.vsync <= vsync;
+  video.csync <= not (hsync xor vsync);
+
+  -- set blank signals
+  video.hblank <= hblank;
+  video.vblank <= vblank;
+
+  -- set output enable
+  video.enable <= not (hblank or vblank);
+end architecture arch;

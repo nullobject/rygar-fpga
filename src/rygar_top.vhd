@@ -28,7 +28,7 @@ use work.types.all;
 
 entity rygar_top is
   port (
-    -- 50MHz input clock
+    -- 50MHz clock
     clk : in std_logic;
 
     -- VGA signals
@@ -79,8 +79,7 @@ architecture arch of rygar_top is
   signal sprite_ram_cs  : std_logic;
   signal palette_ram_cs : std_logic;
   signal bank_cs        : std_logic;
-  signal fg_scroll_cs   : std_logic;
-  signal bg_scroll_cs   : std_logic;
+  signal scroll_cs      : std_logic;
 
   -- chip data output signals
   signal prog_rom_1_dout  : byte_t;
@@ -103,18 +102,22 @@ architecture arch of rygar_top is
   signal bg_scroll_vpos : unsigned(7 downto 0);
 
   -- video signals
-  signal video_pos   : pos_t;
-  signal video_sync  : sync_t;
-  signal video_blank : blank_t;
+  signal video : video_t;
 
   -- pixel data
   signal pixel : rgb_t;
 
-  signal vblank_falling : std_logic;
+  -- sprite priority data
+  signal sprite_priority : std_logic_vector(SPRITE_PRIORITY_WIDTH-1 downto 0);
 
   -- graphics layer data
-  signal char_data : byte_t;
-  signal fg_data : byte_t;
+  signal sprite_data : byte_t;
+  signal char_data   : byte_t;
+  signal fg_data     : byte_t;
+  signal bg_data     : byte_t;
+
+  -- control signals
+  signal vblank_falling : std_logic;
 begin
   my_pll : entity pll.pll
   port map (
@@ -150,9 +153,7 @@ begin
   port map (
     clk   => clk_12,
     cen   => cen_6,
-    pos   => video_pos,
-    sync  => video_sync,
-    blank => video_blank
+    video => video
   );
 
   -- program ROM 1
@@ -197,29 +198,29 @@ begin
     we   => not cpu_wr_n
   );
 
-  -- background RAM
-  bg_ram : entity work.single_port_ram
-  generic map (ADDR_WIDTH => BG_RAM_ADDR_WIDTH)
+  -- foreground RAM
+  fg_ram : entity work.single_port_ram
+  generic map (ADDR_WIDTH => FG_RAM_ADDR_WIDTH)
   port map (
     clk  => clk_12,
-    cs   => bg_ram_cs,
-    addr => cpu_addr(BG_RAM_ADDR_WIDTH-1 downto 0),
+    cs   => fg_ram_cs,
+    addr => cpu_addr(FG_RAM_ADDR_WIDTH-1 downto 0),
     din  => cpu_dout,
-    dout => bg_ram_dout,
+    dout => fg_ram_dout,
     we   => not cpu_wr_n
   );
 
-  -- sprite RAM
-  sprite_ram : entity work.single_port_ram
-  generic map (ADDR_WIDTH => SPRITE_RAM_ADDR_WIDTH)
-  port map (
-    clk  => clk_12,
-    cs   => sprite_ram_cs,
-    addr => cpu_addr(SPRITE_RAM_ADDR_WIDTH-1 downto 0),
-    din  => cpu_dout,
-    dout => sprite_ram_dout,
-    we   => not cpu_wr_n
-  );
+  -- background RAM
+  -- bg_ram : entity work.single_port_ram
+  -- generic map (ADDR_WIDTH => BG_RAM_ADDR_WIDTH)
+  -- port map (
+  --   clk  => clk_12,
+  --   cs   => bg_ram_cs,
+  --   addr => cpu_addr(BG_RAM_ADDR_WIDTH-1 downto 0),
+  --   din  => cpu_dout,
+  --   dout => bg_ram_dout,
+  --   we   => not cpu_wr_n
+  -- );
 
   -- main CPU
   cpu : entity work.T80s
@@ -247,7 +248,7 @@ begin
   generic map (FALLING => true)
   port map (
     clk  => clk_12,
-    data => video_blank.vblank,
+    data => video.vblank,
     edge => vblank_falling
   );
 
@@ -278,86 +279,114 @@ begin
     end if;
   end process;
 
-  -- set foreground horizontal and vertical scroll position registers
-  set_fg_scroll_pos : process (clk_12)
+  -- set foreground and background scroll position registers
+  set_scroll_pos : process (clk_12)
   begin
     if rising_edge(clk_12) then
-      if fg_scroll_cs = '1' and cpu_wr_n = '0' then
-        case cpu_addr(1 downto 0) is
-          when "00" => fg_scroll_hpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
-          when "01" => fg_scroll_hpos(8 downto 8) <= unsigned(cpu_dout(0 downto 0));
-          when "10" => fg_scroll_vpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
+      if scroll_cs = '1' and cpu_wr_n = '0' then
+        case cpu_addr(2 downto 0) is
+          when "000" => fg_scroll_hpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
+          when "001" => fg_scroll_hpos(8 downto 8) <= unsigned(cpu_dout(0 downto 0));
+          when "010" => fg_scroll_vpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
+          when "011" => bg_scroll_hpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
+          when "100" => bg_scroll_hpos(8 downto 8) <= unsigned(cpu_dout(0 downto 0));
+          when "110" => bg_scroll_vpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
           when others => null;
         end case;
       end if;
     end if;
   end process;
 
-  -- set background horizontal and vertical scroll position registers
-  set_bg_scroll_pos : process (clk_12)
-  begin
-    if rising_edge(clk_12) then
-      if bg_scroll_cs = '1' and cpu_wr_n = '0' then
-        case cpu_addr(1 downto 0) is
-          when "00" => bg_scroll_hpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
-          when "01" => bg_scroll_hpos(8 downto 8) <= unsigned(cpu_dout(0 downto 0));
-          when "10" => bg_scroll_vpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
-          when others => null;
-        end case;
-      end if;
-    end if;
-  end process;
+  -- sprite layer
+  sprite : entity work.sprite
+  port map (
+    clk      => clk_12,
+    ram_cs   => sprite_ram_cs,
+    ram_addr => cpu_addr(SPRITE_RAM_ADDR_WIDTH-1 downto 0),
+    ram_din  => cpu_dout,
+    ram_dout => sprite_ram_dout,
+    ram_we   => not cpu_wr_n,
+    video    => video,
+    priority => sprite_priority,
+    data     => sprite_data
+  );
 
   -- character layer
   char : entity work.char
   port map (
-    clk       => clk_12,
-    cen       => cen_6,
-    ram_cs    => char_ram_cs,
-    ram_addr  => cpu_addr(CHAR_RAM_ADDR_WIDTH-1 downto 0),
-    ram_din   => cpu_dout,
-    ram_dout  => char_ram_dout,
-    ram_we    => not cpu_wr_n,
-    video_pos => video_pos,
-    data      => char_data
+    clk      => clk_12,
+    cen      => cen_6,
+    ram_cs   => char_ram_cs,
+    ram_addr => cpu_addr(CHAR_RAM_ADDR_WIDTH-1 downto 0),
+    ram_din  => cpu_dout,
+    ram_dout => char_ram_dout,
+    ram_we   => not cpu_wr_n,
+    video    => video,
+    data     => char_data
   );
 
   -- foreground layer
-  fg : entity work.scroll
+  -- fg : entity work.scroll
+  -- generic map (
+  --   RAM_ADDR_WIDTH => FG_RAM_ADDR_WIDTH,
+  --   ROM_ADDR_WIDTH => FG_ROM_ADDR_WIDTH,
+  --   ROM_INIT_FILE  => "rom/fg.mif"
+  -- )
+  -- port map (
+  --   clk         => clk_12,
+  --   cen         => cen_6,
+  --   ram_cs      => fg_ram_cs,
+  --   ram_addr    => cpu_addr(FG_RAM_ADDR_WIDTH-1 downto 0),
+  --   ram_din     => cpu_dout,
+  --   ram_dout    => fg_ram_dout,
+  --   ram_we      => not cpu_wr_n,
+  --   video       => video,
+  --   scroll_hpos => fg_scroll_hpos,
+  --   scroll_vpos => fg_scroll_vpos,
+  --   data        => fg_data
+  -- );
+
+  -- XXX: Remove this
+  fg_data <= (others => '0');
+
+  -- background layer
+  bg : entity work.scroll
   generic map (
-    RAM_ADDR_WIDTH => FG_RAM_ADDR_WIDTH,
-    ROM_ADDR_WIDTH => FG_ROM_ADDR_WIDTH,
-    ROM_INIT_FILE  => "rom/fg.mif"
+    RAM_ADDR_WIDTH => BG_RAM_ADDR_WIDTH,
+    ROM_ADDR_WIDTH => BG_ROM_ADDR_WIDTH,
+    ROM_INIT_FILE  => "rom/bg.mif"
   )
   port map (
     clk         => clk_12,
     cen         => cen_6,
-    ram_cs      => fg_ram_cs,
-    ram_addr    => cpu_addr(FG_RAM_ADDR_WIDTH-1 downto 0),
+    ram_cs      => bg_ram_cs,
+    ram_addr    => cpu_addr(BG_RAM_ADDR_WIDTH-1 downto 0),
     ram_din     => cpu_dout,
-    ram_dout    => fg_ram_dout,
+    ram_dout    => bg_ram_dout,
     ram_we      => not cpu_wr_n,
-    video_pos   => video_pos,
-    video_sync  => video_sync,
-    scroll_hpos => fg_scroll_hpos,
-    scroll_vpos => fg_scroll_vpos,
-    data        => fg_data
+    video       => video,
+    scroll_hpos => bg_scroll_hpos,
+    scroll_vpos => bg_scroll_vpos,
+    data        => bg_data
   );
 
   -- colour palette
   palette : entity work.palette
   port map (
-    clk         => clk_12,
-    cen         => cen_6,
-    ram_cs      => palette_ram_cs,
-    ram_addr    => cpu_addr(PALETTE_RAM_ADDR_WIDTH-1 downto 0),
-    ram_din     => cpu_dout,
-    ram_dout    => palette_ram_dout,
-    ram_we      => not cpu_wr_n,
-    char_data   => char_data,
-    fg_data     => fg_data,
-    video_blank => video_blank,
-    pixel       => pixel
+    clk             => clk_12,
+    cen             => cen_6,
+    ram_cs          => palette_ram_cs,
+    ram_addr        => cpu_addr(PALETTE_RAM_ADDR_WIDTH-1 downto 0),
+    ram_din         => cpu_dout,
+    ram_dout        => palette_ram_dout,
+    ram_we          => not cpu_wr_n,
+    video           => video,
+    sprite_priority => sprite_priority,
+    sprite_data     => sprite_data,
+    char_data       => char_data,
+    fg_data         => fg_data,
+    bg_data         => bg_data,
+    pixel           => pixel
   );
 
   -- $0000-$7fff PROGRAM ROM 1
@@ -379,8 +408,7 @@ begin
   sprite_ram_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"e000" and unsigned(cpu_addr) <= x"e7ff" else '0';
   palette_ram_cs <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"e800" and unsigned(cpu_addr) <= x"efff" else '0';
   prog_rom_3_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"f000" and unsigned(cpu_addr) <= x"f7ff" else '0';
-  fg_scroll_cs   <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"f800" and unsigned(cpu_addr) <= x"f801" else '0';
-  bg_scroll_cs   <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"f803" and unsigned(cpu_addr) <= x"f804" else '0';
+  scroll_cs      <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"f800" and unsigned(cpu_addr) <= x"f805" else '0';
   bank_cs        <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) = x"f808" else '0';
 
   -- CPU data input bus
@@ -397,10 +425,10 @@ begin
   led <= cpu_dout when work_ram_cs = '1' and cpu_wr_n = '0' else (others => '0');
 
   -- composite sync
-  vga_csync <= not (video_sync.hsync xor video_sync.vsync);
+  vga_csync <= video.csync;
 
-  -- color output
+  -- set pixel data
   vga_r <= pixel.r & pixel.r(3 downto 2);
   vga_g <= pixel.g & pixel.g(3 downto 2);
   vga_b <= pixel.b & pixel.b(3 downto 2);
-end arch;
+end architecture arch;
