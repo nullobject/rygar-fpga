@@ -57,12 +57,6 @@ entity sprite_blitter is
 end sprite_blitter;
 
 architecture arch of sprite_blitter is
-  -- represents the position of a pixel in a sprite
-  type sprite_pos_t is record
-    x : unsigned(4 downto 0);
-    y : unsigned(4 downto 0);
-  end record sprite_pos_t;
-
   type state_t is (INIT, CHECK, PRELOAD, BLIT);
 
   -- state signals

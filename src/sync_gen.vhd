@@ -135,8 +135,8 @@ begin
   end process;
 
   -- set video position
-  video.x <= to_unsigned(x, video.x'length);
-  video.y <= to_unsigned(y, video.y'length);
+  video.pos.x <= to_unsigned(x, video.pos.x'length);
+  video.pos.y <= to_unsigned(y, video.pos.y'length);
 
   -- set sync signals
   video.hsync <= hsync;

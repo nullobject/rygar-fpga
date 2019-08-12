@@ -275,7 +275,7 @@ begin
   frame_done <= '1' when sprite_counter = sprite_counter'high else '0';
 
   -- set frame buffer read address
-  frame_buffer_addr_rd <= std_logic_vector(video.y(7 downto 0) & video.x(7 downto 0));
+  frame_buffer_addr_rd <= std_logic_vector(video.pos.y(7 downto 0) & video.pos.x(7 downto 0));
 
   -- read from the frame buffer when video output is enabled
   frame_buffer_rden <= video.enable;

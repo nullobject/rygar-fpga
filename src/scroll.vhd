@@ -170,7 +170,7 @@ begin
   -- Update vertical position.
   --
   -- This is just the sum of the vertical screen and scroll positions.
-  vpos <= video.y(7 downto 0) + scroll_vpos;
+  vpos <= video.pos.y(7 downto 0) + scroll_vpos;
 
   -- Load tile data from the scroll RAM.
   --
