@@ -123,7 +123,6 @@ package types is
     -- sync signals
     hsync : std_logic;
     vsync : std_logic;
-    csync : std_logic;
 
     -- blank signals
     hblank : std_logic;

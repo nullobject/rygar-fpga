@@ -7,5 +7,4 @@ derive_clock_uncertainty
 set_false_path -from * -to [get_ports {key*}]
 
 # constrain output ports
-set_false_path -from * -to [get_ports {led*}]
 set_false_path -from * -to [get_ports {vga*}]

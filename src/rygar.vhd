@@ -22,38 +22,34 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-library pll;
-
 use work.types.all;
 
-entity rygar_top is
-  port (
-    -- 50MHz clock
-    clk : in std_logic;
-
-    -- VGA signals
-    vga_r     : out std_logic_vector(5 downto 0);
-    vga_g     : out std_logic_vector(5 downto 0);
-    vga_b     : out std_logic_vector(5 downto 0);
-    vga_csync : out std_logic;
-
-    -- buttons
-    key : in std_logic_vector(1 downto 0);
-
-    -- LEDs
-    led : out byte_t
+entity rygar is
+  generic (
+    SPRITE_LAYER_ENABLE : boolean := true;
+    CHAR_LAYER_ENABLE   : boolean := true;
+    FG_LAYER_ENABLE     : boolean := true;
+    BG_LAYER_ENABLE     : boolean := true
   );
-end rygar_top;
+  port (
+    -- clock signals
+    clk   : in std_logic;
+    cen_6 : in std_logic;
+    cen_4 : in std_logic;
 
-architecture arch of rygar_top is
-  -- clock signals
-  signal clk_12 : std_logic;
-  signal cen_6  : std_logic;
-  signal cen_4  : std_logic;
+    -- reset
+    reset : in std_logic;
 
-  -- reset
-  signal reset : std_logic;
+    -- sync signals
+    hsync : out std_logic;
+    vsync : out std_logic;
 
+    -- pixel data
+    pixel : out rgb_t
+  );
+end rygar;
+
+architecture arch of rygar is
   -- CPU signals
   signal cpu_cen     : std_logic;
   signal cpu_addr    : std_logic_vector(15 downto 0);
@@ -101,66 +97,43 @@ architecture arch of rygar_top is
   signal bg_scroll_hpos : unsigned(8 downto 0);
   signal bg_scroll_vpos : unsigned(7 downto 0);
 
-  -- video signals
-  signal video : video_t;
-
-  -- pixel data
-  signal pixel : rgb_t;
-
   -- sprite priority data
   signal sprite_priority : priority_t;
 
   -- graphics layer data
-  signal sprite_data : byte_t;
-  signal char_data   : byte_t;
-  signal fg_data     : byte_t;
-  signal bg_data     : byte_t;
+  signal sprite_data : byte_t := (others => '0');
+  signal char_data   : byte_t := (others => '0');
+  signal fg_data     : byte_t := (others => '0');
+  signal bg_data     : byte_t := (others => '0');
+
+  -- video signals
+  signal video : video_t;
 
   -- control signals
   signal vblank_falling : std_logic;
 begin
-  my_pll : entity pll.pll
-  port map (
-    refclk   => clk,
-    rst      => '0',
-    outclk_0 => clk_12,
-    locked   => open
-  );
-
-  -- generate the 6MHz clock enable signal
-  clock_divider_6 : entity work.clock_divider
-  generic map (DIVISOR => 2)
-  port map (clk => clk_12, cen => cen_6);
-
-  -- generate the 4MHz clock enable signal
-  clock_divider_4 : entity work.clock_divider
-  generic map (DIVISOR => 3)
-  port map (clk => clk_12, cen => cen_4);
-
-  -- Generate reset pulse after powering on, or when KEY0 is pressed.
-  --
-  -- The Z80 needs to be reset after powering on, otherwise it may load garbage
-  -- data from the address and data buses.
-  reset_gen : entity work.reset_gen
-  port map (
-    clk  => clk_12,
-    rin  => not key(0),
-    rout => reset
-  );
-
   -- video timing generator
   sync_gen : entity work.sync_gen
   port map (
-    clk   => clk_12,
+    clk   => clk,
     cen   => cen_6,
     video => video
+  );
+
+  -- detect falling edges of the VBLANK signal
+  vblank_edge_detector : entity work.edge_detector
+  generic map (FALLING => true)
+  port map (
+    clk  => clk,
+    data => video.vblank,
+    edge => vblank_falling
   );
 
   -- program ROM 1
   prog_rom_1 : entity work.single_port_rom
   generic map (ADDR_WIDTH => PROG_ROM_1_ADDR_WIDTH, INIT_FILE => "rom/cpu_5p.mif")
   port map (
-    clk  => clk_12,
+    clk  => clk,
     cs   => prog_rom_1_cs,
     addr => cpu_addr(PROG_ROM_1_ADDR_WIDTH-1 downto 0),
     dout => prog_rom_1_dout
@@ -170,7 +143,7 @@ begin
   prog_rom_2 : entity work.single_port_rom
   generic map (ADDR_WIDTH => PROG_ROM_2_ADDR_WIDTH, INIT_FILE => "rom/cpu_5m.mif")
   port map (
-    clk  => clk_12,
+    clk  => clk,
     cs   => prog_rom_2_cs,
     addr => cpu_addr(PROG_ROM_2_ADDR_WIDTH-1 downto 0),
     dout => prog_rom_2_dout
@@ -180,7 +153,7 @@ begin
   prog_rom_3 : entity work.single_port_rom
   generic map (ADDR_WIDTH => PROG_ROM_3_ADDR_WIDTH, INIT_FILE => "rom/cpu_5j.mif")
   port map (
-    clk  => clk_12,
+    clk  => clk,
     cs   => prog_rom_3_cs,
     addr => std_logic_vector(current_bank) & cpu_addr(10 downto 0),
     dout => prog_rom_3_dout
@@ -190,7 +163,7 @@ begin
   work_ram : entity work.single_port_ram
   generic map (ADDR_WIDTH => WORK_RAM_ADDR_WIDTH)
   port map (
-    clk  => clk_12,
+    clk  => clk,
     cs   => work_ram_cs,
     addr => cpu_addr(WORK_RAM_ADDR_WIDTH-1 downto 0),
     din  => cpu_dout,
@@ -198,35 +171,11 @@ begin
     we   => not cpu_wr_n
   );
 
-  -- foreground RAM
-  fg_ram : entity work.single_port_ram
-  generic map (ADDR_WIDTH => FG_RAM_ADDR_WIDTH)
-  port map (
-    clk  => clk_12,
-    cs   => fg_ram_cs,
-    addr => cpu_addr(FG_RAM_ADDR_WIDTH-1 downto 0),
-    din  => cpu_dout,
-    dout => fg_ram_dout,
-    we   => not cpu_wr_n
-  );
-
-  -- background RAM
-  -- bg_ram : entity work.single_port_ram
-  -- generic map (ADDR_WIDTH => BG_RAM_ADDR_WIDTH)
-  -- port map (
-  --   clk  => clk_12,
-  --   cs   => bg_ram_cs,
-  --   addr => cpu_addr(BG_RAM_ADDR_WIDTH-1 downto 0),
-  --   din  => cpu_dout,
-  --   dout => bg_ram_dout,
-  --   we   => not cpu_wr_n
-  -- );
-
   -- main CPU
   cpu : entity work.T80s
   port map (
     RESET_n => not reset,
-    CLK     => clk_12,
+    CLK     => clk,
     CEN     => cen_4,
     WAIT_n  => '1',
     INT_n   => cpu_int_n,
@@ -243,137 +192,136 @@ begin
     DO      => cpu_dout
   );
 
-  -- detect falling edges of the VBLANK signal
-  vblank_edge_detector : entity work.edge_detector
-  generic map (FALLING => true)
-  port map (
-    clk  => clk_12,
-    data => video.vblank,
-    edge => vblank_falling
-  );
-
-  -- Trigger an interrupt on the falling edge of the VBLANK signal.
-  --
-  -- Once the interrupt request has been accepted by the CPU, it is
-  -- acknowledged by activating the IORQ signal during the M1 cycle. This
-  -- disables the interrupt signal, and the cycle starts over.
-  irq : process (clk_12)
-  begin
-    if rising_edge(clk_12) then
-      if cpu_m1_n = '0' and cpu_ioreq_n = '0' then
-        cpu_int_n <= '1';
-      elsif vblank_falling = '1' then
-        cpu_int_n <= '0';
-      end if;
-    end if;
-  end process;
-
-  -- set current bank register
-  set_current_bank : process (clk_12)
-  begin
-    if rising_edge(clk_12) then
-      if bank_cs = '1' and cpu_wr_n = '0' then
-        -- flip-flop 6J uses data lines 3 to 6
-        current_bank <= unsigned(cpu_dout(6 downto 3));
-      end if;
-    end if;
-  end process;
-
-  -- set foreground and background scroll position registers
-  set_scroll_pos : process (clk_12)
-  begin
-    if rising_edge(clk_12) then
-      if scroll_cs = '1' and cpu_wr_n = '0' then
-        case cpu_addr(2 downto 0) is
-          when "000" => fg_scroll_hpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
-          when "001" => fg_scroll_hpos(8 downto 8) <= unsigned(cpu_dout(0 downto 0));
-          when "010" => fg_scroll_vpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
-          when "011" => bg_scroll_hpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
-          when "100" => bg_scroll_hpos(8 downto 8) <= unsigned(cpu_dout(0 downto 0));
-          when "110" => bg_scroll_vpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
-          when others => null;
-        end case;
-      end if;
-    end if;
-  end process;
-
   -- sprite layer
-  sprite : entity work.sprite
-  port map (
-    clk      => clk_12,
-    ram_cs   => sprite_ram_cs,
-    ram_addr => cpu_addr(SPRITE_RAM_ADDR_WIDTH-1 downto 0),
-    ram_din  => cpu_dout,
-    ram_dout => sprite_ram_dout,
-    ram_we   => not cpu_wr_n,
-    video    => video,
-    priority => sprite_priority,
-    data     => sprite_data
-  );
+  sprite_layer_gen : if SPRITE_LAYER_ENABLE generate
+    sprite_layer : entity work.sprite
+    port map (
+      clk      => clk,
+      ram_cs   => sprite_ram_cs,
+      ram_addr => cpu_addr(SPRITE_RAM_ADDR_WIDTH-1 downto 0),
+      ram_din  => cpu_dout,
+      ram_dout => sprite_ram_dout,
+      ram_we   => not cpu_wr_n,
+      video    => video,
+      priority => sprite_priority,
+      data     => sprite_data
+    );
+  else generate
+    -- dummy sprite RAM
+    sprite_ram : entity work.single_port_ram
+    generic map (ADDR_WIDTH => SPRITE_RAM_ADDR_WIDTH)
+    port map (
+      clk  => clk,
+      cs   => sprite_ram_cs,
+      addr => cpu_addr(SPRITE_RAM_ADDR_WIDTH-1 downto 0),
+      din  => cpu_dout,
+      dout => sprite_ram_dout,
+      we   => not cpu_wr_n
+    );
+  end generate;
 
   -- character layer
-  char : entity work.char
-  port map (
-    clk      => clk_12,
-    cen      => cen_6,
-    ram_cs   => char_ram_cs,
-    ram_addr => cpu_addr(CHAR_RAM_ADDR_WIDTH-1 downto 0),
-    ram_din  => cpu_dout,
-    ram_dout => char_ram_dout,
-    ram_we   => not cpu_wr_n,
-    video    => video,
-    data     => char_data
-  );
+  char_layer_gen : if CHAR_LAYER_ENABLE generate
+    char_layer : entity work.char
+    port map (
+      clk      => clk,
+      cen      => cen_6,
+      ram_cs   => char_ram_cs,
+      ram_addr => cpu_addr(CHAR_RAM_ADDR_WIDTH-1 downto 0),
+      ram_din  => cpu_dout,
+      ram_dout => char_ram_dout,
+      ram_we   => not cpu_wr_n,
+      video    => video,
+      data     => char_data
+    );
+  else generate
+    -- dummy character RAM
+    char_ram : entity work.single_port_ram
+    generic map (ADDR_WIDTH => CHAR_RAM_ADDR_WIDTH)
+    port map (
+      clk  => clk,
+      cs   => char_ram_cs,
+      addr => cpu_addr(CHAR_RAM_ADDR_WIDTH-1 downto 0),
+      din  => cpu_dout,
+      dout => char_ram_dout,
+      we   => not cpu_wr_n
+    );
+  end generate;
 
   -- foreground layer
-  -- fg : entity work.scroll
-  -- generic map (
-  --   RAM_ADDR_WIDTH => FG_RAM_ADDR_WIDTH,
-  --   ROM_ADDR_WIDTH => FG_ROM_ADDR_WIDTH,
-  --   ROM_INIT_FILE  => "rom/fg.mif"
-  -- )
-  -- port map (
-  --   clk         => clk_12,
-  --   cen         => cen_6,
-  --   ram_cs      => fg_ram_cs,
-  --   ram_addr    => cpu_addr(FG_RAM_ADDR_WIDTH-1 downto 0),
-  --   ram_din     => cpu_dout,
-  --   ram_dout    => fg_ram_dout,
-  --   ram_we      => not cpu_wr_n,
-  --   video       => video,
-  --   scroll_hpos => fg_scroll_hpos,
-  --   scroll_vpos => fg_scroll_vpos,
-  --   data        => fg_data
-  -- );
-
-  -- XXX: Remove this
-  fg_data <= (others => '0');
+  fg_layer_gen : if FG_LAYER_ENABLE generate
+    fg_layer : entity work.scroll
+    generic map (
+      RAM_ADDR_WIDTH => FG_RAM_ADDR_WIDTH,
+      ROM_ADDR_WIDTH => FG_ROM_ADDR_WIDTH,
+      ROM_INIT_FILE  => "rom/fg.mif"
+    )
+    port map (
+      clk         => clk,
+      cen         => cen_6,
+      ram_cs      => fg_ram_cs,
+      ram_addr    => cpu_addr(FG_RAM_ADDR_WIDTH-1 downto 0),
+      ram_din     => cpu_dout,
+      ram_dout    => fg_ram_dout,
+      ram_we      => not cpu_wr_n,
+      video       => video,
+      scroll_hpos => fg_scroll_hpos,
+      scroll_vpos => fg_scroll_vpos,
+      data        => fg_data
+    );
+  else generate
+    -- dummy foreground RAM
+    fg_ram : entity work.single_port_ram
+    generic map (ADDR_WIDTH => FG_RAM_ADDR_WIDTH)
+    port map (
+      clk  => clk,
+      cs   => fg_ram_cs,
+      addr => cpu_addr(FG_RAM_ADDR_WIDTH-1 downto 0),
+      din  => cpu_dout,
+      dout => fg_ram_dout,
+      we   => not cpu_wr_n
+    );
+  end generate;
 
   -- background layer
-  bg : entity work.scroll
-  generic map (
-    RAM_ADDR_WIDTH => BG_RAM_ADDR_WIDTH,
-    ROM_ADDR_WIDTH => BG_ROM_ADDR_WIDTH,
-    ROM_INIT_FILE  => "rom/bg.mif"
-  )
-  port map (
-    clk         => clk_12,
-    cen         => cen_6,
-    ram_cs      => bg_ram_cs,
-    ram_addr    => cpu_addr(BG_RAM_ADDR_WIDTH-1 downto 0),
-    ram_din     => cpu_dout,
-    ram_dout    => bg_ram_dout,
-    ram_we      => not cpu_wr_n,
-    video       => video,
-    scroll_hpos => bg_scroll_hpos,
-    scroll_vpos => bg_scroll_vpos,
-    data        => bg_data
-  );
+  bg_layer_gen : if BG_LAYER_ENABLE generate
+    bg_layer : entity work.scroll
+    generic map (
+      RAM_ADDR_WIDTH => BG_RAM_ADDR_WIDTH,
+      ROM_ADDR_WIDTH => BG_ROM_ADDR_WIDTH,
+      ROM_INIT_FILE  => "rom/bg.mif"
+    )
+    port map (
+      clk         => clk,
+      cen         => cen_6,
+      ram_cs      => bg_ram_cs,
+      ram_addr    => cpu_addr(BG_RAM_ADDR_WIDTH-1 downto 0),
+      ram_din     => cpu_dout,
+      ram_dout    => bg_ram_dout,
+      ram_we      => not cpu_wr_n,
+      video       => video,
+      scroll_hpos => bg_scroll_hpos,
+      scroll_vpos => bg_scroll_vpos,
+      data        => bg_data
+    );
+  else generate
+    -- dummy background RAM
+    bg_ram : entity work.single_port_ram
+    generic map (ADDR_WIDTH => BG_RAM_ADDR_WIDTH)
+    port map (
+      clk  => clk,
+      cs   => bg_ram_cs,
+      addr => cpu_addr(BG_RAM_ADDR_WIDTH-1 downto 0),
+      din  => cpu_dout,
+      dout => bg_ram_dout,
+      we   => not cpu_wr_n
+    );
+  end generate;
 
   -- colour palette
   palette : entity work.palette
   port map (
-    clk             => clk_12,
+    clk             => clk,
     cen             => cen_6,
     ram_cs          => palette_ram_cs,
     ram_addr        => cpu_addr(PALETTE_RAM_ADDR_WIDTH-1 downto 0),
@@ -388,6 +336,51 @@ begin
     bg_data         => bg_data,
     pixel           => pixel
   );
+
+  -- Trigger an interrupt on the falling edge of the VBLANK signal.
+  --
+  -- Once the interrupt request has been accepted by the CPU, it is
+  -- acknowledged by activating the IORQ signal during the M1 cycle. This
+  -- disables the interrupt signal, and the cycle starts over.
+  irq : process (clk)
+  begin
+    if rising_edge(clk) then
+      if cpu_m1_n = '0' and cpu_ioreq_n = '0' then
+        cpu_int_n <= '1';
+      elsif vblank_falling = '1' then
+        cpu_int_n <= '0';
+      end if;
+    end if;
+  end process;
+
+  -- set current bank register
+  set_current_bank : process (clk)
+  begin
+    if rising_edge(clk) then
+      if bank_cs = '1' and cpu_wr_n = '0' then
+        -- flip-flop 6J uses data lines 3 to 6
+        current_bank <= unsigned(cpu_dout(6 downto 3));
+      end if;
+    end if;
+  end process;
+
+  -- set foreground and background scroll position registers
+  set_scroll_pos : process (clk)
+  begin
+    if rising_edge(clk) then
+      if scroll_cs = '1' and cpu_wr_n = '0' then
+        case cpu_addr(2 downto 0) is
+          when "000" => fg_scroll_hpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
+          when "001" => fg_scroll_hpos(8 downto 8) <= unsigned(cpu_dout(0 downto 0));
+          when "010" => fg_scroll_vpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
+          when "011" => bg_scroll_hpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
+          when "100" => bg_scroll_hpos(8 downto 8) <= unsigned(cpu_dout(0 downto 0));
+          when "110" => bg_scroll_vpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
+          when others => null;
+        end case;
+      end if;
+    end if;
+  end process;
 
   -- $0000-$7fff PROGRAM ROM 1
   -- $8000-$bfff PROGRAM ROM 2
@@ -422,13 +415,7 @@ begin
              sprite_ram_dout or
              palette_ram_dout;
 
-  led <= cpu_dout when work_ram_cs = '1' and cpu_wr_n = '0' else (others => '0');
-
-  -- composite sync
-  vga_csync <= video.csync;
-
-  -- set pixel data
-  vga_r <= pixel.r & pixel.r(3 downto 2);
-  vga_g <= pixel.g & pixel.g(3 downto 2);
-  vga_b <= pixel.b & pixel.b(3 downto 2);
+  -- set sync signals
+  hsync <= video.hsync;
+  vsync <= video.vsync;
 end architecture arch;

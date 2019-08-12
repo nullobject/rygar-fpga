@@ -24,8 +24,8 @@ use ieee.numeric_std.all;
 
 use work.types.all;
 
--- The sprite layer of the graphics pipeline handles the moving graphical
--- elements you see on the screen.
+-- The sprite layer is the part of the graphics pipeline that handles the
+-- moving graphical elements you see on the screen.
 --
 -- They can be placed anywhere on the screen with per-pixel precision, can be
 -- flipped about their horizontal and/or vertical axes, and can even overlap
@@ -226,9 +226,9 @@ begin
 
   -- Update the sprite counter.
   --
-  -- Sprites are sorted from highest to lowest priority, so we need to iterate
-  -- backwards to ensure that the sprites with the highest priority are drawn
-  -- last.
+  -- Sprites are sorted from lowest to highest priority. If sprites are
+  -- overlapping, then the higher priority sprites will appear above lower
+  -- priority sprites.
   update_sprite_counter : process (clk)
   begin
     if rising_edge(clk) then

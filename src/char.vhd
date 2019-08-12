@@ -24,9 +24,10 @@ use ieee.numeric_std.all;
 
 use work.types.all;
 
--- This module handles the character layer in the graphics pipeline. It
--- consists of a 32x32 grid of 8x8 tiles, and is used to render things like the
--- logo, score, playfield, and other static graphics.
+-- The character layer is the part of the graphics pipeline that handles things
+-- like the logo, score, playfield, and other static graphics.
+--
+-- It consists of a 32x32 grid of 8x8 tiles.
 entity char is
   port (
     -- clock

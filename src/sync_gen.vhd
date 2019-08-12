@@ -141,7 +141,6 @@ begin
   -- set sync signals
   video.hsync <= hsync;
   video.vsync <= vsync;
-  video.csync <= not (hsync xor vsync);
 
   -- set blank signals
   video.hblank <= hblank;

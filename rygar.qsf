@@ -14,31 +14,10 @@ set_location_assignment PIN_V11 -to clk
 
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to clk
 
-# led
-set_location_assignment PIN_W15 -to led[0]
-set_location_assignment PIN_AA24 -to led[1]
-set_location_assignment PIN_V16 -to led[2]
-set_location_assignment PIN_V15 -to led[3]
-set_location_assignment PIN_AF26 -to led[4]
-set_location_assignment PIN_AE26 -to led[5]
-set_location_assignment PIN_Y16 -to led[6]
-set_location_assignment PIN_AA23 -to led[7]
-
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[0]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[1]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[2]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[3]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[4]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[5]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[6]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led[7]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to led
-set_instance_assignment -name SLEW_RATE 1 -to led
-
+# key
 set_location_assignment PIN_AH17 -to key[0]
 set_location_assignment PIN_AH16 -to key[1]
 
-# key
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to key[0]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to key[1]
 
@@ -70,7 +49,8 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to vga_*
 set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to vga_*
 
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
-set_global_assignment -name TOP_LEVEL_ENTITY rygar_top
+set_global_assignment -name TOP_LEVEL_ENTITY top
+set_global_assignment -name VHDL_INPUT_VERSION VHDL_2008
 set_global_assignment -name SDC_FILE src/rygar.sdc
 set_global_assignment -name QIP_FILE src/pll.qip
 set_global_assignment -name QIP_FILE src/t80/T80.qip
@@ -81,12 +61,13 @@ set_global_assignment -name VHDL_FILE src/edge_detector.vhd
 set_global_assignment -name VHDL_FILE src/frame_buffer.vhd
 set_global_assignment -name VHDL_FILE src/palette.vhd
 set_global_assignment -name VHDL_FILE src/reset_gen.vhd
-set_global_assignment -name VHDL_FILE src/rygar_top.vhd
+set_global_assignment -name VHDL_FILE src/rygar.vhd
 set_global_assignment -name VHDL_FILE src/scroll.vhd
 set_global_assignment -name VHDL_FILE src/single_port_ram.vhd
 set_global_assignment -name VHDL_FILE src/single_port_rom.vhd
 set_global_assignment -name VHDL_FILE src/sprite.vhd
 set_global_assignment -name VHDL_FILE src/sprite_blitter.vhd
 set_global_assignment -name VHDL_FILE src/sync_gen.vhd
+set_global_assignment -name VHDL_FILE src/top.vhd
 set_global_assignment -name VHDL_FILE src/true_dual_port_ram.vhd
 set_global_assignment -name VHDL_FILE src/types.vhd
