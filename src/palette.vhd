@@ -65,6 +65,9 @@ architecture arch of palette is
   -- palette RAM (port B)
   signal palette_ram_addr_b : std_logic_vector(PALETTE_RAM_ADDR_WIDTH_B-1 downto 0);
   signal palette_ram_dout_b : std_logic_vector(PALETTE_RAM_DATA_WIDTH_B-1 downto 0);
+
+  -- current layer
+  signal layer : layer_t;
 begin
   -- The palette RAM contains 1024 16-bit RGB colour values, stored in
   -- RRRRGGGGXXXXBBBB format.
@@ -99,23 +102,11 @@ begin
     dout_b => palette_ram_dout_b
   );
 
-  -- TODO: refactor into multiple processes
-  load_palette_data : process (clk)
-    variable layer : layer_t;
+  -- latch pixel data from the palette RAM
+  latch_palette_data : process (clk)
   begin
     if rising_edge(clk) then
       if cen = '1' then
-        layer := mux_layers(sprite_priority, sprite_data, char_data, fg_data, bg_data);
-
-        -- set palette RAM address
-        case layer is
-          when SPRITE_LAYER => palette_ram_addr_b <= "00" & sprite_data;
-          when CHAR_LAYER   => palette_ram_addr_b <= "01" & char_data;
-          when FG_LAYER     => palette_ram_addr_b <= "10" & fg_data;
-          when BG_LAYER     => palette_ram_addr_b <= "11" & bg_data;
-          when FILL_LAYER   => palette_ram_addr_b <= "0100000000";
-        end case;
-
         -- set pixel data
         if video.enable = '1' then
           pixel.r <= palette_ram_dout_b(15 downto 12);
@@ -129,4 +120,16 @@ begin
       end if;
     end if;
   end process;
+
+  -- set current layer
+  layer <= mux_layers(sprite_priority, sprite_data, char_data, fg_data, bg_data);
+
+  -- set palette RAM address
+  with layer select
+    palette_ram_addr_b <=
+      "00" & sprite_data when SPRITE_LAYER,
+      "01" & char_data   when CHAR_LAYER,
+      "10" & fg_data     when FG_LAYER,
+      "11" & bg_data     when BG_LAYER,
+      "0100000000"       when FILL_LAYER;
 end arch;

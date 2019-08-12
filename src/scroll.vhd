@@ -239,7 +239,7 @@ begin
   end process;
 
   -- decode high/low pixels from the graphics data
-  pixel <= gfx_data(7 downto 4) when hpos(0) = '1' else gfx_data(3 downto 0);
+  pixel <= gfx_data(7 downto 4) when hpos(0) = '0' else gfx_data(3 downto 0);
 
   -- set layer data
   data <= color & pixel;
