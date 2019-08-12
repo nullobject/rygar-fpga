@@ -101,62 +101,19 @@ begin
 
   -- TODO: refactor into multiple processes
   load_palette_data : process (clk)
+    variable layer : layer_t;
   begin
     if rising_edge(clk) then
       if cen = '1' then
-        -- handle layer priority
-        case sprite_priority is
-          when "00" =>
-            if sprite_data(3 downto 0) /= "0000" then
-              palette_ram_addr_b <= "00" & sprite_data;
-            elsif char_data(3 downto 0) /= "0000" then
-              palette_ram_addr_b <= "01" & char_data;
-            elsif fg_data(3 downto 0) /= "0000" then
-              palette_ram_addr_b <= "10" & fg_data;
-            elsif bg_data(3 downto 0) /= "0000" then
-              palette_ram_addr_b <= "11" & bg_data;
-            else
-              palette_ram_addr_b <= "0100000000";
-            end if;
+        layer := mux_layers(sprite_priority, sprite_data, char_data, fg_data, bg_data);
 
-          when "01" =>
-            if char_data(3 downto 0) /= "0000" then
-              palette_ram_addr_b <= "01" & char_data;
-            elsif sprite_data(3 downto 0) /= "0000" then
-              palette_ram_addr_b <= "00" & sprite_data;
-            elsif fg_data(3 downto 0) /= "0000" then
-              palette_ram_addr_b <= "10" & fg_data;
-            elsif bg_data(3 downto 0) /= "0000" then
-              palette_ram_addr_b <= "11" & bg_data;
-            else
-              palette_ram_addr_b <= "0100000000";
-            end if;
-
-          when "10" =>
-            if char_data(3 downto 0) /= "0000" then
-              palette_ram_addr_b <= "01" & char_data;
-            elsif fg_data(3 downto 0) /= "0000" then
-              palette_ram_addr_b <= "10" & fg_data;
-            elsif sprite_data(3 downto 0) /= "0000" then
-              palette_ram_addr_b <= "00" & sprite_data;
-            elsif bg_data(3 downto 0) /= "0000" then
-              palette_ram_addr_b <= "11" & bg_data;
-            else
-              palette_ram_addr_b <= "0100000000";
-            end if;
-
-          when "11" =>
-            if char_data(3 downto 0) /= "0000" then
-              palette_ram_addr_b <= "01" & char_data;
-            elsif fg_data(3 downto 0) /= "0000" then
-              palette_ram_addr_b <= "10" & fg_data;
-            elsif bg_data(3 downto 0) /= "0000" then
-              palette_ram_addr_b <= "11" & bg_data;
-            elsif sprite_data(3 downto 0) /= "0000" then
-              palette_ram_addr_b <= "00" & sprite_data;
-            else
-              palette_ram_addr_b <= "0100000000";
-            end if;
+        -- set palette RAM address
+        case layer is
+          when SPRITE_LAYER => palette_ram_addr_b <= "00" & sprite_data;
+          when CHAR_LAYER   => palette_ram_addr_b <= "01" & char_data;
+          when FG_LAYER     => palette_ram_addr_b <= "10" & fg_data;
+          when BG_LAYER     => palette_ram_addr_b <= "11" & bg_data;
+          when FILL_LAYER   => palette_ram_addr_b <= "0100000000";
         end case;
 
         -- set pixel data

@@ -128,11 +128,23 @@ package types is
     enable : std_logic;
   end record video_t;
 
+  -- represents a graphics layer
+  type layer_t is (SPRITE_LAYER, CHAR_LAYER, FG_LAYER, BG_LAYER, FILL_LAYER);
+
   -- calculate sprite size (8x8, 16x16, 32x32, 64x64)
   function sprite_size_in_pixels(size : std_logic_vector(1 downto 0)) return natural;
 
   -- initialise sprite from a raw 64-bit value
   function init_sprite(data : std_logic_vector(SPRITE_RAM_DATA_WIDTH_B-1 downto 0)) return sprite_t;
+
+  -- determine which graphics layer should be rendered
+  function mux_layers(
+    sprite_priority : std_logic_vector(SPRITE_PRIORITY_WIDTH-1 downto 0);
+    sprite_data     : byte_t;
+    char_data       : byte_t;
+    fg_data         : byte_t;
+    bg_data         : byte_t
+  ) return layer_t;
 end package types;
 
 package body types is
@@ -176,4 +188,67 @@ package body types is
     sprite.size     := to_unsigned(sprite_size_in_pixels(data(SPRITE_SIZE_MSB downto SPRITE_SIZE_LSB)), sprite.size'length);
     return sprite;
   end init_sprite;
+
+  function mux_layers(
+    sprite_priority : std_logic_vector(SPRITE_PRIORITY_WIDTH-1 downto 0);
+    sprite_data     : byte_t;
+    char_data       : byte_t;
+    fg_data         : byte_t;
+    bg_data         : byte_t
+  ) return layer_t is
+  begin
+    case sprite_priority is
+      when "00" =>
+        if sprite_data(3 downto 0) /= "0000" then
+          return SPRITE_LAYER;
+        elsif char_data(3 downto 0) /= "0000" then
+          return CHAR_LAYER;
+        elsif fg_data(3 downto 0) /= "0000" then
+          return FG_LAYER;
+        elsif bg_data(3 downto 0) /= "0000" then
+          return BG_LAYER;
+        else
+          return FILL_LAYER;
+        end if;
+
+      when "01" =>
+        if char_data(3 downto 0) /= "0000" then
+          return CHAR_LAYER;
+        elsif sprite_data(3 downto 0) /= "0000" then
+          return SPRITE_LAYER;
+        elsif fg_data(3 downto 0) /= "0000" then
+          return FG_LAYER;
+        elsif bg_data(3 downto 0) /= "0000" then
+          return BG_LAYER;
+        else
+          return FILL_LAYER;
+        end if;
+
+      when "10" =>
+        if char_data(3 downto 0) /= "0000" then
+          return CHAR_LAYER;
+        elsif fg_data(3 downto 0) /= "0000" then
+          return FG_LAYER;
+        elsif sprite_data(3 downto 0) /= "0000" then
+          return SPRITE_LAYER;
+        elsif bg_data(3 downto 0) /= "0000" then
+          return BG_LAYER;
+        else
+          return FILL_LAYER;
+        end if;
+
+      when "11" =>
+        if char_data(3 downto 0) /= "0000" then
+          return CHAR_LAYER;
+        elsif fg_data(3 downto 0) /= "0000" then
+          return FG_LAYER;
+        elsif bg_data(3 downto 0) /= "0000" then
+          return BG_LAYER;
+        elsif sprite_data(3 downto 0) /= "0000" then
+          return SPRITE_LAYER;
+        else
+          return FILL_LAYER;
+        end if;
+    end case;
+  end mux_layers;
 end package body types;
