@@ -81,7 +81,7 @@ architecture arch of sprite is
   signal frame_buffer_wren    : std_logic;
 
   -- sprite counter
-  signal sprite_counter : unsigned(7 downto 0) := (others => '1');
+  signal sprite_counter : natural range 0 to 255;
 
   -- sprite descriptor
   signal sprite : sprite_t;
@@ -231,7 +231,7 @@ begin
   begin
     if rising_edge(clk) then
       if state = JUMP then
-        sprite_counter <= sprite_counter - 1;
+        sprite_counter <= sprite_counter + 1;
       end if;
     end if;
   end process;
@@ -269,10 +269,10 @@ begin
   end process;
 
   -- set sprite RAM address
-  sprite_ram_addr <= std_logic_vector(resize(sprite_counter, sprite_ram_addr'length));
+  sprite_ram_addr <= std_logic_vector(to_unsigned(sprite_counter, sprite_ram_addr'length));
 
   -- the frame is done when all the sprites have been blitted
-  frame_done <= '1' when sprite_counter = 0 else '0';
+  frame_done <= '1' when sprite_counter = sprite_counter'high else '0';
 
   -- set frame buffer read address
   frame_buffer_addr_rd <= std_logic_vector(video.y(7 downto 0) & video.x(7 downto 0));
