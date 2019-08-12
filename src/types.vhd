@@ -23,9 +23,6 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 package types is
-  subtype byte_t is std_logic_vector(7 downto 0);
-  subtype nibble_t is std_logic_vector(3 downto 0);
-
   -- memory sizes
   constant PROG_ROM_1_ADDR_WIDTH   : natural := 15; -- 32kB
   constant PROG_ROM_2_ADDR_WIDTH   : natural := 14; -- 16kB
@@ -44,7 +41,6 @@ package types is
   constant SPRITE_RAM_ADDR_WIDTH_B    : natural := 8;
   constant SPRITE_RAM_DATA_WIDTH_B    : natural := 64;
   constant SPRITE_TILE_ROM_ADDR_WIDTH : natural := 17;
-  constant SPRITE_PRIORITY_WIDTH      : natural := 2;
   constant FRAME_BUFFER_ADDR_WIDTH    : natural := 16;
   constant FRAME_BUFFER_DATA_WIDTH    : natural := 10;
 
@@ -84,6 +80,10 @@ package types is
   constant COLOR_DEPTH_G : natural := 4;
   constant COLOR_DEPTH_B : natural := 4;
 
+  subtype byte_t is std_logic_vector(7 downto 0);
+  subtype nibble_t is std_logic_vector(3 downto 0);
+  subtype priority_t is unsigned(1 downto 0);
+
   -- represents a position
   type pos_t is record
     x : unsigned(8 downto 0);
@@ -111,7 +111,7 @@ package types is
     flip_x   : std_logic;
     flip_y   : std_logic;
     pos      : pos_t;
-    priority : unsigned(1 downto 0);
+    priority : priority_t;
     size     : unsigned(5 downto 0);
   end record sprite_t;
 
@@ -144,7 +144,7 @@ package types is
 
   -- determine which graphics layer should be rendered
   function mux_layers(
-    sprite_priority : std_logic_vector(SPRITE_PRIORITY_WIDTH-1 downto 0);
+    sprite_priority : priority_t;
     sprite_data     : byte_t;
     char_data       : byte_t;
     fg_data         : byte_t;
@@ -195,7 +195,7 @@ package body types is
   end init_sprite;
 
   function mux_layers(
-    sprite_priority : std_logic_vector(SPRITE_PRIORITY_WIDTH-1 downto 0);
+    sprite_priority : priority_t;
     sprite_data     : byte_t;
     char_data       : byte_t;
     fg_data         : byte_t;

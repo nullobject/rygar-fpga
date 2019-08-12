@@ -108,7 +108,7 @@ architecture arch of rygar_top is
   signal pixel : rgb_t;
 
   -- sprite priority data
-  signal sprite_priority : std_logic_vector(SPRITE_PRIORITY_WIDTH-1 downto 0);
+  signal sprite_priority : priority_t;
 
   -- graphics layer data
   signal sprite_data : byte_t;

@@ -45,7 +45,7 @@ entity palette is
     video : in video_t;
 
     -- sprite priority data
-    sprite_priority : in std_logic_vector(SPRITE_PRIORITY_WIDTH-1 downto 0);
+    sprite_priority : in priority_t;
 
     -- graphics layer data
     sprite_data : in byte_t;

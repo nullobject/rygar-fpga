@@ -53,7 +53,7 @@ entity sprite is
     video : in video_t;
 
     -- layer data
-    priority : out std_logic_vector(SPRITE_PRIORITY_WIDTH-1 downto 0);
+    priority : out priority_t;
     data     : out byte_t
   );
 end sprite;
@@ -281,6 +281,6 @@ begin
   frame_buffer_rden <= video.enable;
 
   -- set layer data
-  priority <= frame_buffer_dout(9 downto 8);
+  priority <= unsigned(frame_buffer_dout(9 downto 8));
   data     <= frame_buffer_dout(7 downto 0);
 end architecture arch;
