@@ -91,7 +91,7 @@ begin
   end process;
 
   -- state machine
-  fsm : process (state, start, preload_done, blit_done)
+  fsm : process (state, start, visible, preload_done, blit_done)
   begin
     next_state <= state;
 
