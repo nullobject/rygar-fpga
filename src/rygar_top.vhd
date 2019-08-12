@@ -354,7 +354,7 @@ begin
     ram_we      => not cpu_wr_n,
     char_data   => char_data,
     fg_data     => fg_data,
-    sprite_data => sprite_data(7 downto 0),
+    sprite_data => sprite_data,
     video       => video,
     pixel       => pixel
   );
