@@ -42,9 +42,10 @@ entity palette is
     ram_we   : in std_logic;
 
     -- graphics layer data
-    sprite_data : in std_logic_vector(SPRITE_DATA_WIDTH-1 downto 0);
-    char_data   : in byte_t;
-    fg_data     : in byte_t;
+    sprite_priority : in std_logic_vector(SPRITE_PRIORITY_WIDTH-1 downto 0);
+    sprite_data     : in byte_t;
+    char_data       : in byte_t;
+    fg_data         : in byte_t;
 
     -- video signals
     video : in video_t;
@@ -100,10 +101,10 @@ begin
     if rising_edge(clk) then
       if cen = '1' then
         -- handle layer priority
-        case sprite_data(9 downto 8) is
+        case sprite_priority is
           when "00" =>
             if sprite_data(3 downto 0) /= "0000" then
-              palette_ram_addr_b <= "00" & sprite_data(7 downto 0);
+              palette_ram_addr_b <= "00" & sprite_data;
             elsif char_data(3 downto 0) /= "0000" then
               palette_ram_addr_b <= "01" & char_data;
             elsif fg_data(3 downto 0) /= "0000" then
@@ -115,7 +116,7 @@ begin
             if char_data(3 downto 0) /= "0000" then
               palette_ram_addr_b <= "01" & char_data;
             elsif sprite_data(3 downto 0) /= "0000" then
-              palette_ram_addr_b <= "00" & sprite_data(7 downto 0);
+              palette_ram_addr_b <= "00" & sprite_data;
             elsif fg_data(3 downto 0) /= "0000" then
               palette_ram_addr_b <= "10" & fg_data;
             else
@@ -127,7 +128,7 @@ begin
             elsif fg_data(3 downto 0) /= "0000" then
               palette_ram_addr_b <= "10" & fg_data;
             elsif sprite_data(3 downto 0) /= "0000" then
-              palette_ram_addr_b <= "00" & sprite_data(7 downto 0);
+              palette_ram_addr_b <= "00" & sprite_data;
             else
               palette_ram_addr_b <= (others => '0');
             end if;
@@ -137,7 +138,7 @@ begin
             elsif fg_data(3 downto 0) /= "0000" then
               palette_ram_addr_b <= "10" & fg_data;
             elsif sprite_data(3 downto 0) /= "0000" then
-              palette_ram_addr_b <= "00" & sprite_data(7 downto 0);
+              palette_ram_addr_b <= "00" & sprite_data;
             else
               palette_ram_addr_b <= (others => '0');
             end if;

@@ -52,8 +52,9 @@ entity sprite is
     -- video signals
     video : in video_t;
 
-    -- graphics data
-    data : out std_logic_vector(SPRITE_DATA_WIDTH-1 downto 0)
+    -- data out
+    priority : out std_logic_vector(SPRITE_PRIORITY_WIDTH-1 downto 0);
+    data     : out byte_t
   );
 end sprite;
 
@@ -74,8 +75,8 @@ architecture arch of sprite is
   -- frame buffer signals
   signal frame_buffer_addr_rd : std_logic_vector(FRAME_BUFFER_ADDR_WIDTH-1 downto 0);
   signal frame_buffer_addr_wr : std_logic_vector(FRAME_BUFFER_ADDR_WIDTH-1 downto 0);
-  signal frame_buffer_din     : std_logic_vector(SPRITE_DATA_WIDTH-1 downto 0);
-  signal frame_buffer_dout    : std_logic_vector(SPRITE_DATA_WIDTH-1 downto 0);
+  signal frame_buffer_din     : std_logic_vector(FRAME_BUFFER_DATA_WIDTH-1 downto 0);
+  signal frame_buffer_dout    : std_logic_vector(FRAME_BUFFER_DATA_WIDTH-1 downto 0);
   signal frame_buffer_flip    : std_logic;
   signal frame_buffer_rden    : std_logic;
   signal frame_buffer_wren    : std_logic;
@@ -137,7 +138,7 @@ begin
   sprite_frame_buffer : entity work.frame_buffer
   generic map (
     ADDR_WIDTH => FRAME_BUFFER_ADDR_WIDTH,
-    DATA_WIDTH => SPRITE_DATA_WIDTH
+    DATA_WIDTH => FRAME_BUFFER_DATA_WIDTH
   )
   port map (
     clk  => clk,
@@ -281,5 +282,6 @@ begin
   frame_buffer_rden <= video.enable;
 
   -- output
-  data <= frame_buffer_dout;
+  priority <= frame_buffer_dout(9 downto 8);
+  data     <= frame_buffer_dout(7 downto 0);
 end arch;

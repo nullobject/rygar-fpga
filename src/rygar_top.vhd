@@ -109,9 +109,10 @@ architecture arch of rygar_top is
   signal pixel : rgb_t;
 
   -- graphics layer data
-  signal char_data   : byte_t;
-  signal fg_data     : byte_t;
-  signal sprite_data : std_logic_vector(SPRITE_DATA_WIDTH-1 downto 0);
+  signal sprite_priority : std_logic_vector(SPRITE_PRIORITY_WIDTH-1 downto 0);
+  signal sprite_data     : byte_t;
+  signal char_data       : byte_t;
+  signal fg_data         : byte_t;
 
   -- control signals
   signal vblank_falling : std_logic;
@@ -339,24 +340,26 @@ begin
     ram_dout => sprite_ram_dout,
     ram_we   => not cpu_wr_n,
     video    => video,
+    priority => sprite_priority,
     data     => sprite_data
   );
 
   -- colour palette
   palette : entity work.palette
   port map (
-    clk         => clk_12,
-    cen         => cen_6,
-    ram_cs      => palette_ram_cs,
-    ram_addr    => cpu_addr(PALETTE_RAM_ADDR_WIDTH-1 downto 0),
-    ram_din     => cpu_dout,
-    ram_dout    => palette_ram_dout,
-    ram_we      => not cpu_wr_n,
-    char_data   => char_data,
-    fg_data     => fg_data,
-    sprite_data => sprite_data,
-    video       => video,
-    pixel       => pixel
+    clk             => clk_12,
+    cen             => cen_6,
+    ram_cs          => palette_ram_cs,
+    ram_addr        => cpu_addr(PALETTE_RAM_ADDR_WIDTH-1 downto 0),
+    ram_din         => cpu_dout,
+    ram_dout        => palette_ram_dout,
+    ram_we          => not cpu_wr_n,
+    video           => video,
+    sprite_priority => sprite_priority,
+    sprite_data     => sprite_data,
+    char_data       => char_data,
+    fg_data         => fg_data,
+    pixel           => pixel
   );
 
   -- $0000-$7fff PROGRAM ROM 1

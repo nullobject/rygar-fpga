@@ -44,8 +44,9 @@ package types is
   constant SPRITE_RAM_ADDR_WIDTH_B    : natural := 8;
   constant SPRITE_RAM_DATA_WIDTH_B    : natural := 64;
   constant SPRITE_TILE_ROM_ADDR_WIDTH : natural := 17;
-  constant SPRITE_DATA_WIDTH          : natural := 10;
+  constant SPRITE_PRIORITY_WIDTH      : natural := 2;
   constant FRAME_BUFFER_ADDR_WIDTH    : natural := 16;
+  constant FRAME_BUFFER_DATA_WIDTH    : natural := 10;
 
   -- sprite byte 0
   constant SPRITE_HI_CODE_MSB : natural := 7;

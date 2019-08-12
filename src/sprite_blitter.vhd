@@ -52,7 +52,7 @@ entity sprite_blitter is
 
     -- data out
     dest_addr : out std_logic_vector(FRAME_BUFFER_ADDR_WIDTH-1 downto 0);
-    dout      : out std_logic_vector(SPRITE_DATA_WIDTH-1 downto 0)
+    dout      : out std_logic_vector(FRAME_BUFFER_DATA_WIDTH-1 downto 0)
   );
 end sprite_blitter;
 
