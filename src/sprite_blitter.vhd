@@ -121,13 +121,12 @@ begin
         if blit_done = '1' then
           next_state <= INIT;
         end if;
-
     end case;
   end process;
 
   -- the source position represents the current pixel offset of the sprite to
   -- be copied to the frame buffer
-  src_pos_counter : process (clk)
+  update_src_pos_counter : process (clk)
   begin
     if rising_edge(clk) then
       if state = INIT then
@@ -151,7 +150,7 @@ begin
   end process;
 
   -- the load position represents the position of the next pixel to be loaded
-  load_pos_counter : process (clk)
+  update_load_pos_counter : process (clk)
   begin
     if rising_edge(clk) then
       if state = INIT then
@@ -220,6 +219,6 @@ begin
   -- set current pixel
   pixel <= gfx_data(7 downto 4) when src_pos.x(0) = '0' else gfx_data(3 downto 0);
 
-  -- output
+  -- set data
   dout <= std_logic_vector(sprite.priority & sprite.color) & pixel;
-end arch;
+end architecture arch;

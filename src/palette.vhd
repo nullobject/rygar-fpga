@@ -24,11 +24,11 @@ use ieee.numeric_std.all;
 
 use work.types.all;
 
--- The colour palette combines the pixel data from the different graphics
--- layers, and looks up the RGB pixel color values in the palette RAM.
+-- The palette combines the data from the different graphics layers to produce
+-- actual RGB pixel data.
 entity palette is
   port (
-    -- input clock
+    -- clock
     clk : in std_logic;
 
     -- clock enable
@@ -73,8 +73,8 @@ begin
   --
   -- This differs from the original arcade hardware, which only contains
   -- a single-port palette RAM. Using a dual-port RAM instead simplifies
-  -- things, because we don't need all additional logic required to coordinate
-  -- RAM access.
+  -- things, because we don't need all the additional logic required to
+  -- coordinate RAM access.
   palette_ram : entity work.true_dual_port_ram
   generic map (
     ADDR_WIDTH_A => PALETTE_RAM_ADDR_WIDTH,
@@ -82,7 +82,7 @@ begin
     DATA_WIDTH_B => PALETTE_RAM_DATA_WIDTH_B
   )
   port map (
-    -- port A
+    -- port A (CPU)
     clk_a  => clk,
     cs_a   => ram_cs,
     addr_a => ram_addr,
@@ -90,13 +90,14 @@ begin
     dout_a => ram_dout,
     we_a   => ram_we,
 
-    -- port B
+    -- port B (GPU)
     clk_b  => clk,
     addr_b => palette_ram_addr_b,
     dout_b => palette_ram_dout_b
   );
 
-  process (clk)
+  -- TODO: refactor into multiple processes
+  load_palette_data : process (clk)
   begin
     if rising_edge(clk) then
       if cen = '1' then
@@ -144,6 +145,7 @@ begin
             end if;
         end case;
 
+        -- set pixel data
         if video.enable = '1' then
           pixel.r <= palette_ram_dout_b(15 downto 12);
           pixel.g <= palette_ram_dout_b(11 downto 8);
@@ -156,4 +158,4 @@ begin
       end if;
     end if;
   end process;
-end architecture;
+end arch;

@@ -28,7 +28,7 @@ use work.types.all;
 
 entity rygar_top is
   port (
-    -- 50MHz input clock
+    -- 50MHz clock
     clk : in std_logic;
 
     -- VGA signals
@@ -401,8 +401,8 @@ begin
   -- composite sync
   vga_csync <= video.csync;
 
-  -- color output
+  -- set pixel data
   vga_r <= pixel.r & pixel.r(3 downto 2);
   vga_g <= pixel.g & pixel.g(3 downto 2);
   vga_b <= pixel.b & pixel.b(3 downto 2);
-end arch;
+end architecture arch;

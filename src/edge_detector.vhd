@@ -30,7 +30,7 @@ entity edge_detector is
     FALLING : boolean := false
   );
   port (
-    -- input clock
+    -- clock
     clk : in std_logic;
 
     -- data input
@@ -55,4 +55,4 @@ begin
   edge <= (not t1 and t0) when RISING else
           (t1 and not t0) when FALLING else
           '0';
-end architecture;
+end architecture arch;

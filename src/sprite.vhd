@@ -52,7 +52,7 @@ entity sprite is
     -- video signals
     video : in video_t;
 
-    -- data out
+    -- layer data
     priority : out std_logic_vector(SPRITE_PRIORITY_WIDTH-1 downto 0);
     data     : out byte_t
   );
@@ -101,8 +101,8 @@ begin
   --
   -- This differs from the original arcade hardware, which only contains
   -- a single-port palette RAM. Using a dual-port RAM instead simplifies
-  -- things, because we don't need all additional logic required to coordinate
-  -- RAM access.
+  -- things, because we don't need all the additional logic required to
+  -- coordinate RAM access.
   sprite_ram : entity work.true_dual_port_ram
   generic map (
     ADDR_WIDTH_A => SPRITE_RAM_ADDR_WIDTH,
@@ -110,7 +110,7 @@ begin
     DATA_WIDTH_B => SPRITE_RAM_DATA_WIDTH_B
   )
   port map (
-    -- port A
+    -- port A (CPU)
     clk_a  => clk,
     cs_a   => ram_cs,
     addr_a => ram_addr,
@@ -118,7 +118,7 @@ begin
     dout_a => ram_dout,
     we_a   => ram_we,
 
-    -- port B
+    -- port B (GPU)
     clk_b  => clk,
     addr_b => sprite_ram_addr,
     dout_b => sprite_ram_dout
@@ -219,7 +219,6 @@ begin
       -- flip the frame buffer
       when FLIP =>
         next_state <= INIT;
-
     end case;
   end process;
 
@@ -281,7 +280,7 @@ begin
   -- read from the frame buffer when video output is enabled
   frame_buffer_rden <= video.enable;
 
-  -- output
+  -- set layer data
   priority <= frame_buffer_dout(9 downto 8);
   data     <= frame_buffer_dout(7 downto 0);
-end arch;
+end architecture arch;

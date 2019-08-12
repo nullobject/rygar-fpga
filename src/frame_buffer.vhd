@@ -29,12 +29,12 @@ use ieee.numeric_std.all;
 -- reading and writing, so that while one page is being written to, the other
 -- is being read from.
 --
--- When the flip signal is asserted, the pages are swapped. The page that was
--- previously being written to will be read from, and the page that was being
--- read from will be written to.
+-- When the flip signal is asserted, the page behaviour is swapped. The page
+-- that was previously being written to will be read from, and the page that
+-- was being read from will be written to.
 --
 -- The frame buffer automatically clears pixels during read operations, so that
--- the write page is clean when it is flipped.
+-- the page is clean when it is flipped.
 entity frame_buffer is
   generic (
     ADDR_WIDTH : natural := 8;
@@ -113,8 +113,8 @@ begin
   din_a <= din when wren = '1' and flip = '1' else (others => '0');
   din_b <= din when wren = '1' and flip = '0' else (others => '0');
 
-  -- output
+  -- set data
   dout <= dout_a when rden = '1' and flip = '0' else
           dout_b when rden = '1' and flip = '1' else
           (others => '0');
-end arch;
+end architecture arch;

@@ -40,7 +40,7 @@ use work.types.all;
 -- vertical frequency: 15.625kHz / 264 = 59.185 Hz
 entity sync_gen is
   port (
-    -- input clock
+    -- clock
     clk : in std_logic;
 
     -- clock enable
@@ -51,7 +51,7 @@ entity sync_gen is
   );
 end sync_gen;
 
-architecture struct of sync_gen is
+architecture arch of sync_gen is
   -- horizontal regions
   constant H_DISPLAY     : natural := 256;
   constant H_FRONT_PORCH : natural := 48;
@@ -80,7 +80,7 @@ architecture struct of sync_gen is
   -- blank signals
   signal hblank, vblank : std_logic;
 begin
-  -- generate horizontal timings
+  -- generate horizontal timing signals
   horizontal_timing : process (clk)
   begin
     if rising_edge(clk) then
@@ -106,7 +106,7 @@ begin
     end if;
   end process;
 
-  -- generate vertical timings
+  -- generate vertical timing signals
   vertical_timing : process (clk)
   begin
     if rising_edge(clk) then
@@ -149,4 +149,4 @@ begin
 
   -- set output enable
   video.enable <= not (hblank or vblank);
-end architecture;
+end architecture arch;

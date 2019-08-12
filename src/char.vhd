@@ -29,7 +29,7 @@ use work.types.all;
 -- playfield, and other static graphics.
 entity char is
   port (
-    -- input clock
+    -- clock
     clk : in std_logic;
 
     -- clock enable
@@ -45,7 +45,7 @@ entity char is
     -- video signals
     video : in video_t;
 
-    -- palette index output
+    -- layer data
     data : out byte_t
   );
 end char;
@@ -92,15 +92,15 @@ begin
   --
   -- This differs from the original arcade hardware, which only contains
   -- a single-port character RAM. Using a dual-port RAM instead simplifies
-  -- things, because we don't need all additional logic required to coordinate
-  -- RAM access.
+  -- things, because we don't need all the additional logic required to
+  -- coordinate RAM access.
   char_ram : entity work.true_dual_port_ram
   generic map (
     ADDR_WIDTH_A => CHAR_RAM_ADDR_WIDTH,
     ADDR_WIDTH_B => CHAR_RAM_ADDR_WIDTH
   )
   port map (
-    -- port A
+    -- port A (CPU)
     clk_a  => clk,
     cs_a   => ram_cs,
     addr_a => ram_addr,
@@ -108,7 +108,7 @@ begin
     dout_a => ram_dout,
     we_a   => ram_we,
 
-    -- port B
+    -- port B (GPU)
     clk_b  => clk,
     addr_b => char_ram_addr_b,
     dout_b => char_ram_dout_b
@@ -195,6 +195,6 @@ begin
   -- decode high/low pixels from the graphics data
   pixel <= gfx_data(7 downto 4) when video.x(0) = '1' else gfx_data(3 downto 0);
 
-  -- output data
+  -- set layer data
   data <= color & pixel;
-end architecture;
+end architecture arch;

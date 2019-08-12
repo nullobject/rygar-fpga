@@ -38,7 +38,7 @@ entity scroll is
     ROM_INIT_FILE  : string
   );
   port (
-    -- input clock
+    -- clock
     clk : in std_logic;
 
     -- clock enable
@@ -58,7 +58,7 @@ entity scroll is
     scroll_hpos : in unsigned(8 downto 0);
     scroll_vpos : in unsigned(7 downto 0);
 
-    -- palette index output
+    -- layer data
     data : out byte_t
   );
 end scroll;
@@ -109,15 +109,15 @@ begin
   --
   -- This differs from the original arcade hardware, which only contains
   -- a single-port character RAM. Using a dual-port RAM instead simplifies
-  -- things, because we don't need all additional logic required to coordinate
-  -- RAM access.
+  -- things, because we don't need all the additional logic required to
+  -- coordinate RAM access.
   scroll_ram : entity work.true_dual_port_ram
   generic map (
     ADDR_WIDTH_A => RAM_ADDR_WIDTH,
     ADDR_WIDTH_B => RAM_ADDR_WIDTH
   )
   port map (
-    -- port A
+    -- port A (CPU)
     clk_a  => clk,
     cs_a   => ram_cs,
     addr_a => ram_addr,
@@ -125,7 +125,7 @@ begin
     dout_a => ram_dout,
     we_a   => ram_we,
 
-    -- port B
+    -- port B (GPU)
     clk_b  => clk,
     addr_b => scroll_ram_addr_b,
     dout_b => scroll_ram_dout_b
@@ -241,6 +241,6 @@ begin
   -- decode high/low pixels from the graphics data
   pixel <= gfx_data(7 downto 4) when hpos(0) = '1' else gfx_data(3 downto 0);
 
-  -- output data
+  -- set layer data
   data <= color & pixel;
-end architecture;
+end architecture arch;
