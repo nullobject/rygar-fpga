@@ -197,6 +197,7 @@ begin
     sprite_layer : entity work.sprite
     port map (
       clk      => clk,
+      cen      => cen_6,
       ram_cs   => sprite_ram_cs,
       ram_addr => cpu_addr(SPRITE_RAM_ADDR_WIDTH-1 downto 0),
       ram_din  => cpu_dout,

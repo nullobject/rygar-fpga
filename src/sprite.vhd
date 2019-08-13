@@ -44,6 +44,9 @@ entity sprite is
     -- clock
     clk : in std_logic;
 
+    -- clock enable
+    cen : in std_logic;
+
     -- sprite RAM
     ram_cs   : in std_logic;
     ram_addr : in std_logic_vector(SPRITE_RAM_ADDR_WIDTH-1 downto 0);
@@ -261,12 +264,21 @@ begin
   end process;
 
   -- flip the frame buffer page
-  flip_frame_buffer: process(clk)
+  flip_frame_buffer : process (clk)
   begin
     if rising_edge(clk) then
       if state = FLIP then
         frame_buffer_flip <= not frame_buffer_flip;
       end if;
+    end if;
+  end process;
+
+  -- latch graphics data from the frame buffer
+  latch_gfx_data : process (clk)
+  begin
+    if rising_edge(clk) and cen = '1' then
+      priority <= unsigned(frame_buffer_dout(9 downto 8));
+      data     <= frame_buffer_dout(7 downto 0);
     end if;
   end process;
 
@@ -280,9 +292,5 @@ begin
   frame_buffer_addr_rd <= std_logic_vector(video.pos.y(7 downto 0) & (video.pos.x(7 downto 0)));
 
   -- read from the frame buffer when video output is enabled
-  frame_buffer_rden <= video.enable;
-
-  -- set layer data
-  priority <= unsigned(frame_buffer_dout(9 downto 8));
-  data     <= frame_buffer_dout(7 downto 0);
+  frame_buffer_rden <= cen and video.enable;
 end architecture arch;
