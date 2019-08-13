@@ -87,15 +87,14 @@ architecture arch of scroll is
   -- pixel data
   signal pixel : nibble_t;
 
-  -- horizontal and vertical position
-  signal hpos : unsigned(8 downto 0);
-  signal vpos : unsigned(7 downto 0);
+  -- position signal
+  signal pos : pos_t;
 
   -- aliases to extract the components of the horizontal and vertical position
-  alias col      : unsigned(4 downto 0) is hpos(8 downto 4);
-  alias row      : unsigned(3 downto 0) is vpos(7 downto 4);
-  alias offset_x : unsigned(3 downto 0) is hpos(3 downto 0);
-  alias offset_y : unsigned(3 downto 0) is vpos(3 downto 0);
+  alias col      : unsigned(4 downto 0) is pos.x(8 downto 4);
+  alias row      : unsigned(3 downto 0) is pos.y(7 downto 4);
+  alias offset_x : unsigned(3 downto 0) is pos.x(3 downto 0);
+  alias offset_y : unsigned(3 downto 0) is pos.y(3 downto 0);
 begin
   -- The tile RAM (1kB) contains the code and colour of each tile in the
   -- tilemap.
@@ -150,25 +149,18 @@ begin
     dout => tile_rom_dout
   );
 
-  -- Update horizontal position.
-  --
-  -- During a HSYNC, the horizontal position is reset to the current horizontal
-  -- scroll position. Otherwise, we just increment it at every clock tick.
-  hpos_counter : process (clk)
+  -- update position counter
+  update_pos_counter : process (clk)
   begin
     if rising_edge(clk) and cen = '1' then
       if video.hsync = '1' then
-        hpos <= scroll_pos.x;
+        -- reset to the horizontal scroll position
+        pos.x <= scroll_pos.x;
       else
-        hpos <= hpos + 1;
+        pos.x <= pos.x + 1;
       end if;
     end if;
   end process;
-
-  -- Update vertical position.
-  --
-  -- This is just the sum of the vertical screen and scroll positions.
-  vpos <= video.pos.y(7 downto 0) + scroll_pos.y(7 downto 0);
 
   -- Load tile data from the scroll RAM.
   --
@@ -230,14 +222,17 @@ begin
   latch_gfx_data : process (clk)
   begin
     if rising_edge(clk) then
-      if hpos(0) = '1' then
+      if pos.x(0) = '1' then
         gfx_data <= tile_rom_dout;
       end if;
     end if;
   end process;
 
+  -- update vertical position
+  pos.y(7 downto 0) <= video.pos.y(7 downto 0) + scroll_pos.y(7 downto 0);
+
   -- decode high/low pixels from the graphics data
-  pixel <= gfx_data(7 downto 4) when hpos(0) = '0' else gfx_data(3 downto 0);
+  pixel <= gfx_data(7 downto 4) when pos.x(0) = '0' else gfx_data(3 downto 0);
 
   -- set layer data
   data <= color & pixel;
