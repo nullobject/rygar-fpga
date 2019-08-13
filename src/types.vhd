@@ -90,12 +90,6 @@ package types is
     y : unsigned(8 downto 0);
   end record pos_t;
 
-  -- represents the position of a pixel in a sprite
-  type sprite_pos_t is record
-    x : unsigned(4 downto 0);
-    y : unsigned(4 downto 0);
-  end record sprite_pos_t;
-
   -- represents a RGB colour value
   type rgb_t is record
     r : std_logic_vector(COLOR_DEPTH_R-1 downto 0);

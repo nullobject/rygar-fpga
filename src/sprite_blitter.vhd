@@ -57,6 +57,12 @@ entity sprite_blitter is
 end sprite_blitter;
 
 architecture arch of sprite_blitter is
+  -- represents the position of a pixel in a sprite
+  type sprite_pos_t is record
+    x : unsigned(4 downto 0);
+    y : unsigned(4 downto 0);
+  end record sprite_pos_t;
+
   type state_t is (INIT, CHECK, PRELOAD, BLIT);
 
   -- state signals
@@ -68,8 +74,8 @@ architecture arch of sprite_blitter is
   signal dest_pos : pos_t;
 
   -- graphics signals
-  signal gfx_data : byte_t;
-  signal pixel    : nibble_t;
+  signal pixel      : nibble_t;
+  signal pixel_pair : byte_t;
 
   -- control signals
   signal preload_done : std_logic;
@@ -167,13 +173,13 @@ begin
     end if;
   end process;
 
-  -- latch fresh graphics data from the tile ROM while we are blitting the odd
-  -- pixels to the frame buffer
-  latch_gfx_data : process (clk)
+  -- Latch pixel data from the tile ROM when rendering odd pixels (i.e. the
+  -- second pixel in every pair of pixels).
+  latch_pixel_data : process (clk)
   begin
     if rising_edge(clk) then
       if (state = PRELOAD or state = BLIT) and load_pos.x(0) = '1' then
-        gfx_data <= din;
+        pixel_pair <= din;
       end if;
     end if;
   end process;
@@ -187,7 +193,9 @@ begin
   -- the sprite is visible if it is enabled
   visible <= '1' when sprite.enable = '1' else '0';
 
-  -- the source address
+  -- Set the source address.
+  --
+  -- This encoding is taken directly from the schematic.
   src_addr <= std_logic_vector(
     sprite.code(11 downto 4) &
     (sprite.code(3 downto 0) or (load_pos.y(4) & load_pos.x(4) & load_pos.y(3) & load_pos.x(3))) &
@@ -211,8 +219,8 @@ begin
   dest_addr <= std_logic_vector(dest_pos.y(7 downto 0) & dest_pos.x(7 downto 0));
 
   -- set current pixel
-  pixel <= gfx_data(7 downto 4) when src_pos.x(0) = '0' else gfx_data(3 downto 0);
+  pixel <= pixel_pair(7 downto 4) when src_pos.x(0) = '0' else pixel_pair(3 downto 0);
 
-  -- set data
+  -- set output data
   dout <= std_logic_vector(sprite.priority & sprite.color) & pixel;
 end architecture arch;

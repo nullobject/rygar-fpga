@@ -102,8 +102,8 @@ begin
     dout_b => palette_ram_dout_b
   );
 
-  -- latch graphics data from the palette RAM
-  latch_gfx_data : process (clk)
+  -- latch pixel data from the palette RAM
+  latch_pixel_data : process (clk)
   begin
     if rising_edge(clk) and cen = '1' then
       if video.enable = '1' then
