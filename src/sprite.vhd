@@ -288,8 +288,12 @@ begin
   -- the frame is done when all the sprites have been blitted
   frame_done <= '1' when sprite_counter = sprite_counter'high else '0';
 
-  -- set frame buffer read address
-  frame_buffer_addr_rd <= std_logic_vector(video.pos.y(7 downto 0) & (video.pos.x(7 downto 0)));
+  -- Load graphics data from the frame buffer.
+  --
+  -- While the current two pixels are being rendered, we need to fetch data for
+  -- the next two pixels, so they are loaded in time to render them on the
+  -- screen.
+  frame_buffer_addr_rd <= std_logic_vector(video.pos.y(7 downto 0) & (video.pos.x(7 downto 0)+2));
 
   -- read from the frame buffer when video output is enabled
   frame_buffer_rden <= cen and video.enable;
