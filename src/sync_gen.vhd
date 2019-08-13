@@ -40,11 +40,9 @@ use work.types.all;
 -- vertical frequency: 15.625kHz / 264 = 59.185 Hz
 entity sync_gen is
   port (
-    -- clock
-    clk : in std_logic;
-
-    -- clock enable
-    cen : in std_logic;
+    -- clock signals
+    clk   : in std_logic;
+    cen_6 : in std_logic;
 
     -- video signals
     video : out video_t
@@ -83,7 +81,7 @@ begin
   -- generate horizontal timing signals
   horizontal_timing : process (clk)
   begin
-    if rising_edge(clk) and cen = '1' then
+    if rising_edge(clk) and cen_6 = '1' then
       if x = 511 then
         x <= H_START;
       else
@@ -107,7 +105,7 @@ begin
   -- generate vertical timing signals
   vertical_timing : process (clk)
   begin
-    if rising_edge(clk) and cen = '1' then
+    if rising_edge(clk) and cen_6 = '1' then
       if x = H_START+H_FRONT_PORCH-1 then
         if y = 511 then
           y <= V_START;

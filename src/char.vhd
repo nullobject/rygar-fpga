@@ -30,11 +30,9 @@ use work.types.all;
 -- It consists of a 32x32 grid of 8x8 tiles.
 entity char is
   port (
-    -- clock
-    clk : in std_logic;
-
-    -- clock enable
-    cen : in std_logic;
+    -- clock signals
+    clk   : in std_logic;
+    cen_6 : in std_logic;
 
     -- char RAM
     ram_cs   : in std_logic;

@@ -114,7 +114,7 @@ begin
   sync_gen : entity work.sync_gen
   port map (
     clk   => clk,
-    cen   => cen_6,
+    cen_6 => cen_6,
     video => video
   );
 
@@ -195,7 +195,7 @@ begin
     sprite_layer : entity work.sprite
     port map (
       clk      => clk,
-      cen      => cen_6,
+      cen_6    => cen_6,
       ram_cs   => sprite_ram_cs,
       ram_addr => cpu_addr(SPRITE_RAM_ADDR_WIDTH-1 downto 0),
       ram_din  => cpu_dout,
@@ -224,7 +224,7 @@ begin
     char_layer : entity work.char
     port map (
       clk      => clk,
-      cen      => cen_6,
+      cen_6    => cen_6,
       ram_cs   => char_ram_cs,
       ram_addr => cpu_addr(CHAR_RAM_ADDR_WIDTH-1 downto 0),
       ram_din  => cpu_dout,
@@ -257,7 +257,7 @@ begin
     )
     port map (
       clk        => clk,
-      cen        => cen_6,
+      cen_6      => cen_6,
       ram_cs     => fg_ram_cs,
       ram_addr   => cpu_addr(FG_RAM_ADDR_WIDTH-1 downto 0),
       ram_din    => cpu_dout,
@@ -291,7 +291,7 @@ begin
     )
     port map (
       clk        => clk,
-      cen        => cen_6,
+      cen_6      => cen_6,
       ram_cs     => bg_ram_cs,
       ram_addr   => cpu_addr(BG_RAM_ADDR_WIDTH-1 downto 0),
       ram_din    => cpu_dout,
@@ -319,7 +319,7 @@ begin
   palette : entity work.palette
   port map (
     clk             => clk,
-    cen             => cen_6,
+    cen_6           => cen_6,
     ram_cs          => palette_ram_cs,
     ram_addr        => cpu_addr(PALETTE_RAM_ADDR_WIDTH-1 downto 0),
     ram_din         => cpu_dout,

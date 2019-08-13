@@ -41,11 +41,9 @@ use work.types.all;
 -- sprite tile ROM.
 entity sprite is
   port (
-    -- clock
-    clk : in std_logic;
-
-    -- clock enable
-    cen : in std_logic;
+    -- clock signals
+    clk   : in std_logic;
+    cen_6 : in std_logic;
 
     -- sprite RAM
     ram_cs   : in std_logic;
@@ -276,7 +274,7 @@ begin
   -- latch graphics data from the frame buffer
   latch_gfx_data : process (clk)
   begin
-    if rising_edge(clk) and cen = '1' then
+    if rising_edge(clk) and cen_6 = '1' then
       priority <= unsigned(frame_buffer_dout(9 downto 8));
       data     <= frame_buffer_dout(7 downto 0);
     end if;
@@ -296,5 +294,5 @@ begin
   frame_buffer_addr_rd <= std_logic_vector(video.pos.y(7 downto 0) & (video.pos.x(7 downto 0)+2));
 
   -- read from the frame buffer when video output is enabled
-  frame_buffer_rden <= cen and video.enable;
+  frame_buffer_rden <= cen_6 and video.enable;
 end architecture arch;

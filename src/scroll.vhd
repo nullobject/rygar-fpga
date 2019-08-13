@@ -39,11 +39,9 @@ entity scroll is
     ROM_INIT_FILE  : string
   );
   port (
-    -- clock
-    clk : in std_logic;
-
-    -- clock enable
-    cen : in std_logic;
+    -- clock signals
+    clk   : in std_logic;
+    cen_6 : in std_logic;
 
     -- scroll RAM
     ram_cs   : in std_logic;
@@ -153,7 +151,7 @@ begin
   -- update position counter
   update_pos_counter : process (clk)
   begin
-    if rising_edge(clk) and cen = '1' then
+    if rising_edge(clk) and cen_6 = '1' then
       if video.hsync = '1' then
         -- reset to the horizontal scroll position
         dest_pos.x <= scroll_pos.x;

@@ -28,11 +28,9 @@ use work.types.all;
 -- actual RGB pixel, that can be rendered on the screen.
 entity palette is
   port (
-    -- clock
-    clk : in std_logic;
-
-    -- clock enable
-    cen : in std_logic;
+    -- clock signals
+    clk   : in std_logic;
+    cen_6 : in std_logic;
 
     -- palette RAM
     ram_cs   : in std_logic;
@@ -105,7 +103,7 @@ begin
   -- latch pixel data from the palette RAM
   latch_pixel_data : process (clk)
   begin
-    if rising_edge(clk) and cen = '1' then
+    if rising_edge(clk) and cen_6 = '1' then
       if video.enable = '1' then
         pixel.r <= palette_ram_dout_b(15 downto 12);
         pixel.g <= palette_ram_dout_b(11 downto 8);
