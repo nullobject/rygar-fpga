@@ -92,10 +92,8 @@ architecture arch of rygar is
   signal current_bank : unsigned(3 downto 0);
 
   -- scroll position registers
-  signal fg_scroll_hpos : unsigned(8 downto 0);
-  signal fg_scroll_vpos : unsigned(7 downto 0);
-  signal bg_scroll_hpos : unsigned(8 downto 0);
-  signal bg_scroll_vpos : unsigned(7 downto 0);
+  signal fg_scroll_pos : pos_t;
+  signal bg_scroll_pos : pos_t;
 
   -- sprite priority data
   signal sprite_priority : priority_t;
@@ -258,17 +256,16 @@ begin
       ROM_INIT_FILE  => "rom/fg.mif"
     )
     port map (
-      clk         => clk,
-      cen         => cen_6,
-      ram_cs      => fg_ram_cs,
-      ram_addr    => cpu_addr(FG_RAM_ADDR_WIDTH-1 downto 0),
-      ram_din     => cpu_dout,
-      ram_dout    => fg_ram_dout,
-      ram_we      => not cpu_wr_n,
-      video       => video,
-      scroll_hpos => fg_scroll_hpos,
-      scroll_vpos => fg_scroll_vpos,
-      data        => fg_data
+      clk        => clk,
+      cen        => cen_6,
+      ram_cs     => fg_ram_cs,
+      ram_addr   => cpu_addr(FG_RAM_ADDR_WIDTH-1 downto 0),
+      ram_din    => cpu_dout,
+      ram_dout   => fg_ram_dout,
+      ram_we     => not cpu_wr_n,
+      video      => video,
+      scroll_pos => fg_scroll_pos,
+      data       => fg_data
     );
   else generate
     -- dummy foreground RAM
@@ -293,17 +290,16 @@ begin
       ROM_INIT_FILE  => "rom/bg.mif"
     )
     port map (
-      clk         => clk,
-      cen         => cen_6,
-      ram_cs      => bg_ram_cs,
-      ram_addr    => cpu_addr(BG_RAM_ADDR_WIDTH-1 downto 0),
-      ram_din     => cpu_dout,
-      ram_dout    => bg_ram_dout,
-      ram_we      => not cpu_wr_n,
-      video       => video,
-      scroll_hpos => bg_scroll_hpos,
-      scroll_vpos => bg_scroll_vpos,
-      data        => bg_data
+      clk        => clk,
+      cen        => cen_6,
+      ram_cs     => bg_ram_cs,
+      ram_addr   => cpu_addr(BG_RAM_ADDR_WIDTH-1 downto 0),
+      ram_din    => cpu_dout,
+      ram_dout   => bg_ram_dout,
+      ram_we     => not cpu_wr_n,
+      video      => video,
+      scroll_pos => bg_scroll_pos,
+      data       => bg_data
     );
   else generate
     -- dummy background RAM
@@ -371,12 +367,12 @@ begin
     if rising_edge(clk) then
       if scroll_cs = '1' and cpu_wr_n = '0' then
         case cpu_addr(2 downto 0) is
-          when "000" => fg_scroll_hpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
-          when "001" => fg_scroll_hpos(8 downto 8) <= unsigned(cpu_dout(0 downto 0));
-          when "010" => fg_scroll_vpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
-          when "011" => bg_scroll_hpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
-          when "100" => bg_scroll_hpos(8 downto 8) <= unsigned(cpu_dout(0 downto 0));
-          when "110" => bg_scroll_vpos(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
+          when "000" => fg_scroll_pos.x(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
+          when "001" => fg_scroll_pos.x(8 downto 8) <= unsigned(cpu_dout(0 downto 0));
+          when "010" => fg_scroll_pos.y(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
+          when "011" => bg_scroll_pos.x(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
+          when "100" => bg_scroll_pos.x(8 downto 8) <= unsigned(cpu_dout(0 downto 0));
+          when "110" => bg_scroll_pos.y(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
           when others => null;
         end case;
       end if;

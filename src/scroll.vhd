@@ -55,9 +55,8 @@ entity scroll is
     -- video signals
     video : in video_t;
 
-    -- horizontal and vertical scroll positions
-    scroll_hpos : in unsigned(8 downto 0);
-    scroll_vpos : in unsigned(7 downto 0);
+    -- scroll position signals
+    scroll_pos : in pos_t;
 
     -- layer data
     data : out byte_t
@@ -159,7 +158,7 @@ begin
   begin
     if rising_edge(clk) and cen = '1' then
       if video.hsync = '1' then
-        hpos <= scroll_hpos;
+        hpos <= scroll_pos.x;
       else
         hpos <= hpos + 1;
       end if;
@@ -169,7 +168,7 @@ begin
   -- Update vertical position.
   --
   -- This is just the sum of the vertical screen and scroll positions.
-  vpos <= video.pos.y(7 downto 0) + scroll_vpos;
+  vpos <= video.pos.y(7 downto 0) + scroll_pos.y(7 downto 0);
 
   -- Load tile data from the scroll RAM.
   --
