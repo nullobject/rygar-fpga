@@ -102,21 +102,18 @@ begin
     dout_b => palette_ram_dout_b
   );
 
-  -- latch pixel data from the palette RAM
-  latch_palette_data : process (clk)
+  -- latch graphics data from the palette RAM
+  latch_gfx_data : process (clk)
   begin
-    if rising_edge(clk) then
-      if cen = '1' then
-        -- set pixel data
-        if video.enable = '1' then
-          pixel.r <= palette_ram_dout_b(15 downto 12);
-          pixel.g <= palette_ram_dout_b(11 downto 8);
-          pixel.b <= palette_ram_dout_b(3 downto 0);
-        else
-          pixel.r <= (others => '0');
-          pixel.g <= (others => '0');
-          pixel.b <= (others => '0');
-        end if;
+    if rising_edge(clk) and cen = '1' then
+      if video.enable = '1' then
+        pixel.r <= palette_ram_dout_b(15 downto 12);
+        pixel.g <= palette_ram_dout_b(11 downto 8);
+        pixel.b <= palette_ram_dout_b(3 downto 0);
+      else
+        pixel.r <= (others => '0');
+        pixel.g <= (others => '0');
+        pixel.b <= (others => '0');
       end if;
     end if;
   end process;

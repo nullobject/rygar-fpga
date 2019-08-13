@@ -170,8 +170,8 @@ begin
   -- Load graphics data from the tile ROM.
   --
   -- While the current two pixels are being rendered, we need to fetch data for
-  -- the next two pixels ahead, so they are loaded in time to render them
-  -- on the screen.
+  -- the next two pixels, so they are loaded in time to render them on the
+  -- screen.
   load_gfx_data : block
     signal x : unsigned(1 downto 0);
     signal y : unsigned(2 downto 0);

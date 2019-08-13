@@ -157,13 +157,11 @@ begin
   -- scroll position. Otherwise, we just increment it at every clock tick.
   hpos_counter : process (clk)
   begin
-    if rising_edge(clk) then
-      if cen = '1' then
-        if video.hsync = '1' then
-          hpos <= scroll_hpos;
-        else
-          hpos <= hpos + 1;
-        end if;
+    if rising_edge(clk) and cen = '1' then
+      if video.hsync = '1' then
+        hpos <= scroll_hpos;
+      else
+        hpos <= hpos + 1;
       end if;
     end if;
   end process;
