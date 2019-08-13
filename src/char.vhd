@@ -52,6 +52,12 @@ entity char is
 end char;
 
 architecture arch of char is
+  -- represents the position of a pixel in a 8x8 tile
+  type tile_pos_t is record
+    x : unsigned(2 downto 0);
+    y : unsigned(2 downto 0);
+  end record tile_pos_t;
+
   -- char RAM (port B)
   signal char_ram_addr_b : std_logic_vector(CHAR_RAM_ADDR_WIDTH-1 downto 0);
   signal char_ram_dout_b : byte_t;
@@ -60,20 +66,17 @@ architecture arch of char is
   signal tile_rom_addr : std_logic_vector(CHAR_ROM_ADDR_WIDTH-1 downto 0);
   signal tile_rom_dout : byte_t;
 
-  -- tile colour and code
+  -- position signals
+  signal load_pos : tile_pos_t;
+
+  -- tile signals
   signal tile_data : std_logic_vector(15 downto 0);
+  signal code      : unsigned(9 downto 0);
+  signal color     : nibble_t;
 
-  -- graphics data
-  signal gfx_data : byte_t;
-
-  -- tile code
-  signal code : unsigned(9 downto 0);
-
-  -- tile colour
-  signal color : nibble_t;
-
-  -- pixel data
-  signal pixel : nibble_t;
+  -- graphics signals
+  signal pixel      : nibble_t;
+  signal pixel_pair : byte_t;
 
   -- aliases to extract the components of the horizontal and vertical position
   alias col      : unsigned(4 downto 0) is video.pos.x(7 downto 3);
@@ -167,35 +170,37 @@ begin
     end if;
   end process;
 
-  -- Load graphics data from the tile ROM.
-  --
-  -- While the current two pixels are being rendered, we need to fetch data for
-  -- the next two pixels, so they are loaded in time to render them on the
-  -- screen.
-  load_gfx_data : block
-    signal x : unsigned(1 downto 0);
-    signal y : unsigned(2 downto 0);
-  begin
-    x <= offset_x(2 downto 1)+1;
-    y <= offset_y(2 downto 0);
-
-    tile_rom_addr <= std_logic_vector(code & y & x);
-  end block;
-
-  -- Latch the graphics data from the tile ROM when rendering odd pixels (i.e.
-  -- the second pixel in every pair of pixels).
-  latch_gfx_data : process (clk)
+  -- Latch pixel data from the tile ROM when rendering odd pixels (i.e. the
+  -- second pixel in every pair of pixels).
+  latch_pixel_data : process (clk)
   begin
     if rising_edge(clk) then
       if video.pos.x(0) = '1' then
-        gfx_data <= tile_rom_dout;
+        pixel_pair <= tile_rom_dout;
       end if;
     end if;
   end process;
 
-  -- decode high/low pixels from the graphics data
-  pixel <= gfx_data(7 downto 4) when video.pos.x(0) = '0' else gfx_data(3 downto 0);
+  -- Set the load position.
+  --
+  -- While the current two pixels are being rendered, we need to fetch data for
+  -- the next two pixels, so they are loaded in time to render them on the
+  -- screen.
+  load_pos.x <= offset_x(2 downto 0)+2;
+  load_pos.y <= offset_y(2 downto 0);
 
-  -- set layer data
+  -- Set the tile ROM address.
+  --
+  -- This encoding is taken directly from the schematic.
+  tile_rom_addr <= std_logic_vector(
+    code &
+    load_pos.y(2 downto 0) &
+    load_pos.x(2 downto 1)
+  );
+
+  -- decode high/low pixels from the graphics data
+  pixel <= pixel_pair(7 downto 4) when video.pos.x(0) = '0' else pixel_pair(3 downto 0);
+
+  -- set graphics data
   data <= color & pixel;
 end architecture arch;

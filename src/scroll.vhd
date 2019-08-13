@@ -64,6 +64,12 @@ entity scroll is
 end scroll;
 
 architecture arch of scroll is
+  -- represents the position of a pixel in a 16x16 tile
+  type tile_pos_t is record
+    x : unsigned(3 downto 0);
+    y : unsigned(3 downto 0);
+  end record tile_pos_t;
+
   -- tile RAM (port B)
   signal scroll_ram_addr_b : std_logic_vector(RAM_ADDR_WIDTH-1 downto 0);
   signal scroll_ram_dout_b : byte_t;
@@ -72,29 +78,24 @@ architecture arch of scroll is
   signal tile_rom_addr : std_logic_vector(ROM_ADDR_WIDTH-1 downto 0);
   signal tile_rom_dout : byte_t;
 
-  -- tile colour and code
+  -- position signals
+  signal load_pos : tile_pos_t;
+  signal dest_pos : pos_t;
+
+  -- tile signals
   signal tile_data : std_logic_vector(15 downto 0);
+  signal code      : unsigned(9 downto 0);
+  signal color     : nibble_t;
 
-  -- graphics data
-  signal gfx_data : byte_t;
-
-  -- tile code
-  signal code : unsigned(9 downto 0);
-
-  -- tile colour
-  signal color : nibble_t;
-
-  -- pixel data
-  signal pixel : nibble_t;
-
-  -- position signal
-  signal pos : pos_t;
+  -- graphics signals
+  signal pixel      : nibble_t;
+  signal pixel_pair : byte_t;
 
   -- aliases to extract the components of the horizontal and vertical position
-  alias col      : unsigned(4 downto 0) is pos.x(8 downto 4);
-  alias row      : unsigned(3 downto 0) is pos.y(7 downto 4);
-  alias offset_x : unsigned(3 downto 0) is pos.x(3 downto 0);
-  alias offset_y : unsigned(3 downto 0) is pos.y(3 downto 0);
+  alias col      : unsigned(4 downto 0) is dest_pos.x(8 downto 4);
+  alias row      : unsigned(3 downto 0) is dest_pos.y(7 downto 4);
+  alias offset_x : unsigned(3 downto 0) is dest_pos.x(3 downto 0);
+  alias offset_y : unsigned(3 downto 0) is dest_pos.y(3 downto 0);
 begin
   -- The tile RAM (1kB) contains the code and colour of each tile in the
   -- tilemap.
@@ -155,9 +156,9 @@ begin
     if rising_edge(clk) and cen = '1' then
       if video.hsync = '1' then
         -- reset to the horizontal scroll position
-        pos.x <= scroll_pos.x;
+        dest_pos.x <= scroll_pos.x;
       else
-        pos.x <= pos.x + 1;
+        dest_pos.x <= dest_pos.x + 1;
       end if;
     end if;
   end process;
@@ -202,38 +203,42 @@ begin
     end if;
   end process;
 
-  -- Load graphics data from the tile ROM.
-  --
-  -- While the current two pixels are being rendered, we need to fetch data for
-  -- the next two pixels, so they are loaded in time to render them on the
-  -- screen.
-  load_gfx_data : block
-    signal x : unsigned(2 downto 0);
-    signal y : unsigned(3 downto 0);
-  begin
-    x <= offset_x(3 downto 1)+1;
-    y <= offset_y(3 downto 0);
-
-    tile_rom_addr <= std_logic_vector(code & y(3) & x(2) & y(2 downto 0) & x(1 downto 0));
-  end block;
-
-  -- Latch the graphics data from the tile ROM when rendering odd pixels (i.e.
-  -- the second pixel in every pair of pixels).
-  latch_gfx_data : process (clk)
+  -- Latch pixel data from the tile ROM when rendering odd pixels (i.e. the
+  -- second pixel in every pair of pixels).
+  latch_pixel_data : process (clk)
   begin
     if rising_edge(clk) then
-      if pos.x(0) = '1' then
-        gfx_data <= tile_rom_dout;
+      if dest_pos.x(0) = '1' then
+        pixel_pair <= tile_rom_dout;
       end if;
     end if;
   end process;
 
-  -- update vertical position
-  pos.y(7 downto 0) <= video.pos.y(7 downto 0) + scroll_pos.y(7 downto 0);
+  -- Set the load position.
+  --
+  -- While the current two pixels are being rendered, we need to fetch data for
+  -- the next two pixels, so they are loaded in time to render them on the
+  -- screen.
+  load_pos.x <= offset_x(3 downto 0)+2;
+  load_pos.y <= offset_y(3 downto 0);
+
+  -- Set the tile ROM address.
+  --
+  -- This encoding is taken directly from the schematic.
+  tile_rom_addr <= std_logic_vector(
+    code &
+    load_pos.y(3) &
+    load_pos.x(3) &
+    load_pos.y(2 downto 0) &
+    load_pos.x(2 downto 1)
+  );
+
+  -- set vertical position
+  dest_pos.y(7 downto 0) <= video.pos.y(7 downto 0) + scroll_pos.y(7 downto 0);
 
   -- decode high/low pixels from the graphics data
-  pixel <= gfx_data(7 downto 4) when pos.x(0) = '0' else gfx_data(3 downto 0);
+  pixel <= pixel_pair(7 downto 4) when dest_pos.x(0) = '0' else pixel_pair(3 downto 0);
 
-  -- set layer data
+  -- set graphics data
   data <= color & pixel;
 end architecture arch;
