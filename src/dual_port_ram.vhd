@@ -36,12 +36,12 @@ entity dual_port_ram is
     -- chip select
     cs : in std_logic := '1';
 
-    -- write-only port
+    -- write port
     addr_wr : in std_logic_vector(ADDR_WIDTH-1 downto 0);
     din     : in std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
     wren    : in std_logic := '1';
 
-    -- read-only port
+    -- read port
     addr_rd : in std_logic_vector(ADDR_WIDTH-1 downto 0);
     dout    : out std_logic_vector(DATA_WIDTH-1 downto 0);
     rden    : in std_logic := '1'
