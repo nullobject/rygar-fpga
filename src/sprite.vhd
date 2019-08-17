@@ -62,7 +62,7 @@ entity sprite is
 end sprite;
 
 architecture arch of sprite is
-  type state_t is (INIT, LOAD, LATCH, BLIT, JUMP, DONE, FLIP);
+  type state_t is (IDLE, LOAD, LATCH, BLIT, JUMP, DONE, FLIP);
 
   -- state signals
   signal state, next_state : state_t;
@@ -171,14 +171,6 @@ begin
     done      => blit_done
   );
 
-  -- latch the next state
-  latch_state : process (clk)
-  begin
-    if rising_edge(clk) then
-      state <= next_state;
-    end if;
-  end process;
-
   -- state machine
   fsm : process (state, video.vblank, blit_done, frame_done)
   begin
@@ -186,7 +178,7 @@ begin
 
     case state is
       -- this is the default state, we just wait for the beginning of the frame
-      when INIT =>
+      when IDLE =>
         if video.vblank = '0' then
           next_state <= LOAD;
         end if;
@@ -221,8 +213,16 @@ begin
 
       -- flip the frame buffer
       when FLIP =>
-        next_state <= INIT;
+        next_state <= IDLE;
     end case;
+  end process;
+
+  -- latch the next state
+  latch_state : process (clk)
+  begin
+    if rising_edge(clk) then
+      state <= next_state;
+    end if;
   end process;
 
   -- Update the sprite counter.

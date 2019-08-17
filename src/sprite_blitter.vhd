@@ -63,7 +63,7 @@ architecture arch of sprite_blitter is
     y : unsigned(4 downto 0);
   end record sprite_pos_t;
 
-  type state_t is (INIT, CHECK, PRELOAD, BLIT);
+  type state_t is (IDLE, CHECK, PRELOAD, BLIT);
 
   -- state signals
   signal state, next_state : state_t;
@@ -82,14 +82,6 @@ architecture arch of sprite_blitter is
   signal blit_done    : std_logic;
   signal visible      : std_logic;
 begin
-  -- latch the next state
-  latch_state : process (clk)
-  begin
-    if rising_edge(clk) then
-      state <= next_state;
-    end if;
-  end process;
-
   -- state machine
   fsm : process (state, start, visible, preload_done, blit_done)
   begin
@@ -97,7 +89,7 @@ begin
 
     case state is
       -- this is the default state, we just wait for the start signal
-      when INIT =>
+      when IDLE =>
         if start = '1' then
           next_state <= CHECK;
         end if;
@@ -107,7 +99,7 @@ begin
         if visible = '1' then
           next_state <= PRELOAD;
         else
-          next_state <= INIT;
+          next_state <= IDLE;
         end if;
 
       -- preload the data for the first pixel
@@ -119,9 +111,17 @@ begin
       -- copy pixels from the source to the destination
       when BLIT =>
         if blit_done = '1' then
-          next_state <= INIT;
+          next_state <= IDLE;
         end if;
     end case;
+  end process;
+
+  -- latch the next state
+  latch_state : process (clk)
+  begin
+    if rising_edge(clk) then
+      state <= next_state;
+    end if;
   end process;
 
   -- the source position represents the current pixel offset of the sprite to
@@ -129,7 +129,7 @@ begin
   update_src_pos_counter : process (clk)
   begin
     if rising_edge(clk) then
-      if state = INIT then
+      if state = IDLE then
         -- set source position to first pixel
         src_pos.x <= (others => '0');
         src_pos.y <= (others => '0');
@@ -153,7 +153,7 @@ begin
   update_load_pos_counter : process (clk)
   begin
     if rising_edge(clk) then
-      if state = INIT then
+      if state = IDLE then
         -- set load position to first pixel
         load_pos.x <= (others => '0');
         load_pos.y <= (others => '0');
@@ -188,7 +188,7 @@ begin
   busy <= '1' when state = BLIT and pixel /= "0000" and dest_pos.x(8) = '0' and dest_pos.y(8) = '0' else '0';
 
   -- set done output
-  done <= '1' when state = INIT else '0';
+  done <= '1' when state = IDLE else '0';
 
   -- the sprite is visible if it is enabled
   visible <= '1' when sprite.enable = '1' else '0';
