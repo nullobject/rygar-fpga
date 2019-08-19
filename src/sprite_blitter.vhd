@@ -26,13 +26,12 @@ use work.types.all;
 
 -- The sprite blitter copies sprite data from the tile ROM to the frame buffer.
 --
+-- The ready signal is asserted when the blitter is ready to execute a blit
+-- operation.
+--
 -- A blit operation is triggered by setting the sprite descriptor and asserting
 -- the start signal. Once all the pixels have been copied to the frame buffer,
--- the done signal is asserted by the sprite blitter.
---
--- The busy signal is asserted while the sprite blitter is writing pixel data
--- to the frame buffer. This signal should be used to enable write access to
--- the frame buffer.
+-- the ready signal is again asserted by the blitter.
 entity sprite_blitter is
   port (
     -- clock
@@ -42,17 +41,17 @@ entity sprite_blitter is
     sprite : in sprite_t;
 
     -- control signals
+    ready : out std_logic;
     start : in std_logic;
-    busy  : out std_logic;
-    done  : out std_logic;
 
-    -- data in
-    src_addr : out std_logic_vector(SPRITE_TILE_ROM_ADDR_WIDTH-1 downto 0);
-    din      : in byte_t;
+    -- tile ROM interface
+    tile_rom_addr : out std_logic_vector(SPRITE_TILE_ROM_ADDR_WIDTH-1 downto 0);
+    tile_rom_data : in byte_t;
 
-    -- data out
-    dest_addr : out std_logic_vector(FRAME_BUFFER_ADDR_WIDTH-1 downto 0);
-    dout      : out std_logic_vector(FRAME_BUFFER_DATA_WIDTH-1 downto 0)
+    -- frame buffer interface
+    frame_buffer_addr : out std_logic_vector(FRAME_BUFFER_ADDR_WIDTH-1 downto 0);
+    frame_buffer_data : out std_logic_vector(FRAME_BUFFER_DATA_WIDTH-1 downto 0);
+    frame_buffer_wren : out std_logic
   );
 end sprite_blitter;
 
@@ -179,16 +178,16 @@ begin
   begin
     if rising_edge(clk) then
       if (state = PRELOAD or state = BLIT) and load_pos.x(0) = '1' then
-        pixel_pair <= din;
+        pixel_pair <= tile_rom_data;
       end if;
     end if;
   end process;
 
   -- write to the frame buffer when we're blitting to the visible part of the frame
-  busy <= '1' when state = BLIT and pixel /= "0000" and dest_pos.x(8) = '0' and dest_pos.y(8) = '0' else '0';
+  frame_buffer_wren <= '1' when state = BLIT and pixel /= "0000" and dest_pos.x(8) = '0' and dest_pos.y(8) = '0' else '0';
 
-  -- set done output
-  done <= '1' when state = IDLE else '0';
+  -- set ready output
+  ready <= '1' when state = IDLE else '0';
 
   -- the sprite is visible if it is enabled
   visible <= '1' when sprite.enable = '1' else '0';
@@ -196,7 +195,7 @@ begin
   -- Set the source address.
   --
   -- This encoding is taken directly from the schematic.
-  src_addr <= std_logic_vector(
+  tile_rom_addr <= std_logic_vector(
     sprite.code(11 downto 4) &
     (sprite.code(3 downto 0) or (load_pos.y(4) & load_pos.x(4) & load_pos.y(3) & load_pos.x(3))) &
     load_pos.y(2 downto 0) &
@@ -215,12 +214,12 @@ begin
   -- the blit is done when all the pixels have been copied
   blit_done <= '1' when src_pos.x = sprite.size-1 and src_pos.y = sprite.size-1 else '0';
 
-  -- set destination address
-  dest_addr <= std_logic_vector(dest_pos.y(7 downto 0) & dest_pos.x(7 downto 0));
-
   -- set current pixel
   pixel <= pixel_pair(7 downto 4) when src_pos.x(0) = '0' else pixel_pair(3 downto 0);
 
+  -- set destination address
+  frame_buffer_addr <= std_logic_vector(dest_pos.y(7 downto 0) & dest_pos.x(7 downto 0));
+
   -- set output data
-  dout <= std_logic_vector(sprite.priority & sprite.color) & pixel;
+  frame_buffer_data <= std_logic_vector(sprite.priority & sprite.color) & pixel;
 end architecture arch;

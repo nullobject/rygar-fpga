@@ -401,7 +401,7 @@ begin
   scroll_cs      <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"f800" and unsigned(cpu_addr) <= x"f805" else '0';
   bank_cs        <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) = x"f808" else '0';
 
-  -- CPU data input bus
+  -- set CPU data input
   cpu_din <= prog_rom_1_dout or
              prog_rom_2_dout or
              prog_rom_3_dout or
