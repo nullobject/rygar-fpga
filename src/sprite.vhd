@@ -218,7 +218,7 @@ begin
   end process;
 
   -- latch the next state
-  latch_state : process (clk)
+  latch_next_state : process (clk)
   begin
     if rising_edge(clk) then
       state <= next_state;
