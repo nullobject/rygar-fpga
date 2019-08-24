@@ -65,7 +65,7 @@ architecture arch of char is
   signal rom_dout : std_logic_vector(CHAR_ROM_DATA_WIDTH-1 downto 0);
 
   -- tile signals
-  signal tile_data  : std_logic_vector(15 downto 0);
+  signal tile_data  : byte_t;
   signal tile_code  : tile_code_t;
   signal tile_color : tile_color_t;
   signal tile_row   : tile_row_t;
@@ -132,32 +132,31 @@ begin
   -- The 16-bit tile data words aren't stored contiguously in RAM, instead they
   -- are split into high and low bytes. The high bytes are stored in the
   -- upper-half of the RAM, while the low bytes are stored in the lower-half.
+  --
+  -- We latch the tile code well before the end of the row, to allow the GPU
+  -- enough time to fetch pixel data from the tile ROM.
   tile_data_pipeline : process (clk)
   begin
     if rising_edge(clk) then
       case to_integer(offset_x) is
-        when 2 =>
-          -- load high byte for the next tile
+        when 0 =>
+          -- load high byte
           char_ram_addr_b <= std_logic_vector('1' & row & (col+1));
 
-        when 3 =>
+        when 1 =>
           -- latch high byte
-          tile_data(15 downto 8) <= char_ram_dout_b;
+          tile_data <= char_ram_dout_b;
 
-          -- load low byte for the next tile
+          -- load low byte
           char_ram_addr_b <= std_logic_vector('0' & row & (col+1));
 
-        when 4 =>
-          -- latch low byte
-          tile_data(7 downto 0) <= char_ram_dout_b;
-
-        when 5 =>
-          -- latch code
-          tile_code <= unsigned(tile_data(9 downto 0));
+        when 2 =>
+          -- latch tile code
+          tile_code <= unsigned(tile_data(1 downto 0) & char_ram_dout_b);
 
         when 7 =>
           -- latch colour
-          tile_color <= tile_data(15 downto 12);
+          tile_color <= tile_data(7 downto 4);
 
         when others => null;
       end case;

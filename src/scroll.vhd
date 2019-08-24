@@ -79,7 +79,7 @@ architecture arch of scroll is
   signal rom_dout : std_logic_vector(ROM_DATA_WIDTH-1 downto 0);
 
   -- tile signals
-  signal tile_data  : std_logic_vector(15 downto 0);
+  signal tile_data  : byte_t;
   signal tile_code  : tile_code_t;
   signal tile_color : tile_color_t;
   signal tile_pixel : tile_pixel_t;
@@ -97,7 +97,7 @@ begin
   -- The tile RAM (1kB) contains the code and colour of each tile in the
   -- tilemap.
   --
-  -- Each tile in the tilemap is represented by two bytes in the character RAM,
+  -- Each tile in the tilemap is represented by two bytes in the scroll RAM,
   -- a high byte and a low byte, which contains the tile colour and code.
   --
   -- It has been implemented as a dual-port RAM because both the CPU and the
@@ -105,9 +105,9 @@ begin
   -- identical.
   --
   -- This differs from the original arcade hardware, which only contains
-  -- a single-port character RAM. Using a dual-port RAM instead simplifies
-  -- things, because we don't need all the additional logic required to
-  -- coordinate RAM access.
+  -- a single-port scroll RAM. Using a dual-port RAM instead simplifies things,
+  -- because we don't need all the additional logic required to coordinate RAM
+  -- access.
   scroll_ram : entity work.true_dual_port_ram
   generic map (
     ADDR_WIDTH_A => RAM_ADDR_WIDTH,
@@ -162,32 +162,31 @@ begin
   -- The 16-bit tile data words aren't stored contiguously in RAM, instead they
   -- are split into high and low bytes. The high bytes are stored in the
   -- upper-half of the RAM, while the low bytes are stored in the lower-half.
+  --
+  -- We latch the tile code well before the end of the row, to allow the GPU
+  -- enough time to fetch pixel data from the tile ROM.
   tile_data_pipeline : process (clk)
   begin
     if rising_edge(clk) then
       case to_integer(offset_x) is
-        when 10 =>
-          -- load high byte for the next tile
+        when 8 =>
+          -- load high byte
           scroll_ram_addr_b <= std_logic_vector('1' & row & (col+1));
 
-        when 11 =>
+        when 9 =>
           -- latch high byte
-          tile_data(15 downto 8) <= scroll_ram_dout_b;
+          tile_data <= scroll_ram_dout_b;
 
-          -- load low byte for the next tile
+          -- load low byte
           scroll_ram_addr_b <= std_logic_vector('0' & row & (col+1));
 
-        when 12 =>
-          -- latch low byte
-          tile_data(7 downto 0) <= scroll_ram_dout_b;
-
-        when 13 =>
-          -- latch code
-          tile_code <= unsigned(tile_data(9 downto 0));
+        when 10 =>
+          -- latch tile code
+          tile_code <= unsigned(tile_data(1 downto 0) & scroll_ram_dout_b);
 
         when 15 =>
           -- latch colour
-          tile_color <= tile_data(15 downto 12);
+          tile_color <= tile_data(7 downto 4);
 
         when others => null;
       end case;
