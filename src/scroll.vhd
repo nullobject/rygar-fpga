@@ -27,7 +27,8 @@ use work.types.all;
 -- The scroll module handles the scrolling foreground and background layers in
 -- the graphics pipeline.
 --
--- It consists of of a 32x16 grid of 16x16 tiles.
+-- It consists of a 32x16 grid of 16x16 tiles. Each 16x16 tile is made up of
+-- four separate 8x8 tiles, stored in a left-to-right, top-to-bottom order.
 --
 -- Because a scrolling layer is twice the width of the screen, it can never be
 -- entirely visible on the screen at once. The horizontal and vertical scroll
@@ -193,7 +194,7 @@ begin
     end if;
   end process;
 
-  -- latch the row data from the tile ROM when rendering the last pixel in
+  -- latch the next row from the tile ROM when rendering the last pixel in
   -- every row
   latch_tile_row : process (clk)
   begin
@@ -209,10 +210,7 @@ begin
 
   -- Set the tile ROM address.
   --
-  -- Each 16x16 tile is made up of four separate 8x8 tiles, stored in
-  -- a left-to-right, top-to-bottom order.
-  --
-  -- This address points to a row of the current 8x8 tile in the tile ROM.
+  -- This address points to the next row in the current 8x8 tile.
   tile_rom_addr <= std_logic_vector(tile_code & offset_y(3) & (not offset_x(3)) & offset_y(2 downto 0));
 
   -- decode the pixel from the tile row data

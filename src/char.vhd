@@ -164,7 +164,7 @@ begin
     end if;
   end process;
 
-  -- latch the row data from the tile ROM when rendering the last pixel in
+  -- latch the next row from the tile ROM when rendering the last pixel in
   -- every row
   latch_tile_row : process (clk)
   begin

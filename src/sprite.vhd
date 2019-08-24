@@ -73,7 +73,7 @@ architecture arch of sprite is
 
   -- tile ROM signals
   signal tile_rom_addr : std_logic_vector(SPRITE_TILE_ROM_ADDR_WIDTH-1 downto 0);
-  signal tile_rom_dout : byte_t;
+  signal tile_rom_dout : std_logic_vector(SPRITE_TILE_ROM_DATA_WIDTH-1 downto 0);
 
   -- frame buffer signals
   signal frame_buffer_addr_rd : std_logic_vector(FRAME_BUFFER_ADDR_WIDTH-1 downto 0);
@@ -130,6 +130,7 @@ begin
   tile_rom : entity work.single_port_rom
   generic map (
     ADDR_WIDTH => SPRITE_TILE_ROM_ADDR_WIDTH,
+    DATA_WIDTH => SPRITE_TILE_ROM_DATA_WIDTH,
     INIT_FILE  => "rom/sprites.mif"
   )
   port map (
