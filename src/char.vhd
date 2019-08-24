@@ -128,6 +128,10 @@ begin
   --
   -- While the current tile is being rendered, we need to fetch data for the
   -- next tile ahead, so that it is loaded in time to render it on the screen.
+  --
+  -- The 16-bit tile data words aren't stored contiguously in RAM, instead they
+  -- are split into high and low bytes. The high bytes are stored in the
+  -- upper-half of the RAM, while the low bytes are stored in the lower-half.
   tile_data_pipeline : process (clk)
   begin
     if rising_edge(clk) then
@@ -149,7 +153,7 @@ begin
 
         when 5 =>
           -- latch code
-          tile_code <= tile_code_t(tile_data(9 downto 0));
+          tile_code <= unsigned(tile_data(9 downto 0));
 
         when 7 =>
           -- latch colour
@@ -162,7 +166,7 @@ begin
 
   -- latch the row data from the tile ROM when rendering the last pixel in
   -- every row
-  latch_row_data : process (clk)
+  latch_tile_row : process (clk)
   begin
     if rising_edge(clk) then
       if video.pos.x(2 downto 0) = 7 then
@@ -173,8 +177,7 @@ begin
 
   -- Set the tile ROM address.
   --
-  -- While the current row is being rendered, we need to fetch data for the
-  -- next row in time for rendering.
+  -- This address points to a row of the current 8x8 tile in the tile ROM.
   tile_rom_addr <= std_logic_vector(tile_code & offset_y(2 downto 0));
 
   -- decode the pixel from the tile row data

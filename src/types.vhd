@@ -32,9 +32,11 @@ package types is
   constant CHAR_ROM_ADDR_WIDTH     : natural := 13; -- 32kB
   constant CHAR_ROM_DATA_WIDTH     : natural := 32;
   constant FG_RAM_ADDR_WIDTH       : natural := 10; -- 1kB
-  constant FG_ROM_ADDR_WIDTH       : natural := 17; -- 128kB
+  constant FG_ROM_ADDR_WIDTH       : natural := 15; -- 128kB
+  constant FG_ROM_DATA_WIDTH       : natural := 32;
   constant BG_RAM_ADDR_WIDTH       : natural := 10; -- 1kB
-  constant BG_ROM_ADDR_WIDTH       : natural := 17; -- 128kB
+  constant BG_ROM_ADDR_WIDTH       : natural := 15; -- 128kB
+  constant BG_ROM_DATA_WIDTH       : natural := 32;
   constant SPRITE_RAM_ADDR_WIDTH   : natural := 11; -- 2kB
   constant SPRITE_ROM_ADDR_WIDTH   : natural := 17; -- 128kB
   constant PALETTE_RAM_ADDR_WIDTH  : natural := 11; -- 2kB

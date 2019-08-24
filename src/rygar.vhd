@@ -253,6 +253,7 @@ begin
     generic map (
       RAM_ADDR_WIDTH => FG_RAM_ADDR_WIDTH,
       ROM_ADDR_WIDTH => FG_ROM_ADDR_WIDTH,
+      ROM_DATA_WIDTH => FG_ROM_DATA_WIDTH,
       ROM_INIT_FILE  => "rom/fg.mif"
     )
     port map (
@@ -287,6 +288,7 @@ begin
     generic map (
       RAM_ADDR_WIDTH => BG_RAM_ADDR_WIDTH,
       ROM_ADDR_WIDTH => BG_ROM_ADDR_WIDTH,
+      ROM_DATA_WIDTH => BG_ROM_DATA_WIDTH,
       ROM_INIT_FILE  => "rom/bg.mif"
     )
     port map (

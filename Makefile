@@ -15,12 +15,12 @@ rom:
 					 rom/vid_6o.bin -binary -offset 0x08000 \
 					 rom/vid_6n.bin -binary -offset 0x10000 \
 					 rom/vid_6l.bin -binary -offset 0x18000 \
-					 -o rom/fg.mif -mif
+					 -o rom/fg.mif -mif 32
 	srec_cat rom/vid_6f.bin -binary -offset 0x00000 \
 					 rom/vid_6e.bin -binary -offset 0x08000 \
 					 rom/vid_6c.bin -binary -offset 0x10000 \
 					 rom/vid_6b.bin -binary -offset 0x18000 \
-					 -o rom/bg.mif -mif
+					 -o rom/bg.mif -mif 32
 	srec_cat rom/vid_6k.bin -binary -offset 0x00000 \
 					 rom/vid_6j.bin -binary -offset 0x08000 \
 					 rom/vid_6h.bin -binary -offset 0x10000 \
