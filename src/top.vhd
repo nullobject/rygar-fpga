@@ -56,8 +56,8 @@ architecture arch of top is
   signal vsync : std_logic;
   signal csync : std_logic;
 
-  -- pixel data
-  signal pixel : rgb_t;
+  -- RGB data
+  signal rgb : rgb_t;
 begin
   -- generate a 12MHz clock signal
   my_pll : entity pll.pll
@@ -104,14 +104,14 @@ begin
     reset => reset,
     hsync => hsync,
     vsync => vsync,
-    pixel => pixel
+    rgb   => rgb
   );
 
   -- set composite sync
   vga_csync <= not (hsync xor vsync);
 
-  -- set pixel data
-  vga_r <= pixel.r & pixel.r(3 downto 2);
-  vga_g <= pixel.g & pixel.g(3 downto 2);
-  vga_b <= pixel.b & pixel.b(3 downto 2);
+  -- set RGB data
+  vga_r <= rgb.r & rgb.r(3 downto 2);
+  vga_g <= rgb.g & rgb.g(3 downto 2);
+  vga_b <= rgb.b & rgb.b(3 downto 2);
 end architecture arch;

@@ -44,8 +44,8 @@ entity rygar is
     hsync : out std_logic;
     vsync : out std_logic;
 
-    -- pixel data
-    pixel : out rgb_t
+    -- RGB data
+    rgb : out rgb_t
   );
 end rygar;
 
@@ -333,7 +333,7 @@ begin
     char_data       => char_data,
     fg_data         => fg_data,
     bg_data         => bg_data,
-    pixel           => pixel
+    rgb             => rgb
   );
 
   -- Trigger an interrupt on the falling edge of the VBLANK signal.

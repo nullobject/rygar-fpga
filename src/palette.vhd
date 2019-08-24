@@ -25,7 +25,7 @@ use ieee.numeric_std.all;
 use work.types.all;
 
 -- The palette combines data from the different graphics layers to produce an
--- actual RGB pixel, that can be rendered on the screen.
+-- actual RGB value, that can be rendered on the screen.
 entity palette is
   port (
     -- clock signals
@@ -51,8 +51,8 @@ entity palette is
     fg_data     : in byte_t;
     bg_data     : in byte_t;
 
-    -- pixel data
-    pixel : out rgb_t
+    -- RGB data
+    rgb : out rgb_t
   );
 end palette;
 
@@ -100,18 +100,18 @@ begin
     dout_b => palette_ram_dout_b
   );
 
-  -- latch pixel data from the palette RAM
-  latch_pixel_data : process (clk)
+  -- latch RGB data from the palette RAM
+  latch_rgb_data : process (clk)
   begin
     if rising_edge(clk) and cen_6 = '1' then
       if video.enable = '1' then
-        pixel.r <= palette_ram_dout_b(15 downto 12);
-        pixel.g <= palette_ram_dout_b(11 downto 8);
-        pixel.b <= palette_ram_dout_b(3 downto 0);
+        rgb.r <= palette_ram_dout_b(15 downto 12);
+        rgb.g <= palette_ram_dout_b(11 downto 8);
+        rgb.b <= palette_ram_dout_b(3 downto 0);
       else
-        pixel.r <= (others => '0');
-        pixel.g <= (others => '0');
-        pixel.b <= (others => '0');
+        rgb.r <= (others => '0');
+        rgb.g <= (others => '0');
+        rgb.b <= (others => '0');
       end if;
     end if;
   end process;
