@@ -44,7 +44,7 @@ entity char is
     -- video signals
     video : in video_t;
 
-    -- layer data
+    -- graphics data
     data : out byte_t
   );
 end char;
@@ -60,21 +60,16 @@ architecture arch of char is
   signal char_ram_addr_b : std_logic_vector(CHAR_RAM_ADDR_WIDTH-1 downto 0);
   signal char_ram_dout_b : byte_t;
 
-  -- tile ROM
-  signal tile_rom_addr : std_logic_vector(CHAR_ROM_ADDR_WIDTH-1 downto 0);
-  signal tile_rom_dout : byte_t;
-
-  -- position signals
-  signal load_pos : tile_pos_t;
+  -- char ROM
+  signal rom_addr : std_logic_vector(CHAR_ROM_ADDR_WIDTH-1 downto 0);
+  signal rom_dout : std_logic_vector(CHAR_ROM_DATA_WIDTH-1 downto 0);
 
   -- tile signals
-  signal tile_data : std_logic_vector(15 downto 0);
-  signal code      : unsigned(9 downto 0);
-  signal color     : nibble_t;
-
-  -- graphics signals
-  signal pixel      : nibble_t;
-  signal pixel_pair : byte_t;
+  signal tile_data  : std_logic_vector(15 downto 0);
+  signal tile_code  : tile_code_t;
+  signal tile_color : tile_color_t;
+  signal tile_row   : tile_row_t;
+  signal tile_pixel : tile_pixel_t;
 
   -- aliases to extract the components of the horizontal and vertical position
   alias col      : unsigned(4 downto 0) is video.pos.x(7 downto 3);
@@ -116,26 +111,27 @@ begin
     dout_b => char_ram_dout_b
   );
 
-  -- The tile ROM contains the actual pixel data for the tiles.
-  --
-  -- Each 8x8 tile is composed of four layers of pixel data (bitplanes). This
-  -- means that each row in a 8x8 tile takes up exactly four bytes, for a total
-  -- of 32 bytes per tile.
-  tile_rom : entity work.single_port_rom
+  -- the char ROM contains the actual pixel data for the tiles
+  char_rom : entity work.single_port_rom
   generic map (
     ADDR_WIDTH => CHAR_ROM_ADDR_WIDTH,
+    DATA_WIDTH => CHAR_ROM_DATA_WIDTH,
     INIT_FILE  => "rom/cpu_8k.mif"
   )
   port map (
     clk  => clk,
-    addr => tile_rom_addr,
-    dout => tile_rom_dout
+    addr => rom_addr,
+    dout => rom_dout
   );
 
   -- Load tile data from the character RAM.
   --
   -- While the current tile is being rendered, we need to fetch data for the
   -- next tile ahead, so that it is loaded in time to render it on the screen.
+  --
+  -- The 16-bit tile data words aren't stored contiguously in RAM, instead they
+  -- are split into high and low bytes. The high bytes are stored in the
+  -- upper-half of the RAM, while the low bytes are stored in the lower-half.
   tile_data_pipeline : process (clk)
   begin
     if rising_edge(clk) then
@@ -157,48 +153,45 @@ begin
 
         when 5 =>
           -- latch code
-          code <= unsigned(tile_data(9 downto 0));
+          tile_code <= unsigned(tile_data(9 downto 0));
 
         when 7 =>
           -- latch colour
-          color <= tile_data(15 downto 12);
+          tile_color <= tile_data(15 downto 12);
 
         when others => null;
       end case;
     end if;
   end process;
 
-  -- Latch pixel data from the tile ROM when rendering odd pixels (i.e. the
-  -- second pixel in every pair of pixels).
-  latch_pixel_data : process (clk)
+  -- latch the next row from the tile ROM when rendering the last pixel in
+  -- every row
+  latch_tile_row : process (clk)
   begin
     if rising_edge(clk) then
-      if video.pos.x(0) = '1' then
-        pixel_pair <= tile_rom_dout;
+      if video.pos.x(2 downto 0) = 7 then
+        tile_row <= rom_dout;
       end if;
     end if;
   end process;
 
-  -- Set the load position.
-  --
-  -- While the current two pixels are being rendered, we need to fetch data for
-  -- the next two pixels, so they are loaded in time to render them on the
-  -- screen.
-  load_pos.x <= offset_x(2 downto 0)+2;
-  load_pos.y <= offset_y(2 downto 0);
-
   -- Set the tile ROM address.
   --
-  -- This encoding is taken directly from the schematic.
-  tile_rom_addr <= std_logic_vector(
-    code &
-    load_pos.y(2 downto 0) &
-    load_pos.x(2 downto 1)
-  );
+  -- This address points to a row of an 8x8 tile.
+  rom_addr <= std_logic_vector(tile_code & offset_y(2 downto 0));
 
-  -- decode high/low pixels from the graphics data
-  pixel <= pixel_pair(7 downto 4) when video.pos.x(0) = '0' else pixel_pair(3 downto 0);
+  -- decode the pixel from the tile row data
+  with to_integer(video.pos.x(2 downto 0)) select
+    tile_pixel <= tile_row(31 downto 28) when 0,
+                  tile_row(27 downto 24) when 1,
+                  tile_row(23 downto 20) when 2,
+                  tile_row(19 downto 16) when 3,
+                  tile_row(15 downto 12) when 4,
+                  tile_row(11 downto 8)  when 5,
+                  tile_row(7 downto 4)   when 6,
+                  tile_row(3 downto 0)   when 7,
+                  (others => '0')        when others;
 
   -- set graphics data
-  data <= color & pixel;
+  data <= tile_color & tile_pixel;
 end architecture arch;

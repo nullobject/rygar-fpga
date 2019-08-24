@@ -24,25 +24,34 @@ use ieee.numeric_std.all;
 
 package types is
   -- memory sizes
-  constant PROG_ROM_1_ADDR_WIDTH   : natural := 15; -- 32kB
-  constant PROG_ROM_2_ADDR_WIDTH   : natural := 14; -- 16kB
-  constant PROG_ROM_3_ADDR_WIDTH   : natural := 15; -- 32kB
-  constant WORK_RAM_ADDR_WIDTH     : natural := 12; -- 4kB
-  constant CHAR_RAM_ADDR_WIDTH     : natural := 11; -- 2kB
-  constant CHAR_ROM_ADDR_WIDTH     : natural := 15; -- 32kB
-  constant FG_RAM_ADDR_WIDTH       : natural := 10; -- 1kB
-  constant FG_ROM_ADDR_WIDTH       : natural := 17; -- 128kB
-  constant BG_RAM_ADDR_WIDTH       : natural := 10; -- 1kB
-  constant BG_ROM_ADDR_WIDTH       : natural := 17; -- 128kB
-  constant SPRITE_RAM_ADDR_WIDTH   : natural := 11; -- 2kB
-  constant SPRITE_ROM_ADDR_WIDTH   : natural := 17; -- 128kB
-  constant PALETTE_RAM_ADDR_WIDTH  : natural := 11; -- 2kB
+  constant PROG_ROM_1_ADDR_WIDTH : natural := 15; -- 32kB
+  constant PROG_ROM_2_ADDR_WIDTH : natural := 14; -- 16kB
+  constant PROG_ROM_3_ADDR_WIDTH : natural := 15; -- 32kB
 
-  constant SPRITE_RAM_ADDR_WIDTH_B    : natural := 8;
-  constant SPRITE_RAM_DATA_WIDTH_B    : natural := 64;
-  constant SPRITE_TILE_ROM_ADDR_WIDTH : natural := 17;
-  constant FRAME_BUFFER_ADDR_WIDTH    : natural := 16;
-  constant FRAME_BUFFER_DATA_WIDTH    : natural := 10;
+  constant WORK_RAM_ADDR_WIDTH : natural := 12; -- 4kB
+
+  constant CHAR_RAM_ADDR_WIDTH : natural := 11; -- 2kB
+  constant CHAR_ROM_ADDR_WIDTH : natural := 13; -- 32kB
+  constant CHAR_ROM_DATA_WIDTH : natural := 32;
+
+  constant FG_RAM_ADDR_WIDTH : natural := 10; -- 1kB
+  constant FG_ROM_ADDR_WIDTH : natural := 15; -- 128kB
+  constant FG_ROM_DATA_WIDTH : natural := 32;
+
+  constant BG_RAM_ADDR_WIDTH : natural := 10; -- 1kB
+  constant BG_ROM_ADDR_WIDTH : natural := 15; -- 128kB
+  constant BG_ROM_DATA_WIDTH : natural := 32;
+
+  constant SPRITE_RAM_ADDR_WIDTH   : natural := 11; -- 2kB
+  constant SPRITE_ROM_ADDR_WIDTH   : natural := 15; -- 128kB
+  constant SPRITE_ROM_DATA_WIDTH   : natural := 32;
+  constant SPRITE_RAM_ADDR_WIDTH_B : natural := 8;
+  constant SPRITE_RAM_DATA_WIDTH_B : natural := 64;
+
+  constant FRAME_BUFFER_ADDR_WIDTH : natural := 16;
+  constant FRAME_BUFFER_DATA_WIDTH : natural := 10;
+
+  constant PALETTE_RAM_ADDR_WIDTH : natural := 11; -- 2kB
 
   -- sprite byte 0
   constant SPRITE_HI_CODE_MSB : natural := 7;
@@ -80,9 +89,24 @@ package types is
   constant COLOR_DEPTH_G : natural := 4;
   constant COLOR_DEPTH_B : natural := 4;
 
+  -- each 8x8 tile is composed of four layers of pixel data (bitplanes)
+  constant TILE_BPP : natural := 4;
+
   subtype byte_t is std_logic_vector(7 downto 0);
   subtype nibble_t is std_logic_vector(3 downto 0);
   subtype priority_t is unsigned(1 downto 0);
+
+  -- represents a row of pixels in a 8x8 tile
+  subtype tile_row_t is std_logic_vector(TILE_BPP*8-1 downto 0);
+
+  -- represents a pixel in a 8x8 tile
+  subtype tile_pixel_t is std_logic_vector(TILE_BPP-1 downto 0);
+
+  -- represents the colour of a tile
+  subtype tile_color_t is std_logic_vector(3 downto 0);
+
+  -- represents the index of a tile in a tilemap
+  subtype tile_code_t is unsigned(9 downto 0);
 
   -- represents a position
   type pos_t is record

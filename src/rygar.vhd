@@ -44,8 +44,8 @@ entity rygar is
     hsync : out std_logic;
     vsync : out std_logic;
 
-    -- pixel data
-    pixel : out rgb_t
+    -- RGB data
+    rgb : out rgb_t
   );
 end rygar;
 
@@ -253,6 +253,7 @@ begin
     generic map (
       RAM_ADDR_WIDTH => FG_RAM_ADDR_WIDTH,
       ROM_ADDR_WIDTH => FG_ROM_ADDR_WIDTH,
+      ROM_DATA_WIDTH => FG_ROM_DATA_WIDTH,
       ROM_INIT_FILE  => "rom/fg.mif"
     )
     port map (
@@ -287,6 +288,7 @@ begin
     generic map (
       RAM_ADDR_WIDTH => BG_RAM_ADDR_WIDTH,
       ROM_ADDR_WIDTH => BG_ROM_ADDR_WIDTH,
+      ROM_DATA_WIDTH => BG_ROM_DATA_WIDTH,
       ROM_INIT_FILE  => "rom/bg.mif"
     )
     port map (
@@ -331,7 +333,7 @@ begin
     char_data       => char_data,
     fg_data         => fg_data,
     bg_data         => bg_data,
-    pixel           => pixel
+    rgb             => rgb
   );
 
   -- Trigger an interrupt on the falling edge of the VBLANK signal.
