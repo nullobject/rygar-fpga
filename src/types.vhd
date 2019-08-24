@@ -80,9 +80,24 @@ package types is
   constant COLOR_DEPTH_G : natural := 4;
   constant COLOR_DEPTH_B : natural := 4;
 
+  -- each 8x8 tile is composed of four layers of pixel data (bitplanes)
+  constant TILE_BPP : natural := 4;
+
   subtype byte_t is std_logic_vector(7 downto 0);
   subtype nibble_t is std_logic_vector(3 downto 0);
   subtype priority_t is unsigned(1 downto 0);
+
+  -- represents a row of pixels in a 8x8 tile
+  subtype tile_row_t is std_logic_vector(TILE_BPP*8-1 downto 0);
+
+  -- represents a pixel in a 8x8 tile
+  subtype tile_pixel_t is std_logic_vector(TILE_BPP-1 downto 0);
+
+  -- represents the colour of a tile
+  subtype tile_color_t is std_logic_vector(3 downto 0);
+
+  -- represents the index of a tile in a tilemap
+  subtype tile_code_t is unsigned(9 downto 0);
 
   -- represents a position
   type pos_t is record
