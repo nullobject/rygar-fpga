@@ -10,7 +10,7 @@ rom:
 	srec_cat rom/5.5p -binary -o rom/cpu_5p.mif -mif
 	srec_cat rom/cpu_5m.bin -binary -o rom/cpu_5m.mif -mif
 	srec_cat rom/cpu_5j.bin -binary -o rom/cpu_5j.mif -mif
-	srec_cat rom/cpu_8k.bin -binary -o rom/cpu_8k.mif -mif
+	srec_cat rom/cpu_8k.bin -binary -o rom/cpu_8k.mif -mif 32
 	srec_cat rom/vid_6p.bin -binary -offset 0x00000 \
 					 rom/vid_6o.bin -binary -offset 0x08000 \
 					 rom/vid_6n.bin -binary -offset 0x10000 \
