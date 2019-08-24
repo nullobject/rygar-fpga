@@ -44,11 +44,11 @@ entity sprite_blitter is
     ready : out std_logic;
     start : in std_logic;
 
-    -- tile ROM interface
-    tile_rom_addr : out std_logic_vector(SPRITE_TILE_ROM_ADDR_WIDTH-1 downto 0);
-    tile_rom_data : in std_logic_vector(SPRITE_TILE_ROM_DATA_WIDTH-1 downto 0);
+    -- sprite ROM
+    rom_addr : out std_logic_vector(SPRITE_ROM_ADDR_WIDTH-1 downto 0);
+    rom_data : in std_logic_vector(SPRITE_ROM_DATA_WIDTH-1 downto 0);
 
-    -- frame buffer interface
+    -- frame buffer
     frame_buffer_addr : out std_logic_vector(FRAME_BUFFER_ADDR_WIDTH-1 downto 0);
     frame_buffer_data : out std_logic_vector(FRAME_BUFFER_DATA_WIDTH-1 downto 0);
     frame_buffer_wren : out std_logic
@@ -178,7 +178,7 @@ begin
   begin
     if rising_edge(clk) then
       if (state = PRELOAD or state = BLIT) and load_pos.x(2 downto 0) = 7 then
-        tile_row <= tile_rom_data;
+        tile_row <= rom_data;
       end if;
     end if;
   end process;
@@ -192,10 +192,10 @@ begin
   -- the sprite is visible if it is enabled
   visible <= '1' when sprite.enable = '1' else '0';
 
-  -- Set the tile ROM address.
+  -- Set the ROM address.
   --
-  -- This address points to the next row in the current 8x8 tile.
-  tile_rom_addr <= std_logic_vector(
+  -- This address points to a row of an 8x8 tile.
+  rom_addr <= std_logic_vector(
     sprite.code(11 downto 4) &
     (sprite.code(3 downto 0) or (load_pos.y(4) & load_pos.x(4) & load_pos.y(3) & load_pos.x(3))) &
     load_pos.y(2 downto 0)

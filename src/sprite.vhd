@@ -55,7 +55,7 @@ entity sprite is
     -- video signals
     video : in video_t;
 
-    -- layer data
+    -- graphics data
     priority : out priority_t;
     data     : out byte_t
   );
@@ -67,15 +67,15 @@ architecture arch of sprite is
   -- state signals
   signal state, next_state : state_t;
 
-  -- sprite RAM signals
+  -- sprite RAM
   signal sprite_ram_addr : std_logic_vector(SPRITE_RAM_ADDR_WIDTH_B-1 downto 0);
   signal sprite_ram_dout : std_logic_vector(SPRITE_RAM_DATA_WIDTH_B-1 downto 0);
 
-  -- tile ROM signals
-  signal tile_rom_addr : std_logic_vector(SPRITE_TILE_ROM_ADDR_WIDTH-1 downto 0);
-  signal tile_rom_dout : std_logic_vector(SPRITE_TILE_ROM_DATA_WIDTH-1 downto 0);
+  -- sprite ROM
+  signal rom_addr : std_logic_vector(SPRITE_ROM_ADDR_WIDTH-1 downto 0);
+  signal rom_dout : std_logic_vector(SPRITE_ROM_DATA_WIDTH-1 downto 0);
 
-  -- frame buffer signals
+  -- frame buffer
   signal frame_buffer_addr_rd : std_logic_vector(FRAME_BUFFER_ADDR_WIDTH-1 downto 0);
   signal frame_buffer_addr_wr : std_logic_vector(FRAME_BUFFER_ADDR_WIDTH-1 downto 0);
   signal frame_buffer_din     : std_logic_vector(FRAME_BUFFER_DATA_WIDTH-1 downto 0);
@@ -127,16 +127,17 @@ begin
     dout_b => sprite_ram_dout
  );
 
-  tile_rom : entity work.single_port_rom
+  -- the sprite ROM contains the actual pixel data for the tiles
+  sprite_rom : entity work.single_port_rom
   generic map (
-    ADDR_WIDTH => SPRITE_TILE_ROM_ADDR_WIDTH,
-    DATA_WIDTH => SPRITE_TILE_ROM_DATA_WIDTH,
+    ADDR_WIDTH => SPRITE_ROM_ADDR_WIDTH,
+    DATA_WIDTH => SPRITE_ROM_DATA_WIDTH,
     INIT_FILE  => "rom/sprites.mif"
   )
   port map (
     clk  => clk,
-    addr => tile_rom_addr,
-    dout => tile_rom_dout
+    addr => rom_addr,
+    dout => rom_dout
   );
 
   sprite_frame_buffer : entity work.frame_buffer
@@ -165,8 +166,8 @@ begin
     sprite            => sprite,
     ready             => blitter_ready,
     start             => blitter_start,
-    tile_rom_addr     => tile_rom_addr,
-    tile_rom_data     => tile_rom_dout,
+    rom_addr          => rom_addr,
+    rom_data          => rom_dout,
     frame_buffer_addr => frame_buffer_addr_wr,
     frame_buffer_data => frame_buffer_din,
     frame_buffer_wren => frame_buffer_wren

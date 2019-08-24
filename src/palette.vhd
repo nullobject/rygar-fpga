@@ -121,10 +121,9 @@ begin
 
   -- set palette RAM address
   with layer select
-    palette_ram_addr_b <=
-      "00" & sprite_data when SPRITE_LAYER,
-      "01" & char_data   when CHAR_LAYER,
-      "10" & fg_data     when FG_LAYER,
-      "11" & bg_data     when BG_LAYER,
-      "0100000000"       when FILL_LAYER;
+    palette_ram_addr_b <= "00" & sprite_data when SPRITE_LAYER,
+                          "01" & char_data   when CHAR_LAYER,
+                          "10" & fg_data     when FG_LAYER,
+                          "11" & bg_data     when BG_LAYER,
+                          "0100000000"       when FILL_LAYER;
 end arch;

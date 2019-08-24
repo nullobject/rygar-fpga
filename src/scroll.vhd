@@ -55,10 +55,10 @@ entity scroll is
     -- video signals
     video : in video_t;
 
-    -- scroll position signals
+    -- scroll position
     scroll_pos : in pos_t;
 
-    -- layer data
+    -- graphics data
     data : out byte_t
   );
 end scroll;
@@ -70,13 +70,13 @@ architecture arch of scroll is
     y : unsigned(3 downto 0);
   end record tile_pos_t;
 
-  -- tile RAM (port B)
+  -- scroll RAM (port B)
   signal scroll_ram_addr_b : std_logic_vector(RAM_ADDR_WIDTH-1 downto 0);
   signal scroll_ram_dout_b : byte_t;
 
-  -- tile ROM
-  signal tile_rom_addr : std_logic_vector(ROM_ADDR_WIDTH-1 downto 0);
-  signal tile_rom_dout : std_logic_vector(ROM_DATA_WIDTH-1 downto 0);
+  -- scroll ROM
+  signal rom_addr : std_logic_vector(ROM_ADDR_WIDTH-1 downto 0);
+  signal rom_dout : std_logic_vector(ROM_DATA_WIDTH-1 downto 0);
 
   -- tile signals
   signal tile_data  : std_logic_vector(15 downto 0);
@@ -128,8 +128,8 @@ begin
     dout_b => scroll_ram_dout_b
   );
 
-  -- the tile ROM contains the actual pixel data for the tiles
-  tile_rom : entity work.single_port_rom
+  -- the scroll ROM contains the actual pixel data for the tiles
+  scroll_rom : entity work.single_port_rom
   generic map (
     ADDR_WIDTH => ROM_ADDR_WIDTH,
     DATA_WIDTH => ROM_DATA_WIDTH,
@@ -137,8 +137,8 @@ begin
   )
   port map (
     clk  => clk,
-    addr => tile_rom_addr,
-    dout => tile_rom_dout
+    addr => rom_addr,
+    dout => rom_dout
   );
 
   -- update position counter
@@ -200,7 +200,7 @@ begin
   begin
     if rising_edge(clk) then
       if dest_pos.x(2 downto 0) = 7 then
-        tile_row <= tile_rom_dout;
+        tile_row <= rom_dout;
       end if;
     end if;
   end process;
@@ -210,8 +210,8 @@ begin
 
   -- Set the tile ROM address.
   --
-  -- This address points to the next row in the current 8x8 tile.
-  tile_rom_addr <= std_logic_vector(tile_code & offset_y(3) & (not offset_x(3)) & offset_y(2 downto 0));
+  -- This address points to a row of an 8x8 tile.
+  rom_addr <= std_logic_vector(tile_code & offset_y(3) & (not offset_x(3)) & offset_y(2 downto 0));
 
   -- decode the pixel from the tile row data
   with to_integer(dest_pos.x(2 downto 0)) select
