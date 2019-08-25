@@ -276,9 +276,11 @@ begin
   -- latch graphics data from the frame buffer
   latch_gfx_data : process (clk)
   begin
-    if rising_edge(clk) and cen_6 = '1' then
-      priority <= unsigned(frame_buffer_dout(9 downto 8));
-      data     <= frame_buffer_dout(7 downto 0);
+    if rising_edge(clk) then
+      if cen_6 = '1' then
+        priority <= unsigned(frame_buffer_dout(9 downto 8));
+        data     <= frame_buffer_dout(7 downto 0);
+      end if;
     end if;
   end process;
 

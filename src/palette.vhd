@@ -103,15 +103,17 @@ begin
   -- latch RGB data from the palette RAM
   latch_rgb_data : process (clk)
   begin
-    if rising_edge(clk) and cen_6 = '1' then
-      if video.enable = '1' then
-        rgb.r <= palette_ram_dout_b(15 downto 12);
-        rgb.g <= palette_ram_dout_b(11 downto 8);
-        rgb.b <= palette_ram_dout_b(3 downto 0);
-      else
-        rgb.r <= (others => '0');
-        rgb.g <= (others => '0');
-        rgb.b <= (others => '0');
+    if rising_edge(clk) then
+      if cen_6 = '1' then
+        if video.enable = '1' then
+          rgb.r <= palette_ram_dout_b(15 downto 12);
+          rgb.g <= palette_ram_dout_b(11 downto 8);
+          rgb.b <= palette_ram_dout_b(3 downto 0);
+        else
+          rgb.r <= (others => '0');
+          rgb.g <= (others => '0');
+          rgb.b <= (others => '0');
+        end if;
       end if;
     end if;
   end process;

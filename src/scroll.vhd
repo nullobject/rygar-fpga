@@ -144,12 +144,14 @@ begin
   -- update position counter
   update_pos_counter : process (clk)
   begin
-    if rising_edge(clk) and cen_6 = '1' then
-      if video.hsync = '1' then
-        -- reset to the horizontal scroll position
-        dest_pos.x <= scroll_pos.x;
-      else
-        dest_pos.x <= dest_pos.x + 1;
+    if rising_edge(clk) then
+      if cen_6 = '1' then
+        if video.hsync = '1' then
+          -- reset to the horizontal scroll position
+          dest_pos.x <= scroll_pos.x;
+        else
+          dest_pos.x <= dest_pos.x + 1;
+        end if;
       end if;
     end if;
   end process;

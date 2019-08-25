@@ -81,23 +81,25 @@ begin
   -- generate horizontal timing signals
   horizontal_timing : process (clk)
   begin
-    if rising_edge(clk) and cen_6 = '1' then
-      if x = 511 then
-        x <= H_START;
-      else
-        x <= x + 1;
-      end if;
+    if rising_edge(clk) then
+      if cen_6 = '1' then
+        if x = 511 then
+          x <= H_START;
+        else
+          x <= x + 1;
+        end if;
 
-      if x = H_START+H_FRONT_PORCH+H_RETRACE-1 then
-        hsync <= '0';
-      elsif x = H_START+H_FRONT_PORCH-1 then
-        hsync <= '1';
-      end if;
+        if x = H_START+H_FRONT_PORCH+H_RETRACE-1 then
+          hsync <= '0';
+        elsif x = H_START+H_FRONT_PORCH-1 then
+          hsync <= '1';
+        end if;
 
-      if x = H_START+H_FRONT_PORCH+H_RETRACE+H_BACK_PORCH-1 then
-        hblank <= '0';
-      elsif x = H_START+H_SCAN-1 then
-        hblank <= '1';
+        if x = H_START+H_FRONT_PORCH+H_RETRACE+H_BACK_PORCH-1 then
+          hblank <= '0';
+        elsif x = H_START+H_SCAN-1 then
+          hblank <= '1';
+        end if;
       end if;
     end if;
   end process;
@@ -105,24 +107,26 @@ begin
   -- generate vertical timing signals
   vertical_timing : process (clk)
   begin
-    if rising_edge(clk) and cen_6 = '1' then
-      if x = H_START+H_FRONT_PORCH-1 then
-        if y = 511 then
-          y <= V_START;
-        else
-          y <= y + 1;
-        end if;
+    if rising_edge(clk) then
+      if cen_6 = '1' then
+        if x = H_START+H_FRONT_PORCH-1 then
+          if y = 511 then
+            y <= V_START;
+          else
+            y <= y + 1;
+          end if;
 
-        if y = V_START+V_RETRACE-1 then
-          vsync <= '0';
-        elsif y = V_START+V_SCAN-1 then
-          vsync <= '1';
-        end if;
+          if y = V_START+V_RETRACE-1 then
+            vsync <= '0';
+          elsif y = V_START+V_SCAN-1 then
+            vsync <= '1';
+          end if;
 
-        if y = V_START+V_RETRACE+V_BACK_PORCH-1 then
-          vblank <= '0';
-        elsif y = V_START+V_RETRACE+V_BACK_PORCH+V_DISPLAY-1 then
-          vblank <= '1';
+          if y = V_START+V_RETRACE+V_BACK_PORCH-1 then
+            vblank <= '0';
+          elsif y = V_START+V_RETRACE+V_BACK_PORCH+V_DISPLAY-1 then
+            vblank <= '1';
+          end if;
         end if;
       end if;
     end if;
