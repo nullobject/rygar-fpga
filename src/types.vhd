@@ -42,11 +42,11 @@ package types is
   constant BG_ROM_ADDR_WIDTH : natural := 15; -- 128kB
   constant BG_ROM_DATA_WIDTH : natural := 32;
 
-  constant SPRITE_RAM_ADDR_WIDTH   : natural := 11; -- 2kB
-  constant SPRITE_ROM_ADDR_WIDTH   : natural := 15; -- 128kB
-  constant SPRITE_ROM_DATA_WIDTH   : natural := 32;
-  constant SPRITE_RAM_ADDR_WIDTH_B : natural := 8;
-  constant SPRITE_RAM_DATA_WIDTH_B : natural := 64;
+  constant SPRITE_RAM_ADDR_WIDTH     : natural := 11; -- 2kB
+  constant SPRITE_ROM_ADDR_WIDTH     : natural := 15; -- 128kB
+  constant SPRITE_ROM_DATA_WIDTH     : natural := 32;
+  constant SPRITE_RAM_GPU_ADDR_WIDTH : natural := 8;
+  constant SPRITE_RAM_GPU_DATA_WIDTH : natural := 64;
 
   constant FRAME_BUFFER_ADDR_WIDTH : natural := 16;
   constant FRAME_BUFFER_DATA_WIDTH : natural := 10;
@@ -157,7 +157,7 @@ package types is
   function sprite_size_in_pixels(size : std_logic_vector(1 downto 0)) return natural;
 
   -- initialise sprite from a raw 64-bit value
-  function init_sprite(data : std_logic_vector(SPRITE_RAM_DATA_WIDTH_B-1 downto 0)) return sprite_t;
+  function init_sprite(data : std_logic_vector(SPRITE_RAM_GPU_DATA_WIDTH-1 downto 0)) return sprite_t;
 
   -- determine which graphics layer should be rendered
   function mux_layers(
@@ -196,7 +196,7 @@ package body types is
   --       5 | xxxxxxxx | lo pos x
   --       6 | -------- |
   --       7 | -------- |
-  function init_sprite(data : std_logic_vector(SPRITE_RAM_DATA_WIDTH_B-1 downto 0)) return sprite_t is
+  function init_sprite(data : std_logic_vector(SPRITE_RAM_GPU_DATA_WIDTH-1 downto 0)) return sprite_t is
     variable sprite : sprite_t;
   begin
     sprite.code     := unsigned(data(SPRITE_HI_CODE_MSB downto SPRITE_HI_CODE_LSB)) & unsigned(data(SPRITE_LO_CODE_MSB downto SPRITE_LO_CODE_LSB));

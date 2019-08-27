@@ -68,12 +68,12 @@ architecture arch of sprite is
   signal state, next_state : state_t;
 
   -- sprite RAM
-  signal sprite_ram_addr : std_logic_vector(SPRITE_RAM_ADDR_WIDTH_B-1 downto 0);
-  signal sprite_ram_dout : std_logic_vector(SPRITE_RAM_DATA_WIDTH_B-1 downto 0);
+  signal sprite_ram_addr : std_logic_vector(SPRITE_RAM_GPU_ADDR_WIDTH-1 downto 0);
+  signal sprite_ram_dout : std_logic_vector(SPRITE_RAM_GPU_DATA_WIDTH-1 downto 0);
 
   -- sprite ROM
   signal rom_addr : std_logic_vector(SPRITE_ROM_ADDR_WIDTH-1 downto 0);
-  signal rom_dout : std_logic_vector(SPRITE_ROM_DATA_WIDTH-1 downto 0);
+  signal rom_data : std_logic_vector(SPRITE_ROM_DATA_WIDTH-1 downto 0);
 
   -- frame buffer
   signal frame_buffer_addr_rd : std_logic_vector(FRAME_BUFFER_ADDR_WIDTH-1 downto 0);
@@ -109,8 +109,8 @@ begin
   sprite_ram : entity work.true_dual_port_ram
   generic map (
     ADDR_WIDTH_A => SPRITE_RAM_ADDR_WIDTH,
-    ADDR_WIDTH_B => SPRITE_RAM_ADDR_WIDTH_B,
-    DATA_WIDTH_B => SPRITE_RAM_DATA_WIDTH_B
+    ADDR_WIDTH_B => SPRITE_RAM_GPU_ADDR_WIDTH,
+    DATA_WIDTH_B => SPRITE_RAM_GPU_DATA_WIDTH
   )
   port map (
     -- port A (CPU)
@@ -137,7 +137,7 @@ begin
   port map (
     clk  => clk,
     addr => rom_addr,
-    dout => rom_dout
+    dout => rom_data
   );
 
   sprite_frame_buffer : entity work.frame_buffer
@@ -167,7 +167,7 @@ begin
     ready             => blitter_ready,
     start             => blitter_start,
     rom_addr          => rom_addr,
-    rom_data          => rom_dout,
+    rom_data          => rom_data,
     frame_buffer_addr => frame_buffer_addr_wr,
     frame_buffer_data => frame_buffer_din,
     frame_buffer_wren => frame_buffer_wren
