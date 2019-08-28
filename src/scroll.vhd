@@ -170,28 +170,30 @@ begin
   tile_data_pipeline : process (clk)
   begin
     if rising_edge(clk) then
-      case to_integer(offset_x) is
-        when 8 =>
-          -- load high byte
-          scroll_ram_addr_b <= std_logic_vector('1' & row & (col+1));
+      if cen_6 = '1' then
+        case to_integer(offset_x) is
+          when 8 =>
+            -- load high byte
+            scroll_ram_addr_b <= std_logic_vector('1' & row & (col+1));
 
-        when 9 =>
-          -- latch high byte
-          tile_data <= scroll_ram_dout_b;
+          when 9 =>
+            -- latch high byte
+            tile_data <= scroll_ram_dout_b;
 
-          -- load low byte
-          scroll_ram_addr_b <= std_logic_vector('0' & row & (col+1));
+            -- load low byte
+            scroll_ram_addr_b <= std_logic_vector('0' & row & (col+1));
 
-        when 10 =>
-          -- latch tile code
-          tile_code <= unsigned(tile_data(1 downto 0) & scroll_ram_dout_b);
+          when 10 =>
+            -- latch tile code
+            tile_code <= unsigned(tile_data(1 downto 0) & scroll_ram_dout_b);
 
-        when 15 =>
-          -- latch colour
-          tile_color <= tile_data(7 downto 4);
+          when 15 =>
+            -- latch colour
+            tile_color <= tile_data(7 downto 4);
 
-        when others => null;
-      end case;
+          when others => null;
+        end case;
+      end if;
     end if;
   end process;
 
@@ -200,8 +202,10 @@ begin
   latch_tile_row : process (clk)
   begin
     if rising_edge(clk) then
-      if dest_pos.x(2 downto 0) = 7 then
-        tile_row <= rom_dout;
+      if cen_6 = '1' then
+        if dest_pos.x(2 downto 0) = 7 then
+          tile_row <= rom_dout;
+        end if;
       end if;
     end if;
   end process;

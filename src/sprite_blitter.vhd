@@ -35,7 +35,8 @@ use work.types.all;
 entity sprite_blitter is
   port (
     -- clock
-    clk : in std_logic;
+    clk   : in std_logic;
+    cen_6 : in std_logic;
 
     -- sprite descriptor
     sprite : in sprite_t;
@@ -119,7 +120,9 @@ begin
   latch_next_state : process (clk)
   begin
     if rising_edge(clk) then
-      state <= next_state;
+      if cen_6 = '1' then
+        state <= next_state;
+      end if;
     end if;
   end process;
 
@@ -128,21 +131,23 @@ begin
   update_src_pos_counter : process (clk)
   begin
     if rising_edge(clk) then
-      if state = IDLE then
-        -- set source position to first pixel
-        src_pos.x <= (others => '0');
-        src_pos.y <= (others => '0');
-      elsif state = BLIT then
-        if src_pos.x = sprite.size-1 then
+      if cen_6 = '1' then
+        if state = IDLE then
+          -- set source position to first pixel
           src_pos.x <= (others => '0');
+          src_pos.y <= (others => '0');
+        elsif state = BLIT then
+          if src_pos.x = sprite.size-1 then
+            src_pos.x <= (others => '0');
 
-          if src_pos.y = sprite.size-1 then
-            src_pos.y <= (others => '0');
+            if src_pos.y = sprite.size-1 then
+              src_pos.y <= (others => '0');
+            else
+              src_pos.y <= src_pos.y + 1;
+            end if;
           else
-            src_pos.y <= src_pos.y + 1;
+            src_pos.x <= src_pos.x + 1;
           end if;
-        else
-          src_pos.x <= src_pos.x + 1;
         end if;
       end if;
     end if;
@@ -152,21 +157,23 @@ begin
   update_load_pos_counter : process (clk)
   begin
     if rising_edge(clk) then
-      if state = IDLE then
-        -- set load position to first pixel
-        load_pos.x <= (others => '0');
-        load_pos.y <= (others => '0');
-      elsif state = PRELOAD or state = BLIT then
-        if load_pos.x = sprite.size-1 then
+      if cen_6 = '1' then
+        if state = IDLE then
+          -- set load position to first pixel
           load_pos.x <= (others => '0');
+          load_pos.y <= (others => '0');
+        elsif state = PRELOAD or state = BLIT then
+          if load_pos.x = sprite.size-1 then
+            load_pos.x <= (others => '0');
 
-          if load_pos.y = sprite.size-1 then
-            load_pos.y <= (others => '0');
+            if load_pos.y = sprite.size-1 then
+              load_pos.y <= (others => '0');
+            else
+              load_pos.y <= load_pos.y + 1;
+            end if;
           else
-            load_pos.y <= load_pos.y + 1;
+            load_pos.x <= load_pos.x + 1;
           end if;
-        else
-          load_pos.x <= load_pos.x + 1;
         end if;
       end if;
     end if;
@@ -177,8 +184,10 @@ begin
   latch_tile_row : process (clk)
   begin
     if rising_edge(clk) then
-      if (state = PRELOAD or state = BLIT) and load_pos.x(2 downto 0) = 7 then
-        tile_row <= rom_data;
+      if cen_6 = '1' then
+        if (state = PRELOAD or state = BLIT) and load_pos.x(2 downto 0) = 7 then
+          tile_row <= rom_data;
+        end if;
       end if;
     end if;
   end process;

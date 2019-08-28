@@ -147,6 +147,7 @@ begin
   )
   port map (
     clk  => clk,
+
     flip => frame_buffer_flip,
 
     -- write-only port
@@ -162,12 +163,20 @@ begin
 
   sprite_biltter : entity work.sprite_blitter
   port map (
-    clk               => clk,
-    sprite            => sprite,
-    ready             => blitter_ready,
-    start             => blitter_start,
-    rom_addr          => rom_addr,
-    rom_data          => rom_data,
+    clk   => clk,
+    cen_6 => cen_6,
+
+    sprite => sprite,
+
+    -- control signals
+    ready => blitter_ready,
+    start => blitter_start,
+
+    -- sprite ROM
+    rom_addr => rom_addr,
+    rom_data => rom_data,
+
+    -- frame buffer
     frame_buffer_addr => frame_buffer_addr_wr,
     frame_buffer_data => frame_buffer_din,
     frame_buffer_wren => frame_buffer_wren
@@ -223,7 +232,9 @@ begin
   latch_next_state : process (clk)
   begin
     if rising_edge(clk) then
-      state <= next_state;
+      if cen_6 = '1' then
+        state <= next_state;
+      end if;
     end if;
   end process;
 
@@ -235,8 +246,10 @@ begin
   update_sprite_counter : process (clk)
   begin
     if rising_edge(clk) then
-      if state = JUMP then
-        sprite_counter <= sprite_counter + 1;
+      if cen_6 = '1' then
+        if state = JUMP then
+          sprite_counter <= sprite_counter + 1;
+        end if;
       end if;
     end if;
   end process;
@@ -245,8 +258,10 @@ begin
   latch_sprite : process (clk)
   begin
     if rising_edge(clk) then
-      if state = LATCH then
-        sprite <= init_sprite(sprite_ram_dout);
+      if cen_6 = '1' then
+        if state = LATCH then
+          sprite <= init_sprite(sprite_ram_dout);
+        end if;
       end if;
     end if;
   end process;
@@ -255,10 +270,12 @@ begin
   blit_sprite : process (clk)
   begin
     if rising_edge(clk) then
-      if state = LOAD then
-        blitter_start <= '1';
-      else
-        blitter_start <= '0';
+      if cen_6 = '1' then
+        if state = LOAD then
+          blitter_start <= '1';
+        else
+          blitter_start <= '0';
+        end if;
       end if;
     end if;
   end process;
@@ -267,8 +284,10 @@ begin
   flip_frame_buffer : process (clk)
   begin
     if rising_edge(clk) then
-      if state = FLIP then
-        frame_buffer_flip <= not frame_buffer_flip;
+      if cen_6 = '1' then
+        if state = FLIP then
+          frame_buffer_flip <= not frame_buffer_flip;
+        end if;
       end if;
     end if;
   end process;

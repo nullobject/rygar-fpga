@@ -138,28 +138,30 @@ begin
   tile_data_pipeline : process (clk)
   begin
     if rising_edge(clk) then
-      case to_integer(offset_x) is
-        when 0 =>
-          -- load high byte
-          char_ram_addr_b <= std_logic_vector('1' & row & (col+1));
+      if cen_6 = '1' then
+        case to_integer(offset_x) is
+          when 0 =>
+            -- load high byte
+            char_ram_addr_b <= std_logic_vector('1' & row & (col+1));
 
-        when 1 =>
-          -- latch high byte
-          tile_data <= char_ram_dout_b;
+          when 1 =>
+            -- latch high byte
+            tile_data <= char_ram_dout_b;
 
-          -- load low byte
-          char_ram_addr_b <= std_logic_vector('0' & row & (col+1));
+            -- load low byte
+            char_ram_addr_b <= std_logic_vector('0' & row & (col+1));
 
-        when 2 =>
-          -- latch tile code
-          tile_code <= unsigned(tile_data(1 downto 0) & char_ram_dout_b);
+          when 2 =>
+            -- latch tile code
+            tile_code <= unsigned(tile_data(1 downto 0) & char_ram_dout_b);
 
-        when 7 =>
-          -- latch colour
-          tile_color <= tile_data(7 downto 4);
+          when 7 =>
+            -- latch colour
+            tile_color <= tile_data(7 downto 4);
 
-        when others => null;
-      end case;
+          when others => null;
+        end case;
+      end if;
     end if;
   end process;
 
@@ -168,8 +170,10 @@ begin
   latch_tile_row : process (clk)
   begin
     if rising_edge(clk) then
-      if video.pos.x(2 downto 0) = 7 then
-        tile_row <= rom_dout;
+      if cen_6 = '1' then
+        if video.pos.x(2 downto 0) = 7 then
+          tile_row <= rom_dout;
+        end if;
       end if;
     end if;
   end process;
