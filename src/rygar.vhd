@@ -88,6 +88,22 @@ architecture arch of rygar is
   signal sprite_ram_dout  : byte_t;
   signal palette_ram_dout : byte_t;
 
+  -- sprite ROM
+  signal sprite_rom_addr : std_logic_vector(SPRITE_ROM_ADDR_WIDTH-1 downto 0);
+  signal sprite_rom_data : std_logic_vector(SPRITE_ROM_DATA_WIDTH-1 downto 0);
+
+  -- character ROM
+  signal char_rom_addr : std_logic_vector(CHAR_ROM_ADDR_WIDTH-1 downto 0);
+  signal char_rom_data : std_logic_vector(CHAR_ROM_DATA_WIDTH-1 downto 0);
+
+  -- foreground ROM
+  signal fg_rom_addr : std_logic_vector(FG_ROM_ADDR_WIDTH-1 downto 0);
+  signal fg_rom_data : std_logic_vector(FG_ROM_DATA_WIDTH-1 downto 0);
+
+  -- background ROM
+  signal bg_rom_addr : std_logic_vector(BG_ROM_ADDR_WIDTH-1 downto 0);
+  signal bg_rom_data : std_logic_vector(BG_ROM_DATA_WIDTH-1 downto 0);
+
   -- currently selected bank for program ROM 3
   signal current_bank : unsigned(3 downto 0);
 
@@ -190,8 +206,21 @@ begin
     DO      => cpu_dout
   );
 
-  -- sprite layer
   sprite_layer_gen : if SPRITE_LAYER_ENABLE generate
+    -- sprite ROM
+    sprite_rom : entity work.single_port_rom
+    generic map (
+      ADDR_WIDTH => SPRITE_ROM_ADDR_WIDTH,
+      DATA_WIDTH => SPRITE_ROM_DATA_WIDTH,
+      INIT_FILE  => "rom/sprites.mif"
+    )
+    port map (
+      clk  => clk,
+      addr => sprite_rom_addr,
+      dout => sprite_rom_data
+    );
+
+    -- sprite layer
     sprite_layer : entity work.sprite
     port map (
       clk      => clk,
@@ -201,6 +230,8 @@ begin
       ram_din  => cpu_dout,
       ram_dout => sprite_ram_dout,
       ram_we   => not cpu_wr_n,
+      rom_addr => sprite_rom_addr,
+      rom_data => sprite_rom_data,
       video    => video,
       priority => sprite_priority,
       data     => sprite_data
@@ -219,8 +250,21 @@ begin
     );
   end generate;
 
-  -- character layer
   char_layer_gen : if CHAR_LAYER_ENABLE generate
+    -- character ROM
+    char_rom : entity work.single_port_rom
+    generic map (
+      ADDR_WIDTH => CHAR_ROM_ADDR_WIDTH,
+      DATA_WIDTH => CHAR_ROM_DATA_WIDTH,
+      INIT_FILE  => "rom/cpu_8k.mif"
+    )
+    port map (
+      clk  => clk,
+      addr => char_rom_addr,
+      dout => char_rom_data
+    );
+
+    -- character layer
     char_layer : entity work.char
     port map (
       clk      => clk,
@@ -230,6 +274,8 @@ begin
       ram_din  => cpu_dout,
       ram_dout => char_ram_dout,
       ram_we   => not cpu_wr_n,
+      rom_addr => char_rom_addr,
+      rom_data => char_rom_data,
       video    => video,
       data     => char_data
     );
@@ -247,14 +293,26 @@ begin
     );
   end generate;
 
-  -- foreground layer
   fg_layer_gen : if FG_LAYER_ENABLE generate
+    -- foreground ROM
+    fg_rom : entity work.single_port_rom
+    generic map (
+      ADDR_WIDTH => FG_ROM_ADDR_WIDTH,
+      DATA_WIDTH => FG_ROM_DATA_WIDTH,
+      INIT_FILE  => "rom/fg.mif"
+    )
+    port map (
+      clk  => clk,
+      addr => fg_rom_addr,
+      dout => fg_rom_data
+    );
+
+    -- foreground layer
     fg_layer : entity work.scroll
     generic map (
       RAM_ADDR_WIDTH => FG_RAM_ADDR_WIDTH,
       ROM_ADDR_WIDTH => FG_ROM_ADDR_WIDTH,
-      ROM_DATA_WIDTH => FG_ROM_DATA_WIDTH,
-      ROM_INIT_FILE  => "rom/fg.mif"
+      ROM_DATA_WIDTH => FG_ROM_DATA_WIDTH
     )
     port map (
       clk        => clk,
@@ -264,6 +322,8 @@ begin
       ram_din    => cpu_dout,
       ram_dout   => fg_ram_dout,
       ram_we     => not cpu_wr_n,
+      rom_addr   => fg_rom_addr,
+      rom_data   => fg_rom_data,
       video      => video,
       scroll_pos => fg_scroll_pos,
       data       => fg_data
@@ -282,14 +342,26 @@ begin
     );
   end generate;
 
-  -- background layer
   bg_layer_gen : if BG_LAYER_ENABLE generate
+    -- background ROM
+    bg_rom : entity work.single_port_rom
+    generic map (
+      ADDR_WIDTH => BG_ROM_ADDR_WIDTH,
+      DATA_WIDTH => BG_ROM_DATA_WIDTH,
+      INIT_FILE  => "rom/bg.mif"
+    )
+    port map (
+      clk  => clk,
+      addr => bg_rom_addr,
+      dout => bg_rom_data
+    );
+
+    -- background layer
     bg_layer : entity work.scroll
     generic map (
       RAM_ADDR_WIDTH => BG_RAM_ADDR_WIDTH,
       ROM_ADDR_WIDTH => BG_ROM_ADDR_WIDTH,
-      ROM_DATA_WIDTH => BG_ROM_DATA_WIDTH,
-      ROM_INIT_FILE  => "rom/bg.mif"
+      ROM_DATA_WIDTH => BG_ROM_DATA_WIDTH
     )
     port map (
       clk        => clk,
@@ -299,6 +371,8 @@ begin
       ram_din    => cpu_dout,
       ram_dout   => bg_ram_dout,
       ram_we     => not cpu_wr_n,
+      rom_addr   => bg_rom_addr,
+      rom_data   => bg_rom_data,
       video      => video,
       scroll_pos => bg_scroll_pos,
       data       => bg_data

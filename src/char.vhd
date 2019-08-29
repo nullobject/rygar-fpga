@@ -41,6 +41,10 @@ entity char is
     ram_dout : out byte_t;
     ram_we   : in std_logic;
 
+    -- tile ROM
+    rom_addr : out std_logic_vector(CHAR_ROM_ADDR_WIDTH-1 downto 0);
+    rom_data : in std_logic_vector(CHAR_ROM_DATA_WIDTH-1 downto 0);
+
     -- video signals
     video : in video_t;
 
@@ -59,10 +63,6 @@ architecture arch of char is
   -- char RAM (port B)
   signal char_ram_addr_b : std_logic_vector(CHAR_RAM_ADDR_WIDTH-1 downto 0);
   signal char_ram_dout_b : byte_t;
-
-  -- char ROM
-  signal rom_addr : std_logic_vector(CHAR_ROM_ADDR_WIDTH-1 downto 0);
-  signal rom_dout : std_logic_vector(CHAR_ROM_DATA_WIDTH-1 downto 0);
 
   -- tile signals
   signal tile_data  : byte_t;
@@ -109,19 +109,6 @@ begin
     clk_b  => clk,
     addr_b => char_ram_addr_b,
     dout_b => char_ram_dout_b
-  );
-
-  -- the char ROM contains the actual pixel data for the tiles
-  char_rom : entity work.single_port_rom
-  generic map (
-    ADDR_WIDTH => CHAR_ROM_ADDR_WIDTH,
-    DATA_WIDTH => CHAR_ROM_DATA_WIDTH,
-    INIT_FILE  => "rom/cpu_8k.mif"
-  )
-  port map (
-    clk  => clk,
-    addr => rom_addr,
-    dout => rom_dout
   );
 
   -- Load tile data from the character RAM.
@@ -172,7 +159,7 @@ begin
     if rising_edge(clk) then
       if cen_6 = '1' then
         if video.pos.x(2 downto 0) = 7 then
-          tile_row <= rom_dout;
+          tile_row <= rom_data;
         end if;
       end if;
     end if;
