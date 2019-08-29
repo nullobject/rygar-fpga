@@ -39,7 +39,7 @@ entity single_port_rom is
     cs : in std_logic := '1';
 
     -- address
-    addr : in std_logic_vector(ADDR_WIDTH-1 downto 0);
+    addr : in unsigned(ADDR_WIDTH-1 downto 0);
 
     -- data out
     dout : out std_logic_vector(DATA_WIDTH-1 downto 0)
@@ -67,7 +67,7 @@ begin
     widthad_a              => ADDR_WIDTH
   )
   port map (
-    address_a => addr,
+    address_a => std_logic_vector(addr),
     clock0    => clk,
     q_a       => q
   );

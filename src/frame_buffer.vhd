@@ -51,19 +51,19 @@ entity frame_buffer is
     flip : in std_logic := '0';
 
     -- write port
-    addr_wr : in std_logic_vector(ADDR_WIDTH-1 downto 0);
+    addr_wr : in unsigned(ADDR_WIDTH-1 downto 0);
     din     : in std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
     wren    : in std_logic := '0';
 
     -- read port
-    addr_rd : in std_logic_vector(ADDR_WIDTH-1 downto 0);
+    addr_rd : in unsigned(ADDR_WIDTH-1 downto 0);
     dout    : out std_logic_vector(DATA_WIDTH-1 downto 0);
     rden    : in std_logic := '1'
   );
 end frame_buffer;
 
 architecture arch of frame_buffer is
-  signal addr_a, addr_b : std_logic_vector(ADDR_WIDTH-1 downto 0);
+  signal addr_a, addr_b : unsigned(ADDR_WIDTH-1 downto 0);
   signal din_a, din_b   : std_logic_vector(DATA_WIDTH-1 downto 0);
   signal dout_a, dout_b : std_logic_vector(DATA_WIDTH-1 downto 0);
   signal rden_a, rden_b : std_logic;

@@ -36,13 +36,13 @@ entity char is
 
     -- char RAM
     ram_cs   : in std_logic;
-    ram_addr : in std_logic_vector(CHAR_RAM_ADDR_WIDTH-1 downto 0);
+    ram_addr : in unsigned(CHAR_RAM_ADDR_WIDTH-1 downto 0);
     ram_din  : in byte_t;
     ram_dout : out byte_t;
     ram_we   : in std_logic;
 
     -- tile ROM
-    rom_addr : out std_logic_vector(CHAR_ROM_ADDR_WIDTH-1 downto 0);
+    rom_addr : out unsigned(CHAR_ROM_ADDR_WIDTH-1 downto 0);
     rom_data : in std_logic_vector(CHAR_ROM_DATA_WIDTH-1 downto 0);
 
     -- video signals
@@ -61,7 +61,7 @@ architecture arch of char is
   end record tile_pos_t;
 
   -- char RAM (port B)
-  signal char_ram_addr_b : std_logic_vector(CHAR_RAM_ADDR_WIDTH-1 downto 0);
+  signal char_ram_addr_b : unsigned(CHAR_RAM_ADDR_WIDTH-1 downto 0);
   signal char_ram_dout_b : byte_t;
 
   -- tile signals
@@ -129,14 +129,14 @@ begin
         case to_integer(offset_x) is
           when 0 =>
             -- load high byte
-            char_ram_addr_b <= std_logic_vector('1' & row & (col+1));
+            char_ram_addr_b <= '1' & row & (col+1);
 
           when 1 =>
             -- latch high byte
             tile_data <= char_ram_dout_b;
 
             -- load low byte
-            char_ram_addr_b <= std_logic_vector('0' & row & (col+1));
+            char_ram_addr_b <= '0' & row & (col+1);
 
           when 2 =>
             -- latch tile code
@@ -168,7 +168,7 @@ begin
   -- Set the tile ROM address.
   --
   -- This address points to a row of an 8x8 tile.
-  rom_addr <= std_logic_vector(tile_code & offset_y(2 downto 0));
+  rom_addr <= tile_code & offset_y(2 downto 0);
 
   -- decode the pixel from the tile row data
   with to_integer(video.pos.x(2 downto 0)) select

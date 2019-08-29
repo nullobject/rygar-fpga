@@ -20,6 +20,7 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
 library altera_mf;
 use altera_mf.altera_mf_components.all;
@@ -37,7 +38,7 @@ entity single_port_ram is
     cs : in std_logic := '1';
 
     -- address
-    addr : in std_logic_vector(ADDR_WIDTH-1 downto 0);
+    addr : in unsigned(ADDR_WIDTH-1 downto 0);
 
     -- data in
     din : in std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
@@ -71,7 +72,7 @@ begin
     widthad_a                     => ADDR_WIDTH
   )
   port map (
-    address_a => addr,
+    address_a => std_logic_vector(addr),
     clock0    => clk,
     data_a    => din,
     wren_a    => cs and we,

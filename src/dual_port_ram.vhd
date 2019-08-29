@@ -20,6 +20,7 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
 library altera_mf;
 use altera_mf.altera_mf_components.all;
@@ -37,12 +38,12 @@ entity dual_port_ram is
     cs : in std_logic := '1';
 
     -- write port
-    addr_wr : in std_logic_vector(ADDR_WIDTH-1 downto 0);
+    addr_wr : in unsigned(ADDR_WIDTH-1 downto 0);
     din     : in std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
     wren    : in std_logic := '1';
 
     -- read port
-    addr_rd : in std_logic_vector(ADDR_WIDTH-1 downto 0);
+    addr_rd : in unsigned(ADDR_WIDTH-1 downto 0);
     dout    : out std_logic_vector(DATA_WIDTH-1 downto 0);
     rden    : in std_logic := '1'
   );
@@ -79,8 +80,8 @@ begin
     widthad_b                          => ADDR_WIDTH
   )
   port map (
-    address_a => addr_wr,
-    address_b => addr_rd,
+    address_a => std_logic_vector(addr_wr),
+    address_b => std_logic_vector(addr_rd),
     clock0    => clk,
     wren_a    => cs and wren,
     rden_b    => cs and rden,

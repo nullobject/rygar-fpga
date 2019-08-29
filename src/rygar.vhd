@@ -52,7 +52,7 @@ end rygar;
 architecture arch of rygar is
   -- CPU signals
   signal cpu_cen     : std_logic;
-  signal cpu_addr    : std_logic_vector(15 downto 0);
+  signal cpu_addr    : unsigned(15 downto 0);
   signal cpu_din     : byte_t;
   signal cpu_dout    : byte_t;
   signal cpu_ioreq_n : std_logic;
@@ -89,19 +89,19 @@ architecture arch of rygar is
   signal palette_ram_dout : byte_t;
 
   -- sprite ROM
-  signal sprite_rom_addr : std_logic_vector(SPRITE_ROM_ADDR_WIDTH-1 downto 0);
+  signal sprite_rom_addr : unsigned(SPRITE_ROM_ADDR_WIDTH-1 downto 0);
   signal sprite_rom_data : std_logic_vector(SPRITE_ROM_DATA_WIDTH-1 downto 0);
 
   -- character ROM
-  signal char_rom_addr : std_logic_vector(CHAR_ROM_ADDR_WIDTH-1 downto 0);
+  signal char_rom_addr : unsigned(CHAR_ROM_ADDR_WIDTH-1 downto 0);
   signal char_rom_data : std_logic_vector(CHAR_ROM_DATA_WIDTH-1 downto 0);
 
   -- foreground ROM
-  signal fg_rom_addr : std_logic_vector(FG_ROM_ADDR_WIDTH-1 downto 0);
+  signal fg_rom_addr : unsigned(FG_ROM_ADDR_WIDTH-1 downto 0);
   signal fg_rom_data : std_logic_vector(FG_ROM_DATA_WIDTH-1 downto 0);
 
   -- background ROM
-  signal bg_rom_addr : std_logic_vector(BG_ROM_ADDR_WIDTH-1 downto 0);
+  signal bg_rom_addr : unsigned(BG_ROM_ADDR_WIDTH-1 downto 0);
   signal bg_rom_data : std_logic_vector(BG_ROM_DATA_WIDTH-1 downto 0);
 
   -- currently selected bank for program ROM 3
@@ -169,7 +169,7 @@ begin
   port map (
     clk  => clk,
     cs   => prog_rom_3_cs,
-    addr => std_logic_vector(current_bank) & cpu_addr(10 downto 0),
+    addr => current_bank & cpu_addr(10 downto 0),
     dout => prog_rom_3_dout
   );
 
@@ -188,22 +188,22 @@ begin
   -- main CPU
   cpu : entity work.T80s
   port map (
-    RESET_n => not reset,
-    CLK     => clk,
-    CEN     => cen_4,
-    WAIT_n  => '1',
-    INT_n   => cpu_int_n,
-    M1_n    => cpu_m1_n,
-    MREQ_n  => cpu_mreq_n,
-    IORQ_n  => cpu_ioreq_n,
-    RD_n    => cpu_rd_n,
-    WR_n    => cpu_wr_n,
-    RFSH_n  => cpu_rfsh_n,
-    HALT_n  => cpu_halt_n,
-    BUSAK_n => open,
-    A       => cpu_addr,
-    DI      => cpu_din,
-    DO      => cpu_dout
+    RESET_n             => not reset,
+    CLK                 => clk,
+    CEN                 => cen_4,
+    WAIT_n              => '1',
+    INT_n               => cpu_int_n,
+    M1_n                => cpu_m1_n,
+    MREQ_n              => cpu_mreq_n,
+    IORQ_n              => cpu_ioreq_n,
+    RD_n                => cpu_rd_n,
+    WR_n                => cpu_wr_n,
+    RFSH_n              => cpu_rfsh_n,
+    HALT_n              => cpu_halt_n,
+    BUSAK_n             => open,
+    std_logic_vector(A) => cpu_addr,
+    DI                  => cpu_din,
+    DO                  => cpu_dout
   );
 
   sprite_layer_gen : if SPRITE_LAYER_ENABLE generate

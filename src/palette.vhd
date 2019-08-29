@@ -34,7 +34,7 @@ entity palette is
 
     -- palette RAM
     ram_cs   : in std_logic;
-    ram_addr : in std_logic_vector(PALETTE_RAM_ADDR_WIDTH-1 downto 0);
+    ram_addr : in unsigned(PALETTE_RAM_ADDR_WIDTH-1 downto 0);
     ram_din  : in byte_t;
     ram_dout : out byte_t;
     ram_we   : in std_logic;
@@ -61,7 +61,7 @@ architecture arch of palette is
   constant PALETTE_RAM_DATA_WIDTH_B : natural := 16;
 
   -- palette RAM (port B)
-  signal palette_ram_addr_b : std_logic_vector(PALETTE_RAM_ADDR_WIDTH_B-1 downto 0);
+  signal palette_ram_addr_b : unsigned(PALETTE_RAM_ADDR_WIDTH_B-1 downto 0);
   signal palette_ram_dout_b : std_logic_vector(PALETTE_RAM_DATA_WIDTH_B-1 downto 0);
 
   -- current layer
@@ -123,9 +123,9 @@ begin
 
   -- set palette RAM address
   with layer select
-    palette_ram_addr_b <= "00" & sprite_data when SPRITE_LAYER,
-                          "01" & char_data   when CHAR_LAYER,
-                          "10" & fg_data     when FG_LAYER,
-                          "11" & bg_data     when BG_LAYER,
-                          "0100000000"       when FILL_LAYER;
+    palette_ram_addr_b <= "00" & unsigned(sprite_data) when SPRITE_LAYER,
+                          "01" & unsigned(char_data)   when CHAR_LAYER,
+                          "10" & unsigned(fg_data)     when FG_LAYER,
+                          "11" & unsigned(bg_data)     when BG_LAYER,
+                          "0100000000"                 when FILL_LAYER;
 end arch;

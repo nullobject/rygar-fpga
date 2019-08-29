@@ -46,13 +46,13 @@ entity scroll is
 
     -- scroll RAM
     ram_cs   : in std_logic;
-    ram_addr : in std_logic_vector(RAM_ADDR_WIDTH-1 downto 0);
+    ram_addr : in unsigned(RAM_ADDR_WIDTH-1 downto 0);
     ram_din  : in byte_t;
     ram_dout : out byte_t;
     ram_we   : in std_logic;
 
     -- tile ROM
-    rom_addr : out std_logic_vector(ROM_ADDR_WIDTH-1 downto 0);
+    rom_addr : out unsigned(ROM_ADDR_WIDTH-1 downto 0);
     rom_data : in std_logic_vector(ROM_DATA_WIDTH-1 downto 0);
 
     -- video signals
@@ -74,7 +74,7 @@ architecture arch of scroll is
   end record tile_pos_t;
 
   -- scroll RAM (port B)
-  signal scroll_ram_addr_b : std_logic_vector(RAM_ADDR_WIDTH-1 downto 0);
+  signal scroll_ram_addr_b : unsigned(RAM_ADDR_WIDTH-1 downto 0);
   signal scroll_ram_dout_b : byte_t;
 
   -- tile signals
@@ -160,14 +160,14 @@ begin
         case to_integer(offset_x) is
           when 8 =>
             -- load high byte
-            scroll_ram_addr_b <= std_logic_vector('1' & row & (col+1));
+            scroll_ram_addr_b <= '1' & row & (col+1);
 
           when 9 =>
             -- latch high byte
             tile_data <= scroll_ram_dout_b;
 
             -- load low byte
-            scroll_ram_addr_b <= std_logic_vector('0' & row & (col+1));
+            scroll_ram_addr_b <= '0' & row & (col+1);
 
           when 10 =>
             -- latch tile code
@@ -202,7 +202,7 @@ begin
   -- Set the tile ROM address.
   --
   -- This address points to a row of an 8x8 tile.
-  rom_addr <= std_logic_vector(tile_code & offset_y(3) & (not offset_x(3)) & offset_y(2 downto 0));
+  rom_addr <= tile_code & offset_y(3) & (not offset_x(3)) & offset_y(2 downto 0);
 
   -- decode the pixel from the tile row data
   with to_integer(dest_pos.x(2 downto 0)) select

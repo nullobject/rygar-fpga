@@ -20,6 +20,7 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
 library altera_mf;
 use altera_mf.altera_mf_components.all;
@@ -39,8 +40,8 @@ entity true_dual_port_ram is
     cs_a, cs_b : in std_logic := '1';
 
     -- address
-    addr_a : in std_logic_vector(ADDR_WIDTH_A-1 downto 0);
-    addr_b : in std_logic_vector(ADDR_WIDTH_B-1 downto 0);
+    addr_a : in unsigned(ADDR_WIDTH_A-1 downto 0);
+    addr_b : in unsigned(ADDR_WIDTH_B-1 downto 0);
 
     -- data in
     din_a : in std_logic_vector(DATA_WIDTH_A-1 downto 0) := (others => '0');
@@ -88,8 +89,8 @@ begin
     wrcontrol_wraddress_reg_b     => "CLOCK1"
   )
   port map (
-    address_a => addr_a,
-    address_b => addr_b,
+    address_a => std_logic_vector(addr_a),
+    address_b => std_logic_vector(addr_b),
     clock0    => clk_a,
     clock1    => clk_b,
     data_a    => din_a,

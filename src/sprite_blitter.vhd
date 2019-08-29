@@ -46,11 +46,11 @@ entity sprite_blitter is
     start : in std_logic;
 
     -- sprite ROM
-    rom_addr : out std_logic_vector(SPRITE_ROM_ADDR_WIDTH-1 downto 0);
+    rom_addr : out unsigned(SPRITE_ROM_ADDR_WIDTH-1 downto 0);
     rom_data : in std_logic_vector(SPRITE_ROM_DATA_WIDTH-1 downto 0);
 
     -- frame buffer
-    frame_buffer_addr : out std_logic_vector(FRAME_BUFFER_ADDR_WIDTH-1 downto 0);
+    frame_buffer_addr : out unsigned(FRAME_BUFFER_ADDR_WIDTH-1 downto 0);
     frame_buffer_data : out std_logic_vector(FRAME_BUFFER_DATA_WIDTH-1 downto 0);
     frame_buffer_wren : out std_logic
   );
@@ -204,11 +204,9 @@ begin
   -- Set the ROM address.
   --
   -- This address points to a row of an 8x8 tile.
-  rom_addr <= std_logic_vector(
-    sprite.code(11 downto 4) &
-    (sprite.code(3 downto 0) or (load_pos.y(4) & load_pos.x(4) & load_pos.y(3) & load_pos.x(3))) &
-    load_pos.y(2 downto 0)
-  );
+  rom_addr <= sprite.code(11 downto 4) &
+              (sprite.code(3 downto 0) or (load_pos.y(4) & load_pos.x(4) & load_pos.y(3) & load_pos.x(3))) &
+              load_pos.y(2 downto 0);
 
   -- set destination position and handle X/Y axis flipping
   dest_pos.x <= resize(sprite.pos.x+src_pos.x, dest_pos.x'length) when sprite.flip_x = '0' else
@@ -235,7 +233,7 @@ begin
                   (others => '0')        when others;
 
   -- set frame buffer address
-  frame_buffer_addr <= std_logic_vector(dest_pos.y(7 downto 0) & dest_pos.x(7 downto 0));
+  frame_buffer_addr <= dest_pos.y(7 downto 0) & dest_pos.x(7 downto 0);
 
   -- set frame buffer data
   frame_buffer_data <= std_logic_vector(sprite.priority & sprite.color) & tile_pixel;
