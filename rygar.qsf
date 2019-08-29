@@ -55,6 +55,7 @@ set_global_assignment -name QIP_FILE src/t80/T80.qip
 set_global_assignment -name SDC_FILE src/rygar.sdc
 set_global_assignment -name VHDL_FILE src/clock_divider.vhd
 set_global_assignment -name VHDL_FILE src/edge_detector.vhd
+set_global_assignment -name VHDL_FILE src/gpu.vhd
 set_global_assignment -name VHDL_FILE src/gpu/char.vhd
 set_global_assignment -name VHDL_FILE src/gpu/frame_buffer.vhd
 set_global_assignment -name VHDL_FILE src/gpu/palette.vhd

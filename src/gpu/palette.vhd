@@ -32,27 +32,25 @@ entity palette is
     clk   : in std_logic;
     cen_6 : in std_logic;
 
-    -- palette RAM
+    -- RAM interface
     ram_cs   : in std_logic;
     ram_addr : in unsigned(PALETTE_RAM_ADDR_WIDTH-1 downto 0);
     ram_din  : in byte_t;
     ram_dout : out byte_t;
     ram_we   : in std_logic;
 
-    -- video signals
-    video : in video_t;
-
-    -- sprite priority data
-    sprite_priority : in priority_t;
-
-    -- graphics layer data
+    -- layer data
     sprite_data : in byte_t;
     char_data   : in byte_t;
     fg_data     : in byte_t;
     bg_data     : in byte_t;
 
-    -- RGB data
-    rgb : out rgb_t
+    -- sprite priority
+    sprite_priority : in priority_t;
+
+    -- video signals
+    video : in video_t;
+    rgb   : out rgb_t
   );
 end palette;
 

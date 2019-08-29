@@ -23,6 +23,8 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 package types is
+  constant CPU_ADDR_WIDTH : natural := 16;
+
   -- memory sizes
   constant PROG_ROM_1_ADDR_WIDTH : natural := 15; -- 32kB
   constant PROG_ROM_2_ADDR_WIDTH : natural := 14; -- 16kB

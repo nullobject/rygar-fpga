@@ -91,12 +91,6 @@ begin
 
   -- run the game
   rygar : entity work.rygar
-  generic map (
-    SPRITE_LAYER_ENABLE => true,
-    CHAR_LAYER_ENABLE   => true,
-    FG_LAYER_ENABLE     => true,
-    BG_LAYER_ENABLE     => false
-  )
   port map (
     clk   => clk_12,
     cen_4 => cen_4,
