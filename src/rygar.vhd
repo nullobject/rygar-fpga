@@ -236,7 +236,9 @@ begin
       priority => sprite_priority,
       data     => sprite_data
     );
-  else generate
+  end generate;
+
+  sprite_debug_gen : if not SPRITE_LAYER_ENABLE generate
     -- dummy sprite RAM
     sprite_ram : entity work.single_port_ram
     generic map (ADDR_WIDTH => SPRITE_RAM_ADDR_WIDTH)
@@ -279,7 +281,9 @@ begin
       video    => video,
       data     => char_data
     );
-  else generate
+  end generate;
+
+  char_debug_gen : if not CHAR_LAYER_ENABLE generate
     -- dummy character RAM
     char_ram : entity work.single_port_ram
     generic map (ADDR_WIDTH => CHAR_RAM_ADDR_WIDTH)
@@ -328,7 +332,9 @@ begin
       scroll_pos => fg_scroll_pos,
       data       => fg_data
     );
-  else generate
+  end generate;
+
+  fg_debug_gen : if not FG_LAYER_ENABLE generate
     -- dummy foreground RAM
     fg_ram : entity work.single_port_ram
     generic map (ADDR_WIDTH => FG_RAM_ADDR_WIDTH)
@@ -377,7 +383,9 @@ begin
       scroll_pos => bg_scroll_pos,
       data       => bg_data
     );
-  else generate
+  end generate;
+
+  bg_debug_gen : if not BG_LAYER_ENABLE generate
     -- dummy background RAM
     bg_ram : entity work.single_port_ram
     generic map (ADDR_WIDTH => BG_RAM_ADDR_WIDTH)
