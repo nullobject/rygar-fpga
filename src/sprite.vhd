@@ -52,6 +52,10 @@ entity sprite is
     ram_dout : out byte_t;
     ram_we   : in std_logic;
 
+    -- tile ROM
+    rom_addr : out std_logic_vector(SPRITE_ROM_ADDR_WIDTH-1 downto 0);
+    rom_data : in std_logic_vector(SPRITE_ROM_DATA_WIDTH-1 downto 0);
+
     -- video signals
     video : in video_t;
 
@@ -70,10 +74,6 @@ architecture arch of sprite is
   -- sprite RAM
   signal sprite_ram_addr : std_logic_vector(SPRITE_RAM_GPU_ADDR_WIDTH-1 downto 0);
   signal sprite_ram_dout : std_logic_vector(SPRITE_RAM_GPU_DATA_WIDTH-1 downto 0);
-
-  -- sprite ROM
-  signal rom_addr : std_logic_vector(SPRITE_ROM_ADDR_WIDTH-1 downto 0);
-  signal rom_data : std_logic_vector(SPRITE_ROM_DATA_WIDTH-1 downto 0);
 
   -- frame buffer
   signal frame_buffer_addr_rd : std_logic_vector(FRAME_BUFFER_ADDR_WIDTH-1 downto 0);
@@ -126,19 +126,6 @@ begin
     addr_b => sprite_ram_addr,
     dout_b => sprite_ram_dout
  );
-
-  -- the sprite ROM contains the actual pixel data for the tiles
-  sprite_rom : entity work.single_port_rom
-  generic map (
-    ADDR_WIDTH => SPRITE_ROM_ADDR_WIDTH,
-    DATA_WIDTH => SPRITE_ROM_DATA_WIDTH,
-    INIT_FILE  => "rom/sprites.mif"
-  )
-  port map (
-    clk  => clk,
-    addr => rom_addr,
-    dout => rom_data
-  );
 
   sprite_frame_buffer : entity work.frame_buffer
   generic map (

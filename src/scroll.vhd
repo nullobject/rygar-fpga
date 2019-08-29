@@ -37,8 +37,7 @@ entity scroll is
   generic (
     RAM_ADDR_WIDTH : natural;
     ROM_ADDR_WIDTH : natural;
-    ROM_DATA_WIDTH : natural;
-    ROM_INIT_FILE  : string
+    ROM_DATA_WIDTH : natural
   );
   port (
     -- clock signals
@@ -51,6 +50,10 @@ entity scroll is
     ram_din  : in byte_t;
     ram_dout : out byte_t;
     ram_we   : in std_logic;
+
+    -- tile ROM
+    rom_addr : out std_logic_vector(ROM_ADDR_WIDTH-1 downto 0);
+    rom_data : in std_logic_vector(ROM_DATA_WIDTH-1 downto 0);
 
     -- video signals
     video : in video_t;
@@ -73,10 +76,6 @@ architecture arch of scroll is
   -- scroll RAM (port B)
   signal scroll_ram_addr_b : std_logic_vector(RAM_ADDR_WIDTH-1 downto 0);
   signal scroll_ram_dout_b : byte_t;
-
-  -- scroll ROM
-  signal rom_addr : std_logic_vector(ROM_ADDR_WIDTH-1 downto 0);
-  signal rom_dout : std_logic_vector(ROM_DATA_WIDTH-1 downto 0);
 
   -- tile signals
   signal tile_data  : byte_t;
@@ -126,19 +125,6 @@ begin
     clk_b  => clk,
     addr_b => scroll_ram_addr_b,
     dout_b => scroll_ram_dout_b
-  );
-
-  -- the scroll ROM contains the actual pixel data for the tiles
-  scroll_rom : entity work.single_port_rom
-  generic map (
-    ADDR_WIDTH => ROM_ADDR_WIDTH,
-    DATA_WIDTH => ROM_DATA_WIDTH,
-    INIT_FILE  => ROM_INIT_FILE
-  )
-  port map (
-    clk  => clk,
-    addr => rom_addr,
-    dout => rom_dout
   );
 
   -- update position counter
@@ -204,7 +190,7 @@ begin
     if rising_edge(clk) then
       if cen_6 = '1' then
         if dest_pos.x(2 downto 0) = 7 then
-          tile_row <= rom_dout;
+          tile_row <= rom_data;
         end if;
       end if;
     end if;
