@@ -91,4 +91,4 @@ begin
 
   -- output
   dout <= q when cs = '1' else (others => '0');
-end arch;
+end architecture arch;

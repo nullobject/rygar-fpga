@@ -54,7 +54,6 @@ set_global_assignment -name QIP_FILE src/pll.qip
 set_global_assignment -name QIP_FILE src/t80/T80.qip
 set_global_assignment -name SDC_FILE src/rygar.sdc
 set_global_assignment -name VHDL_FILE src/clock_divider.vhd
-set_global_assignment -name VHDL_FILE src/dual_port_ram.vhd
 set_global_assignment -name VHDL_FILE src/edge_detector.vhd
 set_global_assignment -name VHDL_FILE src/gpu/char.vhd
 set_global_assignment -name VHDL_FILE src/gpu/frame_buffer.vhd
@@ -62,11 +61,12 @@ set_global_assignment -name VHDL_FILE src/gpu/palette.vhd
 set_global_assignment -name VHDL_FILE src/gpu/scroll.vhd
 set_global_assignment -name VHDL_FILE src/gpu/sprite.vhd
 set_global_assignment -name VHDL_FILE src/gpu/sprite_blitter.vhd
+set_global_assignment -name VHDL_FILE src/mem/dual_port_ram.vhd
+set_global_assignment -name VHDL_FILE src/mem/single_port_ram.vhd
+set_global_assignment -name VHDL_FILE src/mem/single_port_rom.vhd
+set_global_assignment -name VHDL_FILE src/mem/true_dual_port_ram.vhd
 set_global_assignment -name VHDL_FILE src/reset_gen.vhd
 set_global_assignment -name VHDL_FILE src/rygar.vhd
-set_global_assignment -name VHDL_FILE src/single_port_ram.vhd
-set_global_assignment -name VHDL_FILE src/single_port_rom.vhd
 set_global_assignment -name VHDL_FILE src/sync_gen.vhd
 set_global_assignment -name VHDL_FILE src/top.vhd
-set_global_assignment -name VHDL_FILE src/true_dual_port_ram.vhd
 set_global_assignment -name VHDL_FILE src/types.vhd
