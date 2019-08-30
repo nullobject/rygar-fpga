@@ -27,25 +27,37 @@ use work.rygar.all;
 entity game is
   port (
     -- clock signals
-    clk   : in std_logic;
-    cen_6 : in std_logic;
-    cen_4 : in std_logic;
+    rom_clk : in std_logic;
+    sys_clk : in std_logic;
+    reset   : in std_logic;
 
-    -- reset
-    reset : in std_logic;
+    -- SDRAM interface
+    sdram_addr  : out unsigned(SDRAM_INPUT_ADDR_WIDTH-1 downto 0);
+    sdram_din   : out std_logic_vector(SDRAM_INPUT_DATA_WIDTH-1 downto 0);
+    sdram_dout  : in std_logic_vector(SDRAM_OUTPUT_DATA_WIDTH-1 downto 0);
+    sdram_we    : out std_logic;
+    sdram_valid : in std_logic;
+    sdram_ready : in std_logic;
 
-    -- sync signals
+    -- IOCTL interface
+    ioctl_addr : in unsigned(IOCTL_ADDR_WIDTH-1 downto 0);
+    ioctl_data : in std_logic_vector(IOCTL_DATA_WIDTH-1 downto 0);
+    ioctl_we   : in std_logic;
+
+    -- video signals
     hsync : out std_logic;
     vsync : out std_logic;
-
-    -- RGB data
-    r : out std_logic_vector(5 downto 0);
-    g : out std_logic_vector(5 downto 0);
-    b : out std_logic_vector(5 downto 0)
+    r     : out std_logic_vector(5 downto 0);
+    g     : out std_logic_vector(5 downto 0);
+    b     : out std_logic_vector(5 downto 0)
   );
 end game;
 
 architecture arch of game is
+  -- clock enable signals
+  signal cen_6 : std_logic;
+  signal cen_4 : std_logic;
+
   -- CPU signals
   signal cpu_cen     : std_logic;
   signal cpu_addr    : unsigned(CPU_ADDR_WIDTH-1 downto 0);
@@ -106,11 +118,21 @@ architecture arch of game is
   -- RGB data
   signal rgb : rgb_t;
 begin
+  -- generate a 6MHz clock enable signal
+  clock_divider_6 : entity work.clock_divider
+  generic map (DIVISOR => 2)
+  port map (clk => sys_clk, cen => cen_6);
+
+  -- generate a 4MHz clock enable signal
+  clock_divider_4 : entity work.clock_divider
+  generic map (DIVISOR => 3)
+  port map (clk => sys_clk, cen => cen_4);
+
   -- detect falling edges of the VBLANK signal
   vblank_edge_detector : entity work.edge_detector
   generic map (FALLING => true)
   port map (
-    clk  => clk,
+    clk  => sys_clk,
     data => video.vblank,
     edge => vblank_falling
   );
@@ -119,7 +141,7 @@ begin
   prog_rom_1 : entity work.single_port_rom
   generic map (ADDR_WIDTH => PROG_ROM_1_ADDR_WIDTH, INIT_FILE => "rom/cpu_5p.mif")
   port map (
-    clk  => clk,
+    clk  => sys_clk,
     cs   => prog_rom_1_cs,
     addr => cpu_addr(PROG_ROM_1_ADDR_WIDTH-1 downto 0),
     dout => prog_rom_1_dout
@@ -129,7 +151,7 @@ begin
   prog_rom_2 : entity work.single_port_rom
   generic map (ADDR_WIDTH => PROG_ROM_2_ADDR_WIDTH, INIT_FILE => "rom/cpu_5m.mif")
   port map (
-    clk  => clk,
+    clk  => sys_clk,
     cs   => prog_rom_2_cs,
     addr => cpu_addr(PROG_ROM_2_ADDR_WIDTH-1 downto 0),
     dout => prog_rom_2_dout
@@ -139,7 +161,7 @@ begin
   prog_rom_3 : entity work.single_port_rom
   generic map (ADDR_WIDTH => PROG_ROM_3_ADDR_WIDTH, INIT_FILE => "rom/cpu_5j.mif")
   port map (
-    clk  => clk,
+    clk  => sys_clk,
     cs   => prog_rom_3_cs,
     addr => current_bank_reg & cpu_addr(10 downto 0),
     dout => prog_rom_3_dout
@@ -149,7 +171,7 @@ begin
   work_ram : entity work.single_port_ram
   generic map (ADDR_WIDTH => WORK_RAM_ADDR_WIDTH)
   port map (
-    clk  => clk,
+    clk  => sys_clk,
     cs   => work_ram_cs,
     addr => cpu_addr(WORK_RAM_ADDR_WIDTH-1 downto 0),
     din  => cpu_dout,
@@ -157,63 +179,42 @@ begin
     we   => not cpu_wr_n
   );
 
-  -- sprite ROM
-  sprite_rom : entity work.single_port_rom
-  generic map (
-    ADDR_WIDTH => SPRITE_ROM_ADDR_WIDTH,
-    DATA_WIDTH => SPRITE_ROM_DATA_WIDTH,
-    INIT_FILE  => "rom/sprites.mif"
-  )
+  -- ROM controller
+  rom_controller : entity work.rom_controller
   port map (
-    clk  => clk,
-    addr => sprite_rom_addr,
-    dout => sprite_rom_data
-  );
+    -- clock signals
+    clk   => rom_clk,
+    reset => reset,
 
-  -- character ROM
-  char_rom : entity work.single_port_rom
-  generic map (
-    ADDR_WIDTH => CHAR_ROM_ADDR_WIDTH,
-    DATA_WIDTH => CHAR_ROM_DATA_WIDTH,
-    INIT_FILE  => "rom/cpu_8k.mif"
-  )
-  port map (
-    clk  => clk,
-    addr => char_rom_addr,
-    dout => char_rom_data
-  );
+    -- ROM interface
+    sprite_rom_addr => sprite_rom_addr,
+    sprite_rom_data => sprite_rom_data,
+    char_rom_addr   => char_rom_addr,
+    char_rom_data   => char_rom_data,
+    fg_rom_addr     => fg_rom_addr,
+    fg_rom_data     => fg_rom_data,
+    bg_rom_addr     => bg_rom_addr,
+    bg_rom_data     => bg_rom_data,
 
-  -- foreground ROM
-  fg_rom : entity work.single_port_rom
-  generic map (
-    ADDR_WIDTH => FG_ROM_ADDR_WIDTH,
-    DATA_WIDTH => FG_ROM_DATA_WIDTH,
-    INIT_FILE  => "rom/fg.mif"
-  )
-  port map (
-    clk  => clk,
-    addr => fg_rom_addr,
-    dout => fg_rom_data
-  );
+    -- SDRAM interface
+    sdram_addr  => sdram_addr,
+    sdram_din   => sdram_din,
+    sdram_dout  => sdram_dout,
+    sdram_we    => sdram_we,
+    sdram_valid => sdram_valid,
+    sdram_ready => sdram_ready,
 
-  -- background ROM
-  bg_rom : entity work.single_port_rom
-  generic map (
-    ADDR_WIDTH => BG_ROM_ADDR_WIDTH,
-    DATA_WIDTH => BG_ROM_DATA_WIDTH,
-    INIT_FILE  => "rom/bg.mif"
-  )
-  port map (
-    clk  => clk,
-    addr => bg_rom_addr,
-    dout => bg_rom_data
+    -- IOCTL interface
+    ioctl_addr => ioctl_addr,
+    ioctl_data => ioctl_data,
+    ioctl_we   => ioctl_we
   );
 
   -- main CPU
   cpu : entity work.T80s
   port map (
     RESET_n             => not reset,
-    CLK                 => clk,
+    CLK                 => sys_clk,
     CEN                 => cen_4,
     WAIT_n              => '1',
     INT_n               => cpu_int_n,
@@ -240,7 +241,7 @@ begin
   )
   port map (
     -- clock signals
-    clk   => clk,
+    clk   => sys_clk,
     cen_6 => cen_6,
 
     -- RAM interface
@@ -280,9 +281,9 @@ begin
   -- Once the interrupt request has been accepted by the CPU, it is
   -- acknowledged by activating the IORQ signal during the M1 cycle. This
   -- disables the interrupt signal, and the cycle starts over.
-  irq : process (clk)
+  irq : process (sys_clk)
   begin
-    if rising_edge(clk) then
+    if rising_edge(sys_clk) then
       if cpu_m1_n = '0' and cpu_ioreq_n = '0' then
         cpu_int_n <= '1';
       elsif vblank_falling = '1' then
@@ -294,9 +295,9 @@ begin
   -- Set current bank register.
   --
   -- This register selects the current bank for program ROM 3.
-  set_current_bank : process (clk)
+  set_current_bank : process (sys_clk)
   begin
-    if rising_edge(clk) then
+    if rising_edge(sys_clk) then
       if bank_cs = '1' and cpu_wr_n = '0' then
         -- flip-flop 6J uses data lines 3 to 6
         current_bank_reg <= unsigned(cpu_dout(6 downto 3));
@@ -305,9 +306,9 @@ begin
   end process;
 
   -- set foreground and background scroll position registers
-  set_scroll_pos : process (clk)
+  set_scroll_pos : process (sys_clk)
   begin
-    if rising_edge(clk) then
+    if rising_edge(sys_clk) then
       if scroll_cs = '1' and cpu_wr_n = '0' then
         case cpu_addr(2 downto 0) is
           when "000" => fg_scroll_pos_reg.x(7 downto 0) <= unsigned(cpu_dout(7 downto 0));

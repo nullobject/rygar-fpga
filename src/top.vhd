@@ -38,42 +38,57 @@ entity top is
     vga_csync : out std_logic;
 
     -- buttons
-    key : in std_logic_vector(1 downto 0)
+    key : in std_logic_vector(1 downto 0);
+
+    -- SDRAM interface
+    SDRAM_A    : out unsigned(SDRAM_ADDR_WIDTH-1 downto 0);
+    SDRAM_BA   : out unsigned(SDRAM_BANK_WIDTH-1 downto 0);
+    SDRAM_DQ   : inout std_logic_vector(SDRAM_DATA_WIDTH-1 downto 0);
+    SDRAM_CLK  : out std_logic;
+    SDRAM_CKE  : out std_logic;
+    SDRAM_nCS  : out std_logic;
+    SDRAM_nRAS : out std_logic;
+    SDRAM_nCAS : out std_logic;
+    SDRAM_nWE  : out std_logic;
+    SDRAM_DQML : out std_logic;
+    SDRAM_DQMH : out std_logic
   );
 end top;
 
 architecture arch of top is
   -- clock signals
-  signal clk_12 : std_logic;
-  signal cen_6  : std_logic;
-  signal cen_4  : std_logic;
+  signal rom_clk : std_logic;
+  signal sys_clk : std_logic;
+  signal reset   : std_logic;
 
-  -- reset
-  signal reset : std_logic;
+  -- SDRAM signals
+  signal sdram_addr  : unsigned(SDRAM_INPUT_ADDR_WIDTH-1 downto 0);
+  signal sdram_din   : std_logic_vector(SDRAM_INPUT_DATA_WIDTH-1 downto 0) := (others => '0');
+  signal sdram_dout  : std_logic_vector(SDRAM_OUTPUT_DATA_WIDTH-1 downto 0);
+  signal sdram_we    : std_logic;
+  signal sdram_ready : std_logic;
+  signal sdram_valid : std_logic;
+
+  -- IOCTL signals
+  signal ioctl_addr : unsigned(IOCTL_ADDR_WIDTH-1 downto 0);
+  signal ioctl_data : std_logic_vector(IOCTL_DATA_WIDTH-1 downto 0);
+  signal ioctl_we   : std_logic;
 
   -- sync signals
   signal hsync : std_logic;
   signal vsync : std_logic;
   signal csync : std_logic;
 begin
-  -- generate a 12MHz clock signal
+  -- generate the clock signals
   my_pll : entity pll.pll
   port map (
     refclk   => clk,
     rst      => '0',
-    outclk_0 => clk_12,
+    outclk_0 => SDRAM_CLK,
+    outclk_1 => rom_clk,
+    outclk_2 => sys_clk,
     locked   => open
   );
-
-  -- generate a 6MHz clock enable signal
-  clock_divider_6 : entity work.clock_divider
-  generic map (DIVISOR => 2)
-  port map (clk => clk_12, cen => cen_6);
-
-  -- generate a 4MHz clock enable signal
-  clock_divider_4 : entity work.clock_divider
-  generic map (DIVISOR => 3)
-  port map (clk => clk_12, cen => cen_4);
 
   -- Generate a reset pulse after powering on, or when KEY0 is pressed.
   --
@@ -81,18 +96,62 @@ begin
   -- data from the address and data buses.
   reset_gen : entity work.reset_gen
   port map (
-    clk  => clk_12,
+    clk  => sys_clk,
     rin  => not key(0),
     rout => reset
+  );
+
+  -- SDRAM controller
+  sdram : entity work.sdram
+  generic map (CLK_FREQ => 48.0)
+  port map (
+    -- clock signals
+    clk   => rom_clk,
+    reset => reset,
+
+    -- IO interface
+    addr  => sdram_addr,
+    din   => sdram_din,
+    dout  => sdram_dout,
+    ready => sdram_ready,
+    valid => sdram_valid,
+    we    => sdram_we,
+
+    -- SDRAM interface
+    sdram_a     => SDRAM_A,
+    sdram_ba    => SDRAM_BA,
+    sdram_dq    => SDRAM_DQ,
+    sdram_cke   => SDRAM_CKE,
+    sdram_cs_n  => SDRAM_nCS,
+    sdram_ras_n => SDRAM_nRAS,
+    sdram_cas_n => SDRAM_nCAS,
+    sdram_we_n  => SDRAM_nWE,
+    sdram_dqml  => SDRAM_DQML,
+    sdram_dqmh  => SDRAM_DQMH
   );
 
   -- the actual game
   game : entity work.game
   port map (
-    clk   => clk_12,
-    cen_4 => cen_4,
-    cen_6 => cen_6,
-    reset => reset,
+    -- clock signals
+    rom_clk => rom_clk,
+    sys_clk => sys_clk,
+    reset   => reset,
+
+    -- SDRAM interface
+    sdram_addr  => sdram_addr,
+    sdram_din   => sdram_din,
+    sdram_dout  => sdram_dout,
+    sdram_we    => sdram_we,
+    sdram_valid => sdram_valid,
+    sdram_ready => sdram_ready,
+
+    -- IOCTL interface
+    ioctl_addr => ioctl_addr,
+    ioctl_data => ioctl_data,
+    ioctl_we   => ioctl_we,
+
+    -- video signals
     hsync => hsync,
     vsync => vsync,
     r     => vga_r,
