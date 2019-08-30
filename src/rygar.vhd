@@ -22,259 +22,274 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-use work.types.all;
+package rygar is
+  constant CPU_ADDR_WIDTH : natural := 16;
 
-entity rygar is
-  port (
-    -- clock signals
-    clk   : in std_logic;
-    cen_6 : in std_logic;
-    cen_4 : in std_logic;
+  -- RAM
+  constant PROG_ROM_1_ADDR_WIDTH : natural := 15; -- 32kB
+  constant PROG_ROM_2_ADDR_WIDTH : natural := 14; -- 16kB
+  constant PROG_ROM_3_ADDR_WIDTH : natural := 15; -- 32kB
+  constant WORK_RAM_ADDR_WIDTH   : natural := 12; -- 4kB
 
-    -- reset
-    reset : in std_logic;
+  -- VRAM
+  constant BG_RAM_CPU_ADDR_WIDTH      : natural := 10; -- 1kB
+  constant BG_RAM_GPU_ADDR_WIDTH      : natural := 10;
+  constant BG_RAM_GPU_DATA_WIDTH      : natural := 8;
+  constant CHAR_RAM_CPU_ADDR_WIDTH    : natural := 11; -- 2kB
+  constant CHAR_RAM_GPU_ADDR_WIDTH    : natural := 11;
+  constant CHAR_RAM_GPU_DATA_WIDTH    : natural := 8;
+  constant FG_RAM_CPU_ADDR_WIDTH      : natural := 10; -- 1kB
+  constant FG_RAM_GPU_ADDR_WIDTH      : natural := 10;
+  constant FG_RAM_GPU_DATA_WIDTH      : natural := 8;
+  constant FRAME_BUFFER_ADDR_WIDTH    : natural := 16;
+  constant FRAME_BUFFER_DATA_WIDTH    : natural := 10;
+  constant PALETTE_RAM_CPU_ADDR_WIDTH : natural := 11; -- 2kB
+  constant PALETTE_RAM_GPU_ADDR_WIDTH : natural := 10;
+  constant PALETTE_RAM_GPU_DATA_WIDTH : natural := 16;
+  constant SPRITE_RAM_CPU_ADDR_WIDTH  : natural := 11; -- 2kB
+  constant SPRITE_RAM_GPU_ADDR_WIDTH  : natural := 8;
+  constant SPRITE_RAM_GPU_DATA_WIDTH  : natural := 64;
+
+  -- tile ROMs
+  constant BG_ROM_ADDR_WIDTH     : natural := 15; -- 128kB
+  constant BG_ROM_DATA_WIDTH     : natural := 32;
+  constant CHAR_ROM_ADDR_WIDTH   : natural := 13; -- 32kB
+  constant CHAR_ROM_DATA_WIDTH   : natural := 32;
+  constant FG_ROM_ADDR_WIDTH     : natural := 15; -- 128kB
+  constant FG_ROM_DATA_WIDTH     : natural := 32;
+  constant SPRITE_ROM_ADDR_WIDTH : natural := 15; -- 128kB
+  constant SPRITE_ROM_DATA_WIDTH : natural := 32;
+
+  -- each 8x8 tile is composed of four layers of pixel data (bitplanes)
+  constant TILE_BPP : natural := 4;
+
+  -- sprite byte 0
+  constant SPRITE_HI_CODE_MSB : natural := 7;
+  constant SPRITE_HI_CODE_LSB : natural := 4;
+  constant SPRITE_ENABLE_BIT  : natural := 2;
+  constant SPRITE_FLIP_Y_BIT  : natural := 1;
+  constant SPRITE_FLIP_X_BIT  : natural := 0;
+
+  -- sprite byte 1
+  constant SPRITE_LO_CODE_MSB : natural := 15;
+  constant SPRITE_LO_CODE_LSB : natural := 8;
+
+  -- sprite byte 2
+  constant SPRITE_SIZE_MSB : natural := 17;
+  constant SPRITE_SIZE_LSB : natural := 16;
+
+  -- sprite byte 3
+  constant SPRITE_PRIORITY_MSB : natural := 31;
+  constant SPRITE_PRIORITY_LSB : natural := 30;
+  constant SPRITE_HI_POS_Y_BIT : natural := 29;
+  constant SPRITE_HI_POS_X_BIT : natural := 28;
+  constant SPRITE_COLOR_MSB    : natural := 27;
+  constant SPRITE_COLOR_LSB    : natural := 24;
+
+  -- sprite byte 4
+  constant SPRITE_LO_POS_Y_MSB : natural := 39;
+  constant SPRITE_LO_POS_Y_LSB : natural := 32;
+
+  -- sprite byte 5
+  constant SPRITE_LO_POS_X_MSB : natural := 47;
+  constant SPRITE_LO_POS_X_LSB : natural := 40;
+
+  -- colour depth
+  constant COLOR_DEPTH_R : natural := 4;
+  constant COLOR_DEPTH_G : natural := 4;
+  constant COLOR_DEPTH_B : natural := 4;
+
+  subtype byte_t is std_logic_vector(7 downto 0);
+
+  -- represents a RGB colour value
+  type rgb_t is record
+    r : std_logic_vector(COLOR_DEPTH_R-1 downto 0);
+    g : std_logic_vector(COLOR_DEPTH_G-1 downto 0);
+    b : std_logic_vector(COLOR_DEPTH_B-1 downto 0);
+  end record rgb_t;
+
+  -- represents a position
+  type pos_t is record
+    x : unsigned(8 downto 0);
+    y : unsigned(8 downto 0);
+  end record pos_t;
+
+  -- represents a priority
+  subtype priority_t is unsigned(1 downto 0);
+
+  -- represents a row of pixels in a 8x8 tile
+  subtype tile_row_t is std_logic_vector(TILE_BPP*8-1 downto 0);
+
+  -- represents a pixel in a 8x8 tile
+  subtype tile_pixel_t is std_logic_vector(TILE_BPP-1 downto 0);
+
+  -- represents the colour of a tile
+  subtype tile_color_t is std_logic_vector(3 downto 0);
+
+  -- represents the index of a tile in a tilemap
+  subtype tile_code_t is unsigned(9 downto 0);
+
+  -- represents the video signals
+  type video_t is record
+    -- position
+    pos : pos_t;
 
     -- sync signals
-    hsync : out std_logic;
-    vsync : out std_logic;
+    hsync : std_logic;
+    vsync : std_logic;
 
-    -- RGB data
-    rgb : out rgb_t
-  );
-end rygar;
+    -- blank signals
+    hblank : std_logic;
+    vblank : std_logic;
 
-architecture arch of rygar is
-  -- CPU signals
-  signal cpu_cen     : std_logic;
-  signal cpu_addr    : unsigned(CPU_ADDR_WIDTH-1 downto 0);
-  signal cpu_din     : byte_t;
-  signal cpu_dout    : byte_t;
-  signal cpu_ioreq_n : std_logic;
-  signal cpu_mreq_n  : std_logic;
-  signal cpu_rd_n    : std_logic;
-  signal cpu_wr_n    : std_logic;
-  signal cpu_rfsh_n  : std_logic;
-  signal cpu_int_n   : std_logic := '1';
-  signal cpu_m1_n    : std_logic;
-  signal cpu_halt_n  : std_logic;
+    -- enable video output
+    enable : std_logic;
+  end record video_t;
 
-  -- chip select signals
-  signal prog_rom_1_cs  : std_logic;
-  signal prog_rom_2_cs  : std_logic;
-  signal prog_rom_3_cs  : std_logic;
-  signal work_ram_cs    : std_logic;
-  signal char_ram_cs    : std_logic;
-  signal fg_ram_cs      : std_logic;
-  signal bg_ram_cs      : std_logic;
-  signal sprite_ram_cs  : std_logic;
-  signal palette_ram_cs : std_logic;
-  signal bank_cs        : std_logic;
-  signal scroll_cs      : std_logic;
+  -- represents a sprite
+  type sprite_t is record
+    code     : unsigned(11 downto 0);
+    color    : unsigned(3 downto 0);
+    enable   : std_logic;
+    flip_x   : std_logic;
+    flip_y   : std_logic;
+    pos      : pos_t;
+    priority : priority_t;
+    size     : unsigned(5 downto 0);
+  end record sprite_t;
 
-  -- data output signals
-  signal prog_rom_1_dout : byte_t;
-  signal prog_rom_2_dout : byte_t;
-  signal prog_rom_3_dout : byte_t;
-  signal work_ram_dout   : byte_t;
-  signal gpu_dout        : byte_t;
+  -- represents a graphics layer
+  type layer_t is (SPRITE_LAYER, CHAR_LAYER, FG_LAYER, BG_LAYER, FILL_LAYER);
 
-  -- currently bank register
-  signal current_bank_reg : unsigned(3 downto 0);
+  -- calculate sprite size (8x8, 16x16, 32x32, 64x64)
+  function sprite_size_in_pixels(size : std_logic_vector(1 downto 0)) return natural;
 
-  -- scroll position registers
-  signal fg_scroll_pos_reg : pos_t;
-  signal bg_scroll_pos_reg : pos_t;
+  -- initialise sprite from a raw 64-bit value
+  function init_sprite(data : std_logic_vector(SPRITE_RAM_GPU_DATA_WIDTH-1 downto 0)) return sprite_t;
 
-  -- video signals
-  signal video : video_t;
+  -- determine which graphics layer should be rendered
+  function mux_layers(
+    sprite_priority : priority_t;
+    sprite_data     : byte_t;
+    char_data       : byte_t;
+    fg_data         : byte_t;
+    bg_data         : byte_t
+  ) return layer_t;
+end package rygar;
 
-  -- control signals
-  signal vblank_falling : std_logic;
-begin
-  -- detect falling edges of the VBLANK signal
-  vblank_edge_detector : entity work.edge_detector
-  generic map (FALLING => true)
-  port map (
-    clk  => clk,
-    data => video.vblank,
-    edge => vblank_falling
-  );
+package body rygar is
+  function sprite_size_in_pixels(size : std_logic_vector(1 downto 0)) return natural is
+  begin
+    case size is
+      when "00" => return 8;
+      when "01" => return 16;
+      when "10" => return 32;
+      when "11" => return 64;
+    end case;
+  end sprite_size_in_pixels;
 
-  -- program ROM 1
-  prog_rom_1 : entity work.single_port_rom
-  generic map (ADDR_WIDTH => PROG_ROM_1_ADDR_WIDTH, INIT_FILE => "rom/cpu_5p.mif")
-  port map (
-    clk  => clk,
-    cs   => prog_rom_1_cs,
-    addr => cpu_addr(PROG_ROM_1_ADDR_WIDTH-1 downto 0),
-    dout => prog_rom_1_dout
-  );
+  --  byte     bit        description
+  -- --------+-76543210-+----------------
+  --       0 | xxxx---- | hi code
+  --         | -----x-- | enable
+  --         | ------x- | flip y
+  --         | -------x | flip x
+  --       1 | xxxxxxxx | lo code
+  --       2 | ------xx | size
+  --       3 | xx-------| priority
+  --         | --x----- | hi pos y
+  --         | ---x---- | hi pos x
+  --         | ----xxxx | colour
+  --       4 | xxxxxxxx | lo pos y
+  --       5 | xxxxxxxx | lo pos x
+  --       6 | -------- |
+  --       7 | -------- |
+  function init_sprite(data : std_logic_vector(SPRITE_RAM_GPU_DATA_WIDTH-1 downto 0)) return sprite_t is
+    variable sprite : sprite_t;
+  begin
+    sprite.code     := unsigned(data(SPRITE_HI_CODE_MSB downto SPRITE_HI_CODE_LSB)) & unsigned(data(SPRITE_LO_CODE_MSB downto SPRITE_LO_CODE_LSB));
+    sprite.color    := unsigned(data(SPRITE_COLOR_MSB downto SPRITE_COLOR_LSB));
+    sprite.enable   := data(SPRITE_ENABLE_BIT);
+    sprite.flip_x   := data(SPRITE_FLIP_X_BIT);
+    sprite.flip_y   := data(SPRITE_FLIP_Y_BIT);
+    sprite.pos.x    := data(SPRITE_HI_POS_X_BIT) & unsigned(data(SPRITE_LO_POS_X_MSB downto SPRITE_LO_POS_X_LSB));
+    sprite.pos.y    := data(SPRITE_HI_POS_Y_BIT) & unsigned(data(SPRITE_LO_POS_Y_MSB downto SPRITE_LO_POS_Y_LSB));
+    sprite.priority := unsigned(data(SPRITE_PRIORITY_MSB downto SPRITE_PRIORITY_LSB));
+    sprite.size     := to_unsigned(sprite_size_in_pixels(data(SPRITE_SIZE_MSB downto SPRITE_SIZE_LSB)), sprite.size'length);
+    return sprite;
+  end init_sprite;
 
-  -- program ROM 2
-  prog_rom_2 : entity work.single_port_rom
-  generic map (ADDR_WIDTH => PROG_ROM_2_ADDR_WIDTH, INIT_FILE => "rom/cpu_5m.mif")
-  port map (
-    clk  => clk,
-    cs   => prog_rom_2_cs,
-    addr => cpu_addr(PROG_ROM_2_ADDR_WIDTH-1 downto 0),
-    dout => prog_rom_2_dout
-  );
-
-  -- program ROM 3
-  prog_rom_3 : entity work.single_port_rom
-  generic map (ADDR_WIDTH => PROG_ROM_3_ADDR_WIDTH, INIT_FILE => "rom/cpu_5j.mif")
-  port map (
-    clk  => clk,
-    cs   => prog_rom_3_cs,
-    addr => current_bank_reg & cpu_addr(10 downto 0),
-    dout => prog_rom_3_dout
-  );
-
-  -- work RAM
-  work_ram : entity work.single_port_ram
-  generic map (ADDR_WIDTH => WORK_RAM_ADDR_WIDTH)
-  port map (
-    clk  => clk,
-    cs   => work_ram_cs,
-    addr => cpu_addr(WORK_RAM_ADDR_WIDTH-1 downto 0),
-    din  => cpu_dout,
-    dout => work_ram_dout,
-    we   => not cpu_wr_n
-  );
-
-  -- main CPU
-  cpu : entity work.T80s
-  port map (
-    RESET_n             => not reset,
-    CLK                 => clk,
-    CEN                 => cen_4,
-    WAIT_n              => '1',
-    INT_n               => cpu_int_n,
-    M1_n                => cpu_m1_n,
-    MREQ_n              => cpu_mreq_n,
-    IORQ_n              => cpu_ioreq_n,
-    RD_n                => cpu_rd_n,
-    WR_n                => cpu_wr_n,
-    RFSH_n              => cpu_rfsh_n,
-    HALT_n              => cpu_halt_n,
-    BUSAK_n             => open,
-    std_logic_vector(A) => cpu_addr,
-    DI                  => cpu_din,
-    DO                  => cpu_dout
-  );
-
-  -- GPU
-  gpu : entity work.gpu
-  generic map (
-    SPRITE_LAYER_ENABLE => true,
-    CHAR_LAYER_ENABLE   => true,
-    FG_LAYER_ENABLE     => true,
-    BG_LAYER_ENABLE     => false
-  )
-  port map (
-    -- clock signals
-    clk   => clk,
-    cen_6 => cen_6,
-
-    -- RAM interface
-    ram_addr => cpu_addr,
-    ram_din  => cpu_dout,
-    ram_dout => gpu_dout,
-    ram_we   => not cpu_wr_n,
-
-    -- chip select signals
-    sprite_ram_cs  => sprite_ram_cs,
-    char_ram_cs    => char_ram_cs,
-    fg_ram_cs      => fg_ram_cs,
-    bg_ram_cs      => bg_ram_cs,
-    palette_ram_cs => palette_ram_cs,
-
-    -- scroll layer positions
-    fg_scroll_pos => fg_scroll_pos_reg,
-    bg_scroll_pos => bg_scroll_pos_reg,
-
-    -- video signals
-    video => video,
-    rgb   => rgb
-  );
-
-  -- Trigger an interrupt on the falling edge of the VBLANK signal.
+  -- This function determines which graphics layer should be rendered, based on
+  -- the sprite priority and the graphics layer data.
   --
-  -- Once the interrupt request has been accepted by the CPU, it is
-  -- acknowledged by activating the IORQ signal during the M1 cycle. This
-  -- disables the interrupt signal, and the cycle starts over.
-  irq : process (clk)
+  -- This differs from the original arcade hardware, which uses a priority
+  -- encoder and some other logic gates to choose the correct layer to render.
+  -- A giant conditional is way more verbose, but it's easy to understand how
+  -- it works.
+  function mux_layers(
+    sprite_priority : priority_t;
+    sprite_data     : byte_t;
+    char_data       : byte_t;
+    fg_data         : byte_t;
+    bg_data         : byte_t
+  ) return layer_t is
   begin
-    if rising_edge(clk) then
-      if cpu_m1_n = '0' and cpu_ioreq_n = '0' then
-        cpu_int_n <= '1';
-      elsif vblank_falling = '1' then
-        cpu_int_n <= '0';
-      end if;
-    end if;
-  end process;
+    case sprite_priority is
+      -- sprites have the highest priority
+      when "00" =>
+        if sprite_data(3 downto 0) /= "0000" then
+          return SPRITE_LAYER;
+        elsif char_data(3 downto 0) /= "0000" then
+          return CHAR_LAYER;
+        elsif fg_data(3 downto 0) /= "0000" then
+          return FG_LAYER;
+        elsif bg_data(3 downto 0) /= "0000" then
+          return BG_LAYER;
+        else
+          return FILL_LAYER;
+        end if;
 
-  -- Set current bank register.
-  --
-  -- This register selects the current bank for program ROM 3.
-  set_current_bank : process (clk)
-  begin
-    if rising_edge(clk) then
-      if bank_cs = '1' and cpu_wr_n = '0' then
-        -- flip-flop 6J uses data lines 3 to 6
-        current_bank_reg <= unsigned(cpu_dout(6 downto 3));
-      end if;
-    end if;
-  end process;
+      -- sprites are obscured by the character layer
+      when "01" =>
+        if char_data(3 downto 0) /= "0000" then
+          return CHAR_LAYER;
+        elsif sprite_data(3 downto 0) /= "0000" then
+          return SPRITE_LAYER;
+        elsif fg_data(3 downto 0) /= "0000" then
+          return FG_LAYER;
+        elsif bg_data(3 downto 0) /= "0000" then
+          return BG_LAYER;
+        else
+          return FILL_LAYER;
+        end if;
 
-  -- set foreground and background scroll position registers
-  set_scroll_pos : process (clk)
-  begin
-    if rising_edge(clk) then
-      if scroll_cs = '1' and cpu_wr_n = '0' then
-        case cpu_addr(2 downto 0) is
-          when "000" => fg_scroll_pos_reg.x(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
-          when "001" => fg_scroll_pos_reg.x(8 downto 8) <= unsigned(cpu_dout(0 downto 0));
-          when "010" => fg_scroll_pos_reg.y(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
-          when "011" => bg_scroll_pos_reg.x(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
-          when "100" => bg_scroll_pos_reg.x(8 downto 8) <= unsigned(cpu_dout(0 downto 0));
-          when "110" => bg_scroll_pos_reg.y(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
-          when others => null;
-        end case;
-      end if;
-    end if;
-  end process;
+      -- sprites are obscured by the character and foreground layers
+      when "10" =>
+        if char_data(3 downto 0) /= "0000" then
+          return CHAR_LAYER;
+        elsif fg_data(3 downto 0) /= "0000" then
+          return FG_LAYER;
+        elsif sprite_data(3 downto 0) /= "0000" then
+          return SPRITE_LAYER;
+        elsif bg_data(3 downto 0) /= "0000" then
+          return BG_LAYER;
+        else
+          return FILL_LAYER;
+        end if;
 
-  -- $0000-$7fff PROGRAM ROM 1
-  -- $8000-$bfff PROGRAM ROM 2
-  -- $c000-$cfff WORK RAM
-  -- $d000-$d7ff CHARACTER RAM
-  -- $d800-$dbff FOREGROUND RAM
-  -- $dc00-$dfff BACKGROUND RAM
-  -- $e000-$e7ff SPRITE RAM
-  -- $e800-$efff PALETTE RAM
-  -- $f000-$f7ff PROGRAM ROM 3 (BANK SWITCHED)
-  -- $f800-$ffff
-  prog_rom_1_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"0000" and unsigned(cpu_addr) <= x"7fff" else '0';
-  prog_rom_2_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"8000" and unsigned(cpu_addr) <= x"bfff" else '0';
-  work_ram_cs    <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"c000" and unsigned(cpu_addr) <= x"cfff" else '0';
-  char_ram_cs    <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"d000" and unsigned(cpu_addr) <= x"d7ff" else '0';
-  fg_ram_cs      <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"d800" and unsigned(cpu_addr) <= x"dbff" else '0';
-  bg_ram_cs      <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"dc00" and unsigned(cpu_addr) <= x"dfff" else '0';
-  sprite_ram_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"e000" and unsigned(cpu_addr) <= x"e7ff" else '0';
-  palette_ram_cs <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"e800" and unsigned(cpu_addr) <= x"efff" else '0';
-  prog_rom_3_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"f000" and unsigned(cpu_addr) <= x"f7ff" else '0';
-  scroll_cs      <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"f800" and unsigned(cpu_addr) <= x"f805" else '0';
-  bank_cs        <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) = x"f808" else '0';
-
-  -- mux CPU data input
-  cpu_din <= prog_rom_1_dout or
-             prog_rom_2_dout or
-             prog_rom_3_dout or
-             work_ram_dout or
-             gpu_dout;
-
-  -- set sync signals
-  hsync <= video.hsync;
-  vsync <= video.vsync;
-end architecture arch;
+      -- sprites are obscured by the character, foreground, and background layers
+      when "11" =>
+        if char_data(3 downto 0) /= "0000" then
+          return CHAR_LAYER;
+        elsif fg_data(3 downto 0) /= "0000" then
+          return FG_LAYER;
+        elsif bg_data(3 downto 0) /= "0000" then
+          return BG_LAYER;
+        elsif sprite_data(3 downto 0) /= "0000" then
+          return SPRITE_LAYER;
+        else
+          return FILL_LAYER;
+        end if;
+    end case;
+  end mux_layers;
+end package body rygar;

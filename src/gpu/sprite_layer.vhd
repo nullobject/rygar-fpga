@@ -22,7 +22,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-use work.types.all;
+use work.rygar.all;
 
 -- The sprite layer is the part of the graphics pipeline that handles the
 -- moving graphical elements you see on the screen.
@@ -46,11 +46,8 @@ entity sprite_layer is
     cen_6 : in std_logic;
 
     -- sprite RAM
-    ram_cs   : in std_logic;
-    ram_addr : in unsigned(SPRITE_RAM_ADDR_WIDTH-1 downto 0);
-    ram_din  : in byte_t;
-    ram_dout : out byte_t;
-    ram_we   : in std_logic;
+    ram_addr : out unsigned(SPRITE_RAM_GPU_ADDR_WIDTH-1 downto 0);
+    ram_data : in std_logic_vector(SPRITE_RAM_GPU_DATA_WIDTH-1 downto 0);
 
     -- tile ROM
     rom_addr : out unsigned(SPRITE_ROM_ADDR_WIDTH-1 downto 0);
@@ -70,10 +67,6 @@ architecture arch of sprite_layer is
 
   -- state signals
   signal state, next_state : state_t;
-
-  -- sprite RAM
-  signal sprite_ram_addr : unsigned(SPRITE_RAM_GPU_ADDR_WIDTH-1 downto 0);
-  signal sprite_ram_dout : std_logic_vector(SPRITE_RAM_GPU_DATA_WIDTH-1 downto 0);
 
   -- frame buffer
   signal frame_buffer_addr_rd : unsigned(FRAME_BUFFER_ADDR_WIDTH-1 downto 0);
@@ -95,38 +88,6 @@ architecture arch of sprite_layer is
   signal blitter_start : std_logic;
   signal blitter_ready : std_logic;
 begin
-  -- The sprite RAM (2kB) contains the sprite data.
-  --
-  -- It has been implemented as a dual-port RAM because both the CPU and the
-  -- graphics pipeline need to access the RAM concurrently. Port A is 8-bits
-  -- wide and is connected to the CPU data bus. Port B is 64-bits wide and is
-  -- connected to the graphics pipeine.
-  --
-  -- This differs from the original arcade hardware, which only contains
-  -- a single-port palette RAM. Using a dual-port RAM instead simplifies
-  -- things, because we don't need all the additional logic required to
-  -- coordinate RAM access.
-  sprite_ram : entity work.true_dual_port_ram
-  generic map (
-    ADDR_WIDTH_A => SPRITE_RAM_ADDR_WIDTH,
-    ADDR_WIDTH_B => SPRITE_RAM_GPU_ADDR_WIDTH,
-    DATA_WIDTH_B => SPRITE_RAM_GPU_DATA_WIDTH
-  )
-  port map (
-    -- port A (CPU)
-    clk_a  => clk,
-    cs_a   => ram_cs,
-    addr_a => ram_addr,
-    din_a  => ram_din,
-    dout_a => ram_dout,
-    we_a   => ram_we,
-
-    -- port B (GPU)
-    clk_b  => clk,
-    addr_b => sprite_ram_addr,
-    dout_b => sprite_ram_dout
- );
-
   sprite_frame_buffer : entity work.frame_buffer
   generic map (
     ADDR_WIDTH => FRAME_BUFFER_ADDR_WIDTH,
@@ -247,7 +208,7 @@ begin
     if rising_edge(clk) then
       if cen_6 = '1' then
         if state = LATCH then
-          sprite <= init_sprite(sprite_ram_dout);
+          sprite <= init_sprite(ram_data);
         end if;
       end if;
     end if;
@@ -291,7 +252,7 @@ begin
   end process;
 
   -- set sprite RAM address
-  sprite_ram_addr <= to_unsigned(sprite_counter, sprite_ram_addr'length);
+  ram_addr <= to_unsigned(sprite_counter, ram_addr'length);
 
   -- the frame is done when all the sprites have been blitted
   frame_done <= '1' when sprite_counter = sprite_counter'high else '0';

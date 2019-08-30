@@ -24,7 +24,7 @@ use ieee.numeric_std.all;
 
 library pll;
 
-use work.types.all;
+use work.rygar.all;
 
 entity top is
   port (
@@ -55,9 +55,6 @@ architecture arch of top is
   signal hsync : std_logic;
   signal vsync : std_logic;
   signal csync : std_logic;
-
-  -- RGB data
-  signal rgb : rgb_t;
 begin
   -- generate a 12MHz clock signal
   my_pll : entity pll.pll
@@ -89,8 +86,8 @@ begin
     rout => reset
   );
 
-  -- run the game
-  rygar : entity work.rygar
+  -- the actual game
+  game : entity work.game
   port map (
     clk   => clk_12,
     cen_4 => cen_4,
@@ -98,14 +95,11 @@ begin
     reset => reset,
     hsync => hsync,
     vsync => vsync,
-    rgb   => rgb
+    r     => vga_r,
+    g     => vga_g,
+    b     => vga_b
   );
 
   -- set composite sync
   vga_csync <= not (hsync xor vsync);
-
-  -- set RGB data
-  vga_r <= rgb.r & rgb.r(3 downto 2);
-  vga_g <= rgb.g & rgb.g(3 downto 2);
-  vga_b <= rgb.b & rgb.b(3 downto 2);
 end architecture arch;

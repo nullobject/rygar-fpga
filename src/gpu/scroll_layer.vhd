@@ -22,7 +22,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-use work.types.all;
+use work.rygar.all;
 
 -- The scroll module handles the scrolling foreground and background layers in
 -- the graphics pipeline.
@@ -30,12 +30,16 @@ use work.types.all;
 -- It consists of a 32x16 grid of 16x16 tiles. Each 16x16 tile is made up of
 -- four separate 8x8 tiles, stored in a left-to-right, top-to-bottom order.
 --
+-- Each tile in the tilemap is represented by two bytes in the scroll RAM,
+-- a high byte and a low byte, which contains the tile colour and code.
+--
 -- Because a scrolling layer is twice the width of the screen, it can never be
 -- entirely visible on the screen at once. The horizontal and vertical scroll
 -- positions are used to set the position of the visible area.
 entity scroll_layer is
   generic (
     RAM_ADDR_WIDTH : natural;
+    RAM_DATA_WIDTH : natural;
     ROM_ADDR_WIDTH : natural;
     ROM_DATA_WIDTH : natural
   );
@@ -45,11 +49,8 @@ entity scroll_layer is
     cen_6 : in std_logic;
 
     -- scroll RAM
-    ram_cs   : in std_logic;
-    ram_addr : in unsigned(RAM_ADDR_WIDTH-1 downto 0);
-    ram_din  : in byte_t;
-    ram_dout : out byte_t;
-    ram_we   : in std_logic;
+    ram_addr : out unsigned(RAM_ADDR_WIDTH-1 downto 0);
+    ram_data : in std_logic_vector(RAM_DATA_WIDTH-1 downto 0);
 
     -- tile ROM
     rom_addr : out unsigned(ROM_ADDR_WIDTH-1 downto 0);
@@ -73,10 +74,6 @@ architecture arch of scroll_layer is
     y : unsigned(3 downto 0);
   end record tile_pos_t;
 
-  -- scroll RAM (port B)
-  signal scroll_ram_addr_b : unsigned(RAM_ADDR_WIDTH-1 downto 0);
-  signal scroll_ram_dout_b : byte_t;
-
   -- tile signals
   signal tile_data  : byte_t;
   signal tile_code  : tile_code_t;
@@ -93,40 +90,6 @@ architecture arch of scroll_layer is
   alias offset_x : unsigned(3 downto 0) is dest_pos.x(3 downto 0);
   alias offset_y : unsigned(3 downto 0) is dest_pos.y(3 downto 0);
 begin
-  -- The tile RAM (1kB) contains the code and colour of each tile in the
-  -- tilemap.
-  --
-  -- Each tile in the tilemap is represented by two bytes in the scroll RAM,
-  -- a high byte and a low byte, which contains the tile colour and code.
-  --
-  -- It has been implemented as a dual-port RAM because both the CPU and the
-  -- graphics pipeline need to access the RAM concurrently. Ports A and B are
-  -- identical.
-  --
-  -- This differs from the original arcade hardware, which only contains
-  -- a single-port scroll RAM. Using a dual-port RAM instead simplifies things,
-  -- because we don't need all the additional logic required to coordinate RAM
-  -- access.
-  scroll_ram : entity work.true_dual_port_ram
-  generic map (
-    ADDR_WIDTH_A => RAM_ADDR_WIDTH,
-    ADDR_WIDTH_B => RAM_ADDR_WIDTH
-  )
-  port map (
-    -- port A (CPU)
-    clk_a  => clk,
-    cs_a   => ram_cs,
-    addr_a => ram_addr,
-    din_a  => ram_din,
-    dout_a => ram_dout,
-    we_a   => ram_we,
-
-    -- port B (GPU)
-    clk_b  => clk,
-    addr_b => scroll_ram_addr_b,
-    dout_b => scroll_ram_dout_b
-  );
-
   -- update position counter
   update_pos_counter : process (clk)
   begin
@@ -160,18 +123,18 @@ begin
         case to_integer(offset_x) is
           when 8 =>
             -- load high byte
-            scroll_ram_addr_b <= '1' & row & (col+1);
+            ram_addr <= '1' & row & (col+1);
 
           when 9 =>
             -- latch high byte
-            tile_data <= scroll_ram_dout_b;
+            tile_data <= ram_data;
 
             -- load low byte
-            scroll_ram_addr_b <= '0' & row & (col+1);
+            ram_addr <= '0' & row & (col+1);
 
           when 10 =>
             -- latch tile code
-            tile_code <= unsigned(tile_data(1 downto 0) & scroll_ram_dout_b);
+            tile_code <= unsigned(tile_data(1 downto 0) & ram_data);
 
           when 15 =>
             -- latch colour
