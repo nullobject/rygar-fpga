@@ -168,16 +168,7 @@ begin
   rom_addr <= tile_code & offset_y(3) & (not offset_x(3)) & offset_y(2 downto 0);
 
   -- decode the pixel from the tile row data
-  with to_integer(dest_pos.x(2 downto 0)) select
-    tile_pixel <= tile_row(31 downto 28) when 0,
-                  tile_row(27 downto 24) when 1,
-                  tile_row(23 downto 20) when 2,
-                  tile_row(19 downto 16) when 3,
-                  tile_row(15 downto 12) when 4,
-                  tile_row(11 downto 8)  when 5,
-                  tile_row(7 downto 4)   when 6,
-                  tile_row(3 downto 0)   when 7,
-                  (others => '0')        when others;
+  tile_pixel <= decode_tile_row(tile_row, dest_pos.x(2 downto 0));
 
   -- set graphics data
   data <= tile_color & tile_pixel;

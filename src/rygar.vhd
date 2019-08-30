@@ -161,6 +161,9 @@ package rygar is
   -- represents a graphics layer
   type layer_t is (SPRITE_LAYER, CHAR_LAYER, FG_LAYER, BG_LAYER, FILL_LAYER);
 
+  -- decodes a single pixel from a row at the given offset
+  function decode_tile_row(tile_row : tile_row_t; offset : unsigned(2 downto 0)) return tile_pixel_t;
+
   -- calculate sprite size (8x8, 16x16, 32x32, 64x64)
   function sprite_size_in_pixels(size : std_logic_vector(1 downto 0)) return natural;
 
@@ -178,6 +181,20 @@ package rygar is
 end package rygar;
 
 package body rygar is
+  function decode_tile_row(tile_row : tile_row_t; offset : unsigned(2 downto 0)) return tile_pixel_t is
+  begin
+    case offset is
+      when "000" => return tile_row(31 downto 28);
+      when "001" => return tile_row(27 downto 24);
+      when "010" => return tile_row(23 downto 20);
+      when "011" => return tile_row(19 downto 16);
+      when "100" => return tile_row(15 downto 12);
+      when "101" => return tile_row(11 downto 8);
+      when "110" => return tile_row(7 downto 4);
+      when "111" => return tile_row(3 downto 0);
+    end case;
+  end decode_tile_row;
+
   function sprite_size_in_pixels(size : std_logic_vector(1 downto 0)) return natural is
   begin
     case size is
