@@ -162,16 +162,16 @@ package rygar is
   type layer_t is (SPRITE_LAYER, CHAR_LAYER, FG_LAYER, BG_LAYER, FILL_LAYER);
 
   -- decodes a single pixel from a row at the given offset
-  function decode_tile_row(tile_row : tile_row_t; offset : unsigned(2 downto 0)) return tile_pixel_t;
+  function decode_tile_row (tile_row : tile_row_t; offset : unsigned(2 downto 0)) return tile_pixel_t;
 
   -- calculate sprite size (8x8, 16x16, 32x32, 64x64)
-  function sprite_size_in_pixels(size : std_logic_vector(1 downto 0)) return natural;
+  function sprite_size_in_pixels (size : std_logic_vector(1 downto 0)) return natural;
 
   -- initialise sprite from a raw 64-bit value
-  function init_sprite(data : std_logic_vector(SPRITE_RAM_GPU_DATA_WIDTH-1 downto 0)) return sprite_t;
+  function init_sprite (data : std_logic_vector(SPRITE_RAM_GPU_DATA_WIDTH-1 downto 0)) return sprite_t;
 
   -- determine which graphics layer should be rendered
-  function mux_layers(
+  function mux_layers (
     sprite_priority : priority_t;
     sprite_data     : byte_t;
     char_data       : byte_t;
@@ -181,7 +181,7 @@ package rygar is
 end package rygar;
 
 package body rygar is
-  function decode_tile_row(tile_row : tile_row_t; offset : unsigned(2 downto 0)) return tile_pixel_t is
+  function decode_tile_row (tile_row : tile_row_t; offset : unsigned(2 downto 0)) return tile_pixel_t is
   begin
     case offset is
       when "000" => return tile_row(31 downto 28);
@@ -195,7 +195,7 @@ package body rygar is
     end case;
   end decode_tile_row;
 
-  function sprite_size_in_pixels(size : std_logic_vector(1 downto 0)) return natural is
+  function sprite_size_in_pixels (size : std_logic_vector(1 downto 0)) return natural is
   begin
     case size is
       when "00" => return 8;
@@ -221,7 +221,7 @@ package body rygar is
   --       5 | xxxxxxxx | lo pos x
   --       6 | -------- |
   --       7 | -------- |
-  function init_sprite(data : std_logic_vector(SPRITE_RAM_GPU_DATA_WIDTH-1 downto 0)) return sprite_t is
+  function init_sprite (data : std_logic_vector(SPRITE_RAM_GPU_DATA_WIDTH-1 downto 0)) return sprite_t is
     variable sprite : sprite_t;
   begin
     sprite.code     := unsigned(data(SPRITE_HI_CODE_MSB downto SPRITE_HI_CODE_LSB)) & unsigned(data(SPRITE_LO_CODE_MSB downto SPRITE_LO_CODE_LSB));
@@ -243,7 +243,7 @@ package body rygar is
   -- encoder and some other logic gates to choose the correct layer to render.
   -- A giant conditional is way more verbose, but it's easy to understand how
   -- it works.
-  function mux_layers(
+  function mux_layers (
     sprite_priority : priority_t;
     sprite_data     : byte_t;
     char_data       : byte_t;
