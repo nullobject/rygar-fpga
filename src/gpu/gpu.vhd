@@ -357,7 +357,7 @@ begin
   );
 
   -- video timing generator
-  sync_gen : entity work.sync_gen
+  video_gen : entity work.video_gen
   port map (
     clk   => clk,
     cen_6 => cen_6,

@@ -38,7 +38,7 @@ use work.rygar.all;
 --
 -- horizontal frequency: 6Mhz / 384 = 15.625kHz
 -- vertical frequency: 15.625kHz / 264 = 59.185 Hz
-entity sync_gen is
+entity video_gen is
   port (
     -- clock signals
     clk   : in std_logic;
@@ -47,9 +47,9 @@ entity sync_gen is
     -- video signals
     video : out video_t
   );
-end sync_gen;
+end video_gen;
 
-architecture arch of sync_gen is
+architecture arch of video_gen is
   -- horizontal regions
   constant H_DISPLAY     : natural := 256;
   constant H_FRONT_PORCH : natural := 48;

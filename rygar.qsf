@@ -63,7 +63,7 @@ set_global_assignment -name VHDL_FILE src/gpu/palette.vhd
 set_global_assignment -name VHDL_FILE src/gpu/scroll_layer.vhd
 set_global_assignment -name VHDL_FILE src/gpu/sprite_blitter.vhd
 set_global_assignment -name VHDL_FILE src/gpu/sprite_layer.vhd
-set_global_assignment -name VHDL_FILE src/gpu/sync_gen.vhd
+set_global_assignment -name VHDL_FILE src/gpu/video_gen.vhd
 set_global_assignment -name VHDL_FILE src/mem/dual_port_ram.vhd
 set_global_assignment -name VHDL_FILE src/mem/single_port_ram.vhd
 set_global_assignment -name VHDL_FILE src/mem/single_port_rom.vhd
