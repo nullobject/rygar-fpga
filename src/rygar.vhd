@@ -78,12 +78,12 @@ architecture arch of rygar is
   signal work_ram_dout   : byte_t;
   signal gpu_dout        : byte_t;
 
-  -- currently selected bank for program ROM 3
-  signal current_bank : unsigned(3 downto 0);
+  -- currently bank register
+  signal current_bank_reg : unsigned(3 downto 0);
 
   -- scroll position registers
-  signal fg_scroll_pos : pos_t;
-  signal bg_scroll_pos : pos_t;
+  signal fg_scroll_pos_reg : pos_t;
+  signal bg_scroll_pos_reg : pos_t;
 
   -- video signals
   signal video : video_t;
@@ -126,7 +126,7 @@ begin
   port map (
     clk  => clk,
     cs   => prog_rom_3_cs,
-    addr => current_bank & cpu_addr(10 downto 0),
+    addr => current_bank_reg & cpu_addr(10 downto 0),
     dout => prog_rom_3_dout
   );
 
@@ -190,8 +190,8 @@ begin
     palette_ram_cs => palette_ram_cs,
 
     -- scroll layer positions
-    fg_scroll_pos => fg_scroll_pos,
-    bg_scroll_pos => bg_scroll_pos,
+    fg_scroll_pos => fg_scroll_pos_reg,
+    bg_scroll_pos => bg_scroll_pos_reg,
 
     -- video signals
     video => video,
@@ -214,13 +214,15 @@ begin
     end if;
   end process;
 
-  -- set current bank register
+  -- Set current bank register.
+  --
+  -- This register selects the current bank for program ROM 3.
   set_current_bank : process (clk)
   begin
     if rising_edge(clk) then
       if bank_cs = '1' and cpu_wr_n = '0' then
         -- flip-flop 6J uses data lines 3 to 6
-        current_bank <= unsigned(cpu_dout(6 downto 3));
+        current_bank_reg <= unsigned(cpu_dout(6 downto 3));
       end if;
     end if;
   end process;
@@ -231,12 +233,12 @@ begin
     if rising_edge(clk) then
       if scroll_cs = '1' and cpu_wr_n = '0' then
         case cpu_addr(2 downto 0) is
-          when "000" => fg_scroll_pos.x(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
-          when "001" => fg_scroll_pos.x(8 downto 8) <= unsigned(cpu_dout(0 downto 0));
-          when "010" => fg_scroll_pos.y(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
-          when "011" => bg_scroll_pos.x(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
-          when "100" => bg_scroll_pos.x(8 downto 8) <= unsigned(cpu_dout(0 downto 0));
-          when "110" => bg_scroll_pos.y(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
+          when "000" => fg_scroll_pos_reg.x(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
+          when "001" => fg_scroll_pos_reg.x(8 downto 8) <= unsigned(cpu_dout(0 downto 0));
+          when "010" => fg_scroll_pos_reg.y(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
+          when "011" => bg_scroll_pos_reg.x(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
+          when "100" => bg_scroll_pos_reg.x(8 downto 8) <= unsigned(cpu_dout(0 downto 0));
+          when "110" => bg_scroll_pos_reg.y(7 downto 0) <= unsigned(cpu_dout(7 downto 0));
           when others => null;
         end case;
       end if;
