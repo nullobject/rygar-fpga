@@ -49,25 +49,25 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to vga_*
 set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to vga_*
 
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
-set_global_assignment -name TOP_LEVEL_ENTITY top
 set_global_assignment -name QIP_FILE src/pll.qip
 set_global_assignment -name QIP_FILE src/t80/T80.qip
 set_global_assignment -name SDC_FILE src/rygar.sdc
+set_global_assignment -name TOP_LEVEL_ENTITY top
 set_global_assignment -name VHDL_FILE src/clock_divider.vhd
 set_global_assignment -name VHDL_FILE src/edge_detector.vhd
-set_global_assignment -name VHDL_FILE src/gpu.vhd
+set_global_assignment -name VHDL_FILE src/game.vhd
+set_global_assignment -name VHDL_FILE src/gpu/gpu.vhd
 set_global_assignment -name VHDL_FILE src/gpu/char_layer.vhd
 set_global_assignment -name VHDL_FILE src/gpu/frame_buffer.vhd
 set_global_assignment -name VHDL_FILE src/gpu/palette.vhd
 set_global_assignment -name VHDL_FILE src/gpu/scroll_layer.vhd
-set_global_assignment -name VHDL_FILE src/gpu/sprite_layer.vhd
 set_global_assignment -name VHDL_FILE src/gpu/sprite_blitter.vhd
+set_global_assignment -name VHDL_FILE src/gpu/sprite_layer.vhd
+set_global_assignment -name VHDL_FILE src/gpu/sync_gen.vhd
 set_global_assignment -name VHDL_FILE src/mem/dual_port_ram.vhd
 set_global_assignment -name VHDL_FILE src/mem/single_port_ram.vhd
 set_global_assignment -name VHDL_FILE src/mem/single_port_rom.vhd
 set_global_assignment -name VHDL_FILE src/mem/true_dual_port_ram.vhd
 set_global_assignment -name VHDL_FILE src/reset_gen.vhd
 set_global_assignment -name VHDL_FILE src/rygar.vhd
-set_global_assignment -name VHDL_FILE src/sync_gen.vhd
 set_global_assignment -name VHDL_FILE src/top.vhd
-set_global_assignment -name VHDL_FILE src/types.vhd
