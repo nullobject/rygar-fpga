@@ -56,11 +56,11 @@ set_global_assignment -name SDC_FILE src/rygar.sdc
 set_global_assignment -name VHDL_FILE src/clock_divider.vhd
 set_global_assignment -name VHDL_FILE src/edge_detector.vhd
 set_global_assignment -name VHDL_FILE src/gpu.vhd
-set_global_assignment -name VHDL_FILE src/gpu/char.vhd
+set_global_assignment -name VHDL_FILE src/gpu/char_layer.vhd
 set_global_assignment -name VHDL_FILE src/gpu/frame_buffer.vhd
 set_global_assignment -name VHDL_FILE src/gpu/palette.vhd
-set_global_assignment -name VHDL_FILE src/gpu/scroll.vhd
-set_global_assignment -name VHDL_FILE src/gpu/sprite.vhd
+set_global_assignment -name VHDL_FILE src/gpu/scroll_layer.vhd
+set_global_assignment -name VHDL_FILE src/gpu/sprite_layer.vhd
 set_global_assignment -name VHDL_FILE src/gpu/sprite_blitter.vhd
 set_global_assignment -name VHDL_FILE src/mem/dual_port_ram.vhd
 set_global_assignment -name VHDL_FILE src/mem/single_port_ram.vhd

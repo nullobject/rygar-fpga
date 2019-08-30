@@ -33,7 +33,7 @@ use work.types.all;
 -- Because a scrolling layer is twice the width of the screen, it can never be
 -- entirely visible on the screen at once. The horizontal and vertical scroll
 -- positions are used to set the position of the visible area.
-entity scroll is
+entity scroll_layer is
   generic (
     RAM_ADDR_WIDTH : natural;
     ROM_ADDR_WIDTH : natural;
@@ -64,9 +64,9 @@ entity scroll is
     -- graphics data
     data : out byte_t
   );
-end scroll;
+end scroll_layer;
 
-architecture arch of scroll is
+architecture arch of scroll_layer is
   -- represents the position of a pixel in a 16x16 tile
   type tile_pos_t is record
     x : unsigned(3 downto 0);

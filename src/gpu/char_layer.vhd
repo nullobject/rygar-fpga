@@ -28,7 +28,7 @@ use work.types.all;
 -- like the logo, score, playfield, and other static graphics.
 --
 -- It consists of a 32x32 grid of 8x8 tiles.
-entity char is
+entity char_layer is
   port (
     -- clock signals
     clk   : in std_logic;
@@ -51,9 +51,9 @@ entity char is
     -- graphics data
     data : out byte_t
   );
-end char;
+end char_layer;
 
-architecture arch of char is
+architecture arch of char_layer is
   -- represents the position of a pixel in a 8x8 tile
   type tile_pos_t is record
     x : unsigned(2 downto 0);

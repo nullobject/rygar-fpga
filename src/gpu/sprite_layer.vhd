@@ -39,7 +39,7 @@ use work.types.all;
 --
 -- The pixel data for the 8x8 tiles which make up each sprite is stored in the
 -- sprite tile ROM.
-entity sprite is
+entity sprite_layer is
   port (
     -- clock signals
     clk   : in std_logic;
@@ -63,9 +63,9 @@ entity sprite is
     priority : out priority_t;
     data     : out byte_t
   );
-end sprite;
+end sprite_layer;
 
-architecture arch of sprite is
+architecture arch of sprite_layer is
   type state_t is (IDLE, LOAD, LATCH, BLIT, JUMP, DONE, FLIP);
 
   -- state signals

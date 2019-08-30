@@ -115,7 +115,7 @@ begin
     );
 
     -- sprite layer
-    sprite_layer : entity work.sprite
+    sprite_layer : entity work.sprite_layer
     port map (
       -- clock signals
       clk   => clk,
@@ -168,7 +168,7 @@ begin
     );
 
     -- character layer
-    char_layer : entity work.char
+    char_layer : entity work.char_layer
     port map (
       -- clock signals
       clk   => clk,
@@ -220,7 +220,7 @@ begin
     );
 
     -- foreground layer
-    fg_layer : entity work.scroll
+    fg_layer : entity work.scroll_layer
     generic map (
       RAM_ADDR_WIDTH => FG_RAM_ADDR_WIDTH,
       ROM_ADDR_WIDTH => FG_ROM_ADDR_WIDTH,
@@ -278,7 +278,7 @@ begin
     );
 
     -- background layer
-    bg_layer : entity work.scroll
+    bg_layer : entity work.scroll_layer
     generic map (
       RAM_ADDR_WIDTH => BG_RAM_ADDR_WIDTH,
       ROM_ADDR_WIDTH => BG_ROM_ADDR_WIDTH,
