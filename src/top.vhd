@@ -56,7 +56,7 @@ entity top is
 end top;
 
 architecture arch of top is
-  constant ROM_SIZE : natural := 81920;
+  constant TILE_ROM_SIZE : natural := 81920;
 
   type state_t is (INIT, LOAD, IDLE);
 
@@ -70,7 +70,7 @@ architecture arch of top is
   signal state, next_state : state_t;
 
   -- counters
-  signal data_counter : natural range 0 to ROM_SIZE-1;
+  signal data_counter : natural range 0 to TILE_ROM_SIZE-1;
 
   -- SDRAM signals
   signal sdram_addr  : unsigned(SDRAM_INPUT_ADDR_WIDTH-1 downto 0);
@@ -85,8 +85,8 @@ architecture arch of top is
   signal ioctl_data : std_logic_vector(IOCTL_DATA_WIDTH-1 downto 0);
   signal ioctl_we   : std_logic;
 
-  -- tile ROM
-  signal tile_rom_addr : unsigned(ilog2(ROM_SIZE)-1 downto 0);
+  -- tile ROM signals
+  signal tile_rom_addr : unsigned(ilog2(TILE_ROM_SIZE)-1 downto 0);
   signal tile_rom_data : std_logic_vector(15 downto 0);
 
   -- sync signals
@@ -184,7 +184,7 @@ begin
   -- tile ROM
   tile_rom : entity work.single_port_rom
   generic map (
-    ADDR_WIDTH => ilog2(ROM_SIZE),
+    ADDR_WIDTH => ilog2(TILE_ROM_SIZE),
     DATA_WIDTH => IOCTL_DATA_WIDTH,
     INIT_FILE  => "rom/tiles.mif"
   )
@@ -201,12 +201,12 @@ begin
 
     case state is
       when INIT =>
-        if data_counter = 255 then
+        if data_counter = TILE_ROM_SIZE-1 then
           next_state <= LOAD;
         end if;
 
       when LOAD =>
-        if data_counter = ROM_SIZE-1 then
+        if data_counter = TILE_ROM_SIZE-1 then
           next_state <= IDLE;
         end if;
 
@@ -227,6 +227,7 @@ begin
     end if;
   end process;
 
+  -- update the data counter
   update_data_counter : process (sys_clk, reset)
   begin
     if reset = '1' then
@@ -242,11 +243,20 @@ begin
     end if;
   end process;
 
+  -- latch tile ROM data
+  latch_rom_data : process (sys_clk)
+  begin
+    if rising_edge(sys_clk) then
+      if cen_4 = '1' then
+        ioctl_addr <= resize(tile_rom_addr, ioctl_addr'length);
+        ioctl_data <= tile_rom_data;
+      end if;
+    end if;
+  end process;
+
   tile_rom_addr <= to_unsigned(data_counter, tile_rom_addr'length);
 
-  ioctl_addr <= resize(tile_rom_addr, ioctl_addr'length);
-  ioctl_data <= tile_rom_data;
-  ioctl_we   <= '1' when state = LOAD else '0';
+  ioctl_we <= '1' when state = LOAD else '0';
 
   -- set composite sync
   vga_csync <= not (hsync xor vsync);

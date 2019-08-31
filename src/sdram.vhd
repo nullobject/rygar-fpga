@@ -34,11 +34,11 @@ entity sdram is
     CLK_FREQ : real := 100.0 -- MHz
   );
   port (
-    -- clock
-    clk : in std_logic;
-
     -- reset
     reset : in std_logic;
+
+    -- clock
+    clk : in std_logic;
 
     -- controller interface
     addr  : in unsigned(SDRAM_INPUT_ADDR_WIDTH-1 downto 0);
