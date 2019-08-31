@@ -35,6 +35,12 @@ use work.rygar.all;
 -- controller is to manage reading the tile data from the SDRAM in a fair, and
 -- timely manner.
 entity rom_controller is
+  generic (
+    SPRITE_ROM_OFFSET : natural;
+    CHAR_ROM_OFFSET   : natural;
+    FG_ROM_OFFSET     : natural;
+    BG_ROM_OFFSET     : natural
+  );
   port (
     -- clock signals
     clk   : in std_logic;
@@ -79,16 +85,16 @@ architecture arch of rom_controller is
   signal bg_rom_cs     : std_logic;
 
   -- address mux signals
-  signal ioctl_sdram_addr      : unsigned(SDRAM_INPUT_ADDR_WIDTH-1 downto 0);
   signal sprite_rom_sdram_addr : unsigned(SDRAM_INPUT_ADDR_WIDTH-1 downto 0);
   signal char_rom_sdram_addr   : unsigned(SDRAM_INPUT_ADDR_WIDTH-1 downto 0);
   signal fg_rom_sdram_addr     : unsigned(SDRAM_INPUT_ADDR_WIDTH-1 downto 0);
   signal bg_rom_sdram_addr     : unsigned(SDRAM_INPUT_ADDR_WIDTH-1 downto 0);
+  signal ioctl_sdram_addr      : unsigned(SDRAM_INPUT_ADDR_WIDTH-1 downto 0);
 begin
   sprite_rom_segment : entity work.segment
   generic map (
     ROM_ADDR_WIDTH => SPRITE_ROM_ADDR_WIDTH,
-    SEGMENT_OFFSET => 16#00#
+    SEGMENT_OFFSET => SPRITE_ROM_OFFSET
   )
   port map (
     clk => clk,
@@ -108,7 +114,7 @@ begin
   char_rom_segment : entity work.segment
   generic map (
     ROM_ADDR_WIDTH => CHAR_ROM_ADDR_WIDTH,
-    SEGMENT_OFFSET => 16#40#
+    SEGMENT_OFFSET => CHAR_ROM_OFFSET
   )
   port map (
     clk => clk,
@@ -128,7 +134,7 @@ begin
   fg_rom_segment : entity work.segment
   generic map (
     ROM_ADDR_WIDTH => FG_ROM_ADDR_WIDTH,
-    SEGMENT_OFFSET => 16#80#
+    SEGMENT_OFFSET => FG_ROM_OFFSET
   )
   port map (
     clk => clk,
@@ -148,7 +154,7 @@ begin
   bg_rom_segment : entity work.segment
   generic map (
     ROM_ADDR_WIDTH => BG_ROM_ADDR_WIDTH,
-    SEGMENT_OFFSET => 16#C0#
+    SEGMENT_OFFSET => BG_ROM_OFFSET
   )
   port map (
     clk => clk,

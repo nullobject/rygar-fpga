@@ -201,7 +201,7 @@ end package rygar;
 package body rygar is
   function ilog2(n : natural) return natural is
   begin
-    return natural(log2(real(n)));
+    return natural(ceil(log2(real(n))));
   end ilog2;
 
   function decode_tile_row (tile_row : tile_row_t; offset : unsigned(2 downto 0)) return tile_pixel_t is

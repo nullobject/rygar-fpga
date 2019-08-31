@@ -29,6 +29,8 @@ entity game is
     -- clock signals
     rom_clk : in std_logic;
     sys_clk : in std_logic;
+    cen_4   : in std_logic;
+    cen_6   : in std_logic;
     reset   : in std_logic;
 
     -- SDRAM interface
@@ -54,10 +56,6 @@ entity game is
 end game;
 
 architecture arch of game is
-  -- clock enable signals
-  signal cen_6 : std_logic;
-  signal cen_4 : std_logic;
-
   -- CPU signals
   signal cpu_cen     : std_logic;
   signal cpu_addr    : unsigned(CPU_ADDR_WIDTH-1 downto 0);
@@ -118,16 +116,6 @@ architecture arch of game is
   -- RGB data
   signal rgb : rgb_t;
 begin
-  -- generate a 6MHz clock enable signal
-  clock_divider_6 : entity work.clock_divider
-  generic map (DIVISOR => 2)
-  port map (clk => sys_clk, cen => cen_6);
-
-  -- generate a 4MHz clock enable signal
-  clock_divider_4 : entity work.clock_divider
-  generic map (DIVISOR => 3)
-  port map (clk => sys_clk, cen => cen_4);
-
   -- detect falling edges of the VBLANK signal
   vblank_edge_detector : entity work.edge_detector
   generic map (FALLING => true)
@@ -179,8 +167,66 @@ begin
     we   => not cpu_wr_n
   );
 
+--   -- sprite ROM
+--   sprite_rom : entity work.single_port_rom
+--   generic map (
+--     ADDR_WIDTH => SPRITE_ROM_ADDR_WIDTH,
+--     DATA_WIDTH => SPRITE_ROM_DATA_WIDTH,
+--     INIT_FILE  => "rom/sprites.mif"
+--   )
+--   port map (
+--     clk  => clk,
+--     addr => sprite_rom_addr,
+--     dout => sprite_rom_data
+--   );
+
+--   -- character ROM
+--   char_rom : entity work.single_port_rom
+--   generic map (
+--     ADDR_WIDTH => CHAR_ROM_ADDR_WIDTH,
+--     DATA_WIDTH => CHAR_ROM_DATA_WIDTH,
+--     INIT_FILE  => "rom/cpu_8k.mif"
+--   )
+--   port map (
+--     clk  => clk,
+--     addr => char_rom_addr,
+--     dout => char_rom_data
+--   );
+
+--   -- foreground ROM
+--   fg_rom : entity work.single_port_rom
+--   generic map (
+--     ADDR_WIDTH => FG_ROM_ADDR_WIDTH,
+--     DATA_WIDTH => FG_ROM_DATA_WIDTH,
+--     INIT_FILE  => "rom/fg.mif"
+--   )
+--   port map (
+--     clk  => clk,
+--     addr => fg_rom_addr,
+--     dout => fg_rom_data
+--   );
+
+--   -- background ROM
+--   bg_rom : entity work.single_port_rom
+--   generic map (
+--     ADDR_WIDTH => BG_ROM_ADDR_WIDTH,
+--     DATA_WIDTH => BG_ROM_DATA_WIDTH,
+--     INIT_FILE  => "rom/bg.mif"
+--   )
+--   port map (
+--     clk  => clk,
+--     addr => bg_rom_addr,
+--     dout => bg_rom_data
+--   );
+
   -- ROM controller
   rom_controller : entity work.rom_controller
+  generic map (
+    SPRITE_ROM_OFFSET => 16#02000#,
+    CHAR_ROM_OFFSET   => 16#00000#,
+    FG_ROM_OFFSET     => 16#0A000#,
+    BG_ROM_OFFSET     => 16#12000#
+  )
   port map (
     -- clock signals
     clk   => rom_clk,
@@ -236,7 +282,7 @@ begin
   generic map (
     SPRITE_LAYER_ENABLE => true,
     CHAR_LAYER_ENABLE   => true,
-    FG_LAYER_ENABLE     => true,
+    FG_LAYER_ENABLE     => false,
     BG_LAYER_ENABLE     => false
   )
   port map (

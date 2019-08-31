@@ -79,8 +79,8 @@ begin
   -- set palette RAM address
   with layer select
     ram_addr <= "00" & unsigned(sprite_data) when SPRITE_LAYER,
-                          "01" & unsigned(char_data)   when CHAR_LAYER,
-                          "10" & unsigned(fg_data)     when FG_LAYER,
-                          "11" & unsigned(bg_data)     when BG_LAYER,
-                          "0100000000"                 when FILL_LAYER;
+                "01" & unsigned(char_data)   when CHAR_LAYER,
+                "10" & unsigned(fg_data)     when FG_LAYER,
+                "11" & unsigned(bg_data)     when BG_LAYER,
+                "0100000000"                 when FILL_LAYER;
 end arch;

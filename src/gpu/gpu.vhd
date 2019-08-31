@@ -82,22 +82,22 @@ end gpu;
 architecture arch of gpu is
   -- sprite RAM/ROM
   signal sprite_ram_cpu_dout : byte_t;
-  signal sprite_ram_gpu_addr : unsigned(SPRITE_RAM_GPU_ADDR_WIDTH-1 downto 0);
+  signal sprite_ram_gpu_addr : unsigned(SPRITE_RAM_GPU_ADDR_WIDTH-1 downto 0) := (others => '0');
   signal sprite_ram_gpu_dout : std_logic_vector(SPRITE_RAM_GPU_DATA_WIDTH-1 downto 0);
 
   -- character RAM/ROM
   signal char_ram_cpu_dout : byte_t;
-  signal char_ram_gpu_addr : unsigned(CHAR_RAM_GPU_ADDR_WIDTH-1 downto 0);
+  signal char_ram_gpu_addr : unsigned(CHAR_RAM_GPU_ADDR_WIDTH-1 downto 0) := (others => '0');
   signal char_ram_gpu_dout : std_logic_vector(CHAR_RAM_GPU_DATA_WIDTH-1 downto 0);
 
   -- foreground RAM/ROM
   signal fg_ram_cpu_dout : byte_t;
-  signal fg_ram_gpu_addr : unsigned(FG_RAM_GPU_ADDR_WIDTH-1 downto 0);
+  signal fg_ram_gpu_addr : unsigned(FG_RAM_GPU_ADDR_WIDTH-1 downto 0) := (others => '0');
   signal fg_ram_gpu_dout : std_logic_vector(FG_RAM_GPU_DATA_WIDTH-1 downto 0);
 
   -- background RAM/ROM
   signal bg_ram_cpu_dout : byte_t;
-  signal bg_ram_gpu_addr : unsigned(BG_RAM_GPU_ADDR_WIDTH-1 downto 0);
+  signal bg_ram_gpu_addr : unsigned(BG_RAM_GPU_ADDR_WIDTH-1 downto 0) := (others => '0');
   signal bg_ram_gpu_dout : std_logic_vector(BG_RAM_GPU_DATA_WIDTH-1 downto 0);
 
   -- palette RAM
