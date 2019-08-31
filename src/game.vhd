@@ -29,8 +29,7 @@ entity game is
     reset : in std_logic;
 
     -- clock signals
-    rom_clk : in std_logic;
-    sys_clk : in std_logic;
+    clk : in std_logic;
 
     -- SDRAM interface
     sdram_addr  : out unsigned(SDRAM_INPUT_ADDR_WIDTH-1 downto 0);
@@ -123,19 +122,19 @@ architecture arch of game is
 begin
   -- generate a 6MHz clock enable signal
   clock_divider_6 : entity work.clock_divider
-  generic map (DIVISOR => 2)
-  port map (clk => sys_clk, cen => cen_6);
+  generic map (DIVISOR => 8)
+  port map (clk => clk, cen => cen_6);
 
   -- generate a 4MHz clock enable signal
   clock_divider_4 : entity work.clock_divider
-  generic map (DIVISOR => 3)
-  port map (clk => sys_clk, cen => cen_4);
+  generic map (DIVISOR => 12)
+  port map (clk => clk, cen => cen_4);
 
   -- detect falling edges of the VBLANK signal
   vblank_edge_detector : entity work.edge_detector
   generic map (FALLING => true)
   port map (
-    clk  => sys_clk,
+    clk  => clk,
     data => video.vblank,
     edge => vblank_falling
   );
@@ -144,7 +143,7 @@ begin
   prog_rom_1 : entity work.single_port_rom
   generic map (ADDR_WIDTH => PROG_ROM_1_ADDR_WIDTH, INIT_FILE => "rom/cpu_5p.mif")
   port map (
-    clk  => sys_clk,
+    clk  => clk,
     cs   => prog_rom_1_cs,
     addr => cpu_addr(PROG_ROM_1_ADDR_WIDTH-1 downto 0),
     dout => prog_rom_1_dout
@@ -154,7 +153,7 @@ begin
   prog_rom_2 : entity work.single_port_rom
   generic map (ADDR_WIDTH => PROG_ROM_2_ADDR_WIDTH, INIT_FILE => "rom/cpu_5m.mif")
   port map (
-    clk  => sys_clk,
+    clk  => clk,
     cs   => prog_rom_2_cs,
     addr => cpu_addr(PROG_ROM_2_ADDR_WIDTH-1 downto 0),
     dout => prog_rom_2_dout
@@ -164,7 +163,7 @@ begin
   prog_rom_3 : entity work.single_port_rom
   generic map (ADDR_WIDTH => PROG_ROM_3_ADDR_WIDTH, INIT_FILE => "rom/cpu_5j.mif")
   port map (
-    clk  => sys_clk,
+    clk  => clk,
     cs   => prog_rom_3_cs,
     addr => current_bank_reg & cpu_addr(10 downto 0),
     dout => prog_rom_3_dout
@@ -174,7 +173,7 @@ begin
   work_ram : entity work.single_port_ram
   generic map (ADDR_WIDTH => WORK_RAM_ADDR_WIDTH)
   port map (
-    clk  => sys_clk,
+    clk  => clk,
     cs   => work_ram_cs,
     addr => cpu_addr(WORK_RAM_ADDR_WIDTH-1 downto 0),
     din  => cpu_dout,
@@ -243,9 +242,10 @@ begin
     BG_ROM_OFFSET     => 16#12000#
   )
   port map (
-    -- clock signals
-    clk   => rom_clk,
     reset => reset,
+
+    -- clock signals
+    clk => clk,
 
     -- ROM interface
     sprite_rom_addr => sprite_rom_addr,
@@ -275,7 +275,7 @@ begin
   cpu : entity work.T80s
   port map (
     RESET_n             => not reset,
-    CLK                 => sys_clk,
+    CLK                 => clk,
     CEN                 => cen_4,
     WAIT_n              => '1',
     INT_n               => cpu_int_n,
@@ -302,7 +302,7 @@ begin
   )
   port map (
     -- clock signals
-    clk   => sys_clk,
+    clk   => clk,
     cen_6 => cen_6,
 
     -- RAM interface
@@ -342,9 +342,9 @@ begin
   -- Once the interrupt request has been accepted by the CPU, it is
   -- acknowledged by activating the IORQ signal during the M1 cycle. This
   -- disables the interrupt signal, and the cycle starts over.
-  irq : process (sys_clk)
+  irq : process (clk)
   begin
-    if rising_edge(sys_clk) then
+    if rising_edge(clk) then
       if cpu_m1_n = '0' and cpu_ioreq_n = '0' then
         cpu_int_n <= '1';
       elsif vblank_falling = '1' then
@@ -356,9 +356,9 @@ begin
   -- Set current bank register.
   --
   -- This register selects the current bank for program ROM 3.
-  set_current_bank : process (sys_clk)
+  set_current_bank : process (clk)
   begin
-    if rising_edge(sys_clk) then
+    if rising_edge(clk) then
       if bank_cs = '1' and cpu_wr_n = '0' then
         -- flip-flop 6J uses data lines 3 to 6
         current_bank_reg <= unsigned(cpu_dout(6 downto 3));
@@ -367,9 +367,9 @@ begin
   end process;
 
   -- set foreground and background scroll position registers
-  set_scroll_pos : process (sys_clk)
+  set_scroll_pos : process (clk)
   begin
-    if rising_edge(sys_clk) then
+    if rising_edge(clk) then
       if scroll_cs = '1' and cpu_wr_n = '0' then
         case cpu_addr(2 downto 0) is
           when "000" => fg_scroll_pos_reg.x(7 downto 0) <= unsigned(cpu_dout(7 downto 0));

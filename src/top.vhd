@@ -60,11 +60,11 @@ architecture arch of top is
 
   type state_t is (INIT, LOAD, IDLE);
 
+  signal reset : std_logic;
+
   -- clock signals
-  signal rom_clk : std_logic;
   signal sys_clk : std_logic;
   signal cen_4   : std_logic;
-  signal reset   : std_logic;
 
   -- state signals
   signal state, next_state : state_t;
@@ -99,15 +99,14 @@ begin
   port map (
     refclk   => clk,
     rst      => '0',
-    outclk_0 => SDRAM_CLK,
-    outclk_1 => rom_clk,
-    outclk_2 => sys_clk,
+    outclk_0 => sys_clk,
+    outclk_1 => SDRAM_CLK,
     locked   => open
   );
 
   -- generate a 4MHz clock enable signal
   clock_divider_4 : entity work.clock_divider
-  generic map (DIVISOR => 3)
+  generic map (DIVISOR => 12)
   port map (clk => sys_clk, cen => cen_4);
 
   -- Generate a reset pulse after powering on, or when KEY0 is pressed.
@@ -125,9 +124,10 @@ begin
   sdram : entity work.sdram
   generic map (CLK_FREQ => 48.0)
   port map (
-    -- clock signals
-    clk   => rom_clk,
     reset => reset,
+
+    -- clock signals
+    clk => sys_clk,
 
     -- IO interface
     addr  => sdram_addr,
@@ -156,8 +156,7 @@ begin
     reset => reset,
 
     -- clock signals
-    rom_clk => rom_clk,
-    sys_clk => sys_clk,
+    clk => sys_clk,
 
     -- SDRAM interface
     sdram_addr  => sdram_addr,
