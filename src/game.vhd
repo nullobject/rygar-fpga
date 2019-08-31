@@ -26,12 +26,11 @@ use work.rygar.all;
 
 entity game is
   port (
+    reset : in std_logic;
+
     -- clock signals
     rom_clk : in std_logic;
     sys_clk : in std_logic;
-    cen_4   : in std_logic;
-    cen_6   : in std_logic;
-    reset   : in std_logic;
 
     -- SDRAM interface
     sdram_addr  : out unsigned(SDRAM_INPUT_ADDR_WIDTH-1 downto 0);
@@ -47,15 +46,21 @@ entity game is
     ioctl_we   : in std_logic;
 
     -- video signals
-    hsync : out std_logic;
-    vsync : out std_logic;
-    r     : out std_logic_vector(5 downto 0);
-    g     : out std_logic_vector(5 downto 0);
-    b     : out std_logic_vector(5 downto 0)
+    hsync  : out std_logic;
+    vsync  : out std_logic;
+    hblank : out std_logic;
+    vblank : out std_logic;
+    r      : out std_logic_vector(5 downto 0);
+    g      : out std_logic_vector(5 downto 0);
+    b      : out std_logic_vector(5 downto 0)
   );
 end game;
 
 architecture arch of game is
+  -- clock enable signals
+  signal cen_6 : std_logic;
+  signal cen_4 : std_logic;
+
   -- CPU signals
   signal cpu_cen     : std_logic;
   signal cpu_addr    : unsigned(CPU_ADDR_WIDTH-1 downto 0);
@@ -116,6 +121,16 @@ architecture arch of game is
   -- RGB data
   signal rgb : rgb_t;
 begin
+  -- generate a 6MHz clock enable signal
+  clock_divider_6 : entity work.clock_divider
+  generic map (DIVISOR => 2)
+  port map (clk => sys_clk, cen => cen_6);
+
+  -- generate a 4MHz clock enable signal
+  clock_divider_4 : entity work.clock_divider
+  generic map (DIVISOR => 3)
+  port map (clk => sys_clk, cen => cen_4);
+
   -- detect falling edges of the VBLANK signal
   vblank_edge_detector : entity work.edge_detector
   generic map (FALLING => true)
@@ -401,6 +416,10 @@ begin
   -- set sync signals
   hsync <= video.hsync;
   vsync <= video.vsync;
+
+  -- set blank signals
+  hblank <= video.hblank;
+  vblank <= video.vblank;
 
   -- set RGB data
   r <= rgb.r & rgb.r(3 downto 2);

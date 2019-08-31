@@ -63,7 +63,6 @@ architecture arch of top is
   -- clock signals
   signal rom_clk : std_logic;
   signal sys_clk : std_logic;
-  signal cen_6   : std_logic;
   signal cen_4   : std_logic;
   signal reset   : std_logic;
 
@@ -105,11 +104,6 @@ begin
     outclk_2 => sys_clk,
     locked   => open
   );
-
-  -- generate a 6MHz clock enable signal
-  clock_divider_6 : entity work.clock_divider
-  generic map (DIVISOR => 2)
-  port map (clk => sys_clk, cen => cen_6);
 
   -- generate a 4MHz clock enable signal
   clock_divider_4 : entity work.clock_divider
@@ -159,12 +153,11 @@ begin
   -- the actual game
   game : entity work.game
   port map (
+    reset => reset,
+
     -- clock signals
     rom_clk => rom_clk,
     sys_clk => sys_clk,
-    cen_4   => cen_4,
-    cen_6   => cen_6,
-    reset   => reset,
 
     -- SDRAM interface
     sdram_addr  => sdram_addr,
@@ -180,11 +173,13 @@ begin
     ioctl_we   => ioctl_we,
 
     -- video signals
-    hsync => hsync,
-    vsync => vsync,
-    r     => vga_r,
-    g     => vga_g,
-    b     => vga_b
+    hsync  => hsync,
+    vsync  => vsync,
+    hblank => open,
+    vblank => open,
+    r      => vga_r,
+    g      => vga_g,
+    b      => vga_b
   );
 
   -- tile ROM
