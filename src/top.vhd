@@ -38,42 +38,83 @@ entity top is
     vga_csync : out std_logic;
 
     -- buttons
-    key : in std_logic_vector(1 downto 0)
+    key : in std_logic_vector(1 downto 0);
+
+    -- SDRAM interface
+    SDRAM_A    : out unsigned(SDRAM_ADDR_WIDTH-1 downto 0);
+    SDRAM_BA   : out unsigned(SDRAM_BANK_WIDTH-1 downto 0);
+    SDRAM_DQ   : inout std_logic_vector(SDRAM_DATA_WIDTH-1 downto 0);
+    SDRAM_CLK  : out std_logic;
+    SDRAM_CKE  : out std_logic;
+    SDRAM_nCS  : out std_logic;
+    SDRAM_nRAS : out std_logic;
+    SDRAM_nCAS : out std_logic;
+    SDRAM_nWE  : out std_logic;
+    SDRAM_DQML : out std_logic;
+    SDRAM_DQMH : out std_logic
   );
 end top;
 
 architecture arch of top is
-  -- clock signals
-  signal clk_12 : std_logic;
-  signal cen_6  : std_logic;
-  signal cen_4  : std_logic;
+  constant ROM_SIZE : natural := 81920;
 
-  -- reset
-  signal reset : std_logic;
+  type state_t is (INIT, LOAD, IDLE);
+
+  -- clock signals
+  signal rom_clk : std_logic;
+  signal sys_clk : std_logic;
+  signal cen_6   : std_logic;
+  signal cen_4   : std_logic;
+  signal reset   : std_logic;
+
+  -- state signals
+  signal state, next_state : state_t;
+
+  -- counters
+  signal data_counter : natural range 0 to ROM_SIZE-1;
+
+  -- SDRAM signals
+  signal sdram_addr  : unsigned(SDRAM_INPUT_ADDR_WIDTH-1 downto 0);
+  signal sdram_din   : std_logic_vector(SDRAM_INPUT_DATA_WIDTH-1 downto 0) := (others => '0');
+  signal sdram_dout  : std_logic_vector(SDRAM_OUTPUT_DATA_WIDTH-1 downto 0);
+  signal sdram_we    : std_logic;
+  signal sdram_ready : std_logic;
+  signal sdram_valid : std_logic;
+
+  -- IOCTL signals
+  signal ioctl_addr : unsigned(IOCTL_ADDR_WIDTH-1 downto 0);
+  signal ioctl_data : std_logic_vector(IOCTL_DATA_WIDTH-1 downto 0);
+  signal ioctl_we   : std_logic;
+
+  -- tile ROM
+  signal tile_rom_addr : unsigned(ilog2(ROM_SIZE)-1 downto 0);
+  signal tile_rom_data : std_logic_vector(15 downto 0);
 
   -- sync signals
   signal hsync : std_logic;
   signal vsync : std_logic;
   signal csync : std_logic;
 begin
-  -- generate a 12MHz clock signal
+  -- generate the clock signals
   my_pll : entity pll.pll
   port map (
     refclk   => clk,
     rst      => '0',
-    outclk_0 => clk_12,
+    outclk_0 => SDRAM_CLK,
+    outclk_1 => rom_clk,
+    outclk_2 => sys_clk,
     locked   => open
   );
 
   -- generate a 6MHz clock enable signal
   clock_divider_6 : entity work.clock_divider
   generic map (DIVISOR => 2)
-  port map (clk => clk_12, cen => cen_6);
+  port map (clk => sys_clk, cen => cen_6);
 
   -- generate a 4MHz clock enable signal
   clock_divider_4 : entity work.clock_divider
   generic map (DIVISOR => 3)
-  port map (clk => clk_12, cen => cen_4);
+  port map (clk => sys_clk, cen => cen_4);
 
   -- Generate a reset pulse after powering on, or when KEY0 is pressed.
   --
@@ -81,24 +122,137 @@ begin
   -- data from the address and data buses.
   reset_gen : entity work.reset_gen
   port map (
-    clk  => clk_12,
+    clk  => sys_clk,
     rin  => not key(0),
     rout => reset
+  );
+
+  -- SDRAM controller
+  sdram : entity work.sdram
+  generic map (CLK_FREQ => 48.0)
+  port map (
+    -- clock signals
+    clk   => rom_clk,
+    reset => reset,
+
+    -- IO interface
+    addr  => sdram_addr,
+    din   => sdram_din,
+    dout  => sdram_dout,
+    ready => sdram_ready,
+    valid => sdram_valid,
+    we    => sdram_we,
+
+    -- SDRAM interface
+    sdram_a     => SDRAM_A,
+    sdram_ba    => SDRAM_BA,
+    sdram_dq    => SDRAM_DQ,
+    sdram_cke   => SDRAM_CKE,
+    sdram_cs_n  => SDRAM_nCS,
+    sdram_ras_n => SDRAM_nRAS,
+    sdram_cas_n => SDRAM_nCAS,
+    sdram_we_n  => SDRAM_nWE,
+    sdram_dqml  => SDRAM_DQML,
+    sdram_dqmh  => SDRAM_DQMH
   );
 
   -- the actual game
   game : entity work.game
   port map (
-    clk   => clk_12,
-    cen_4 => cen_4,
-    cen_6 => cen_6,
-    reset => reset,
+    -- clock signals
+    rom_clk => rom_clk,
+    sys_clk => sys_clk,
+    cen_4   => cen_4,
+    cen_6   => cen_6,
+    reset   => reset,
+
+    -- SDRAM interface
+    sdram_addr  => sdram_addr,
+    sdram_din   => sdram_din,
+    sdram_dout  => sdram_dout,
+    sdram_we    => sdram_we,
+    sdram_valid => sdram_valid,
+    sdram_ready => sdram_ready,
+
+    -- IOCTL interface
+    ioctl_addr => ioctl_addr,
+    ioctl_data => ioctl_data,
+    ioctl_we   => ioctl_we,
+
+    -- video signals
     hsync => hsync,
     vsync => vsync,
     r     => vga_r,
     g     => vga_g,
     b     => vga_b
   );
+
+  -- tile ROM
+  tile_rom : entity work.single_port_rom
+  generic map (
+    ADDR_WIDTH => ilog2(ROM_SIZE),
+    DATA_WIDTH => IOCTL_DATA_WIDTH,
+    INIT_FILE  => "rom/tiles.mif"
+  )
+  port map (
+    clk  => sys_clk,
+    addr => tile_rom_addr,
+    dout => tile_rom_data
+  );
+
+  -- state machine
+  fsm : process (state, data_counter)
+  begin
+    next_state <= state;
+
+    case state is
+      when INIT =>
+        if data_counter = 255 then
+          next_state <= LOAD;
+        end if;
+
+      when LOAD =>
+        if data_counter = ROM_SIZE-1 then
+          next_state <= IDLE;
+        end if;
+
+      when IDLE =>
+        -- do nothing
+    end case;
+  end process;
+
+  -- latch the next state
+  latch_next_state : process (sys_clk, reset)
+  begin
+    if reset = '1' then
+      state <= INIT;
+    elsif rising_edge(sys_clk) then
+      if cen_4 = '1' then
+        state <= next_state;
+      end if;
+    end if;
+  end process;
+
+  update_data_counter : process (sys_clk, reset)
+  begin
+    if reset = '1' then
+      data_counter <= 0;
+    elsif rising_edge(sys_clk) then
+      if cen_4 = '1' then
+        if state /= next_state then -- state changing
+          data_counter <= 0;
+        else
+          data_counter <= data_counter + 1;
+        end if;
+      end if;
+    end if;
+  end process;
+
+  tile_rom_addr <= to_unsigned(data_counter, tile_rom_addr'length);
+
+  ioctl_addr <= resize(tile_rom_addr, ioctl_addr'length);
+  ioctl_data <= tile_rom_data;
+  ioctl_we   <= '1' when state = LOAD else '0';
 
   -- set composite sync
   vga_csync <= not (hsync xor vsync);

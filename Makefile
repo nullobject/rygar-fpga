@@ -26,6 +26,12 @@ rom:
 					 rom/vid_6h.bin -binary -offset 0x10000 \
 					 rom/vid_6g.bin -binary -offset 0x18000 \
 					 -o rom/sprites.mif -mif 32
+	srec_cat rom/cpu_8k.bin -binary -offset 0x00000 \
+					 rom/vid_6k.bin -binary -offset 0x08000 \
+					 rom/vid_6j.bin -binary -offset 0x10000 \
+					 rom/vid_6h.bin -binary -offset 0x18000 \
+					 rom/vid_6g.bin -binary -offset 0x20000 \
+					 -o rom/tiles.mif -mif 16
 
 clean:
 	rm -rf db incremental_db output_files
