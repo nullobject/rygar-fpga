@@ -93,6 +93,11 @@ architecture arch of top is
   signal hsync : std_logic;
   signal vsync : std_logic;
   signal csync : std_logic;
+
+  -- RGB signals
+  signal r : std_logic_vector(COLOR_DEPTH_R-1 downto 0);
+  signal g : std_logic_vector(COLOR_DEPTH_G-1 downto 0);
+  signal b : std_logic_vector(COLOR_DEPTH_B-1 downto 0);
 begin
   -- generate the clock signals
   my_pll : entity pll.pll
@@ -176,9 +181,11 @@ begin
     vsync  => vsync,
     hblank => open,
     vblank => open,
-    r      => vga_r,
-    g      => vga_g,
-    b      => vga_b
+
+    -- RGB signals
+    r => r,
+    g => g,
+    b => b
   );
 
   -- tile ROM
@@ -260,4 +267,9 @@ begin
 
   -- set composite sync
   vga_csync <= not (hsync xor vsync);
+
+  -- set RGB signals
+  vga_r <= r & r(3 downto 2);
+  vga_g <= g & g(3 downto 2);
+  vga_b <= b & b(3 downto 2);
 end architecture arch;

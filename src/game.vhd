@@ -49,9 +49,11 @@ entity game is
     vsync  : out std_logic;
     hblank : out std_logic;
     vblank : out std_logic;
-    r      : out std_logic_vector(5 downto 0);
-    g      : out std_logic_vector(5 downto 0);
-    b      : out std_logic_vector(5 downto 0)
+
+    -- RGB
+    r : out std_logic_vector(COLOR_DEPTH_R-1 downto 0);
+    g : out std_logic_vector(COLOR_DEPTH_G-1 downto 0);
+    b : out std_logic_vector(COLOR_DEPTH_B-1 downto 0)
   );
 end game;
 
@@ -413,16 +415,14 @@ begin
              work_ram_dout or
              gpu_dout;
 
-  -- set sync signals
-  hsync <= video.hsync;
-  vsync <= video.vsync;
-
-  -- set blank signals
+  -- set video signals
+  hsync  <= video.hsync;
+  vsync  <= video.vsync;
   hblank <= video.hblank;
   vblank <= video.vblank;
 
-  -- set RGB data
-  r <= rgb.r & rgb.r(3 downto 2);
-  g <= rgb.g & rgb.g(3 downto 2);
-  b <= rgb.b & rgb.b(3 downto 2);
+  -- set RGB signals
+  r <= rgb.r;
+  g <= rgb.g;
+  b <= rgb.b;
 end architecture arch;
