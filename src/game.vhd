@@ -183,58 +183,6 @@ begin
     we   => not cpu_wr_n
   );
 
---   -- sprite ROM
---   sprite_rom : entity work.single_port_rom
---   generic map (
---     ADDR_WIDTH => SPRITE_ROM_ADDR_WIDTH,
---     DATA_WIDTH => SPRITE_ROM_DATA_WIDTH,
---     INIT_FILE  => "rom/sprites.mif"
---   )
---   port map (
---     clk  => clk,
---     addr => sprite_rom_addr,
---     dout => sprite_rom_data
---   );
-
---   -- character ROM
---   char_rom : entity work.single_port_rom
---   generic map (
---     ADDR_WIDTH => CHAR_ROM_ADDR_WIDTH,
---     DATA_WIDTH => CHAR_ROM_DATA_WIDTH,
---     INIT_FILE  => "rom/cpu_8k.mif"
---   )
---   port map (
---     clk  => clk,
---     addr => char_rom_addr,
---     dout => char_rom_data
---   );
-
---   -- foreground ROM
---   fg_rom : entity work.single_port_rom
---   generic map (
---     ADDR_WIDTH => FG_ROM_ADDR_WIDTH,
---     DATA_WIDTH => FG_ROM_DATA_WIDTH,
---     INIT_FILE  => "rom/fg.mif"
---   )
---   port map (
---     clk  => clk,
---     addr => fg_rom_addr,
---     dout => fg_rom_data
---   );
-
---   -- background ROM
---   bg_rom : entity work.single_port_rom
---   generic map (
---     ADDR_WIDTH => BG_ROM_ADDR_WIDTH,
---     DATA_WIDTH => BG_ROM_DATA_WIDTH,
---     INIT_FILE  => "rom/bg.mif"
---   )
---   port map (
---     clk  => clk,
---     addr => bg_rom_addr,
---     dout => bg_rom_data
---   );
-
   -- ROM controller
   rom_controller : entity work.rom_controller
   generic map (
