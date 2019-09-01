@@ -31,11 +31,12 @@ use work.rygar.all;
 -- a read or write operation.
 entity sdram is
   generic (
-    CLK_FREQ : real := 100.0 -- MHz
+    -- clock frequency in MHz
+    CLK_FREQ : real
   );
   port (
     -- reset
-    reset : in std_logic;
+    reset : in std_logic := '0';
 
     -- clock
     clk : in std_logic;
