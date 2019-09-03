@@ -26,9 +26,10 @@ use work.rygar.all;
 
 entity game is
   port (
+    -- reset
     reset : in std_logic;
 
-    -- clock signals
+    -- clock
     clk : in std_logic;
 
     -- SDRAM interface
