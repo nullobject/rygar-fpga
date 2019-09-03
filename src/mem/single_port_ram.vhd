@@ -32,7 +32,7 @@ entity single_port_ram is
   );
   port (
     -- clock
-    clk : in std_logic := '1';
+    clk : in std_logic;
 
     -- chip select
     cs : in std_logic := '1';
