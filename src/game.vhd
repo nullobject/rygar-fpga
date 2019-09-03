@@ -183,7 +183,7 @@ begin
   -- ROM controller
   rom_controller : entity work.rom_controller
   port map (
-    reset => reset,
+    -- reset => reset,
     clk   => clk,
 
     -- program ROM #1 interface
@@ -379,7 +379,7 @@ begin
   begin
     if rising_edge(clk) then
       if coin_cs = '1' and cpu_rd_n = '0' then
-        coin_reg <= "0000" & coin_2 & coin_1 & start_2 & start_1;
+        coin_reg <= "0000" & coin_1 & coin_2 & start_1 & start_2;
       else
         coin_reg <= (others => '0');
       end if;

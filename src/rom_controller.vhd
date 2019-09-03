@@ -39,7 +39,7 @@ use work.rygar.all;
 entity rom_controller is
   port (
     -- reset
-    reset : in std_logic;
+    reset : in std_logic := '0';
 
     -- clock
     clk : in std_logic;

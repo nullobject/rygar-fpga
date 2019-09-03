@@ -24,6 +24,23 @@ rom:
 					 rom/vid_6c.bin -binary -offset 0x6C000 \
 					 rom/vid_6b.bin -binary -offset 0x74000 \
 					 -o rom/rygar.mif -mif
+	cat rom/5.5p \
+			rom/cpu_5m.bin \
+			rom/cpu_5j.bin \
+			rom/cpu_8k.bin \
+			rom/vid_6k.bin \
+			rom/vid_6j.bin \
+			rom/vid_6h.bin \
+			rom/vid_6g.bin \
+			rom/vid_6p.bin \
+			rom/vid_6o.bin \
+			rom/vid_6n.bin \
+			rom/vid_6l.bin \
+			rom/vid_6f.bin \
+			rom/vid_6e.bin \
+			rom/vid_6c.bin \
+			rom/vid_6b.bin \
+			> rom/a.rygar.rom
 
 clean:
 	rm -rf db incremental_db output_files
