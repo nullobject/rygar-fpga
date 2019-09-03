@@ -179,7 +179,7 @@ package rygar is
   -- calculates the log2 of the given number
   function ilog2(n : natural) return natural;
 
-  -- decodes a single pixel from a row at the given offset
+  -- decodes a single pixel from a tile row at the given offset
   function decode_tile_row (tile_row : tile_row_t; offset : unsigned(2 downto 0)) return tile_pixel_t;
 
   -- calculate sprite size (8x8, 16x16, 32x32, 64x64)
@@ -204,7 +204,10 @@ package body rygar is
     return natural(ceil(log2(real(n))));
   end ilog2;
 
-  function decode_tile_row (tile_row : tile_row_t; offset : unsigned(2 downto 0)) return tile_pixel_t is
+  function decode_tile_row (
+    tile_row : tile_row_t;
+    offset   : unsigned(2 downto 0)
+  ) return tile_pixel_t is
   begin
     case offset is
       when "000" => return tile_row(31 downto 28);
