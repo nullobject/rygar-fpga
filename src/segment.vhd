@@ -24,15 +24,15 @@ use ieee.numeric_std.all;
 
 use work.rygar.all;
 
--- A segment provides a 32-bit read-only interface to a contiguous block of
--- memory located in SDRAM.
+-- A segment provides a 32-bit read-only interface to a contiguous block of ROM
+-- data, located at some offset in the SDRAM.
 entity segment is
   generic (
     -- the width of the ROM address bus
     ROM_ADDR_WIDTH : natural;
 
-    -- the offset of the segment in the SDRAM
-    SEGMENT_OFFSET : natural := 0
+    -- the offset of the ROM data in the SDRAM
+    ROM_OFFSET : natural := 0
   );
   port (
     -- clock
@@ -43,11 +43,11 @@ entity segment is
 
     -- ROM interface
     rom_addr : in unsigned(ROM_ADDR_WIDTH-1 downto 0);
-    rom_data : out std_logic_vector(SDRAM_OUTPUT_DATA_WIDTH-1 downto 0);
+    rom_data : out std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
 
     -- SDRAM interface
-    sdram_addr  : out unsigned(SDRAM_INPUT_ADDR_WIDTH-1 downto 0);
-    sdram_data  : in std_logic_vector(SDRAM_OUTPUT_DATA_WIDTH-1 downto 0);
+    sdram_addr  : out unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
+    sdram_data  : in std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
     sdram_valid : in std_logic
   );
 end segment;
@@ -65,5 +65,5 @@ begin
   end process;
 
   -- set SDRAM address
-  sdram_addr <= resize(rom_addr, sdram_addr'length)+SEGMENT_OFFSET when cs = '1' else (others => '0');
+  sdram_addr <= resize(rom_addr, sdram_addr'length)+ROM_OFFSET when cs = '1' else (others => '0');
 end architecture arch;

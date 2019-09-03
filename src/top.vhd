@@ -56,9 +56,9 @@ entity top is
 end top;
 
 architecture arch of top is
-  constant TILE_ROM_SIZE : natural := 81920;
+  constant TILE_ROM_SIZE : natural := 163840;
 
-  type state_t is (INIT, LOAD, IDLE);
+  type state_t is (INIT, PRELOAD, LOAD, IDLE);
 
   signal reset : std_logic;
 
@@ -73,21 +73,23 @@ architecture arch of top is
   signal data_counter : natural range 0 to TILE_ROM_SIZE-1;
 
   -- SDRAM signals
-  signal sdram_addr  : unsigned(SDRAM_INPUT_ADDR_WIDTH-1 downto 0);
-  signal sdram_din   : std_logic_vector(SDRAM_INPUT_DATA_WIDTH-1 downto 0) := (others => '0');
-  signal sdram_dout  : std_logic_vector(SDRAM_OUTPUT_DATA_WIDTH-1 downto 0);
+  signal sdram_addr  : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
+  signal sdram_din   : std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
+  signal sdram_dout  : std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
   signal sdram_we    : std_logic;
+  signal sdram_ack   : std_logic;
   signal sdram_ready : std_logic;
   signal sdram_valid : std_logic;
 
   -- IOCTL signals
-  signal ioctl_addr : unsigned(IOCTL_ADDR_WIDTH-1 downto 0);
-  signal ioctl_data : std_logic_vector(IOCTL_DATA_WIDTH-1 downto 0);
-  signal ioctl_we   : std_logic;
+  signal ioctl_addr     : unsigned(IOCTL_ADDR_WIDTH-1 downto 0);
+  signal ioctl_data     : byte_t;
+  signal ioctl_wr       : std_logic;
+  signal ioctl_download : std_logic;
 
   -- tile ROM signals
   signal tile_rom_addr : unsigned(ilog2(TILE_ROM_SIZE)-1 downto 0);
-  signal tile_rom_data : std_logic_vector(15 downto 0);
+  signal tile_rom_data : byte_t;
 
   -- sync signals
   signal hsync : std_logic;
@@ -130,17 +132,16 @@ begin
   generic map (CLK_FREQ => 48.0)
   port map (
     reset => reset,
-
-    -- clock signals
-    clk => sys_clk,
+    clk   => sys_clk,
 
     -- IO interface
     addr  => sdram_addr,
     din   => sdram_din,
     dout  => sdram_dout,
+    we    => sdram_we,
+    ack   => sdram_ack,
     ready => sdram_ready,
     valid => sdram_valid,
-    we    => sdram_we,
 
     -- SDRAM interface
     sdram_a     => SDRAM_A,
@@ -159,22 +160,22 @@ begin
   game : entity work.game
   port map (
     reset => reset,
-
-    -- clock signals
-    clk => sys_clk,
+    clk   => sys_clk,
 
     -- SDRAM interface
     sdram_addr  => sdram_addr,
     sdram_din   => sdram_din,
     sdram_dout  => sdram_dout,
     sdram_we    => sdram_we,
+    sdram_ack   => sdram_ack,
     sdram_valid => sdram_valid,
     sdram_ready => sdram_ready,
 
     -- IOCTL interface
-    ioctl_addr => ioctl_addr,
-    ioctl_data => ioctl_data,
-    ioctl_we   => ioctl_we,
+    ioctl_addr     => ioctl_addr,
+    ioctl_data     => ioctl_data,
+    ioctl_wr       => ioctl_wr,
+    ioctl_download => ioctl_download,
 
     -- video signals
     hsync  => hsync,
@@ -192,7 +193,6 @@ begin
   tile_rom : entity work.single_port_rom
   generic map (
     ADDR_WIDTH => ilog2(TILE_ROM_SIZE),
-    DATA_WIDTH => IOCTL_DATA_WIDTH,
     INIT_FILE  => "rom/tiles.mif"
   )
   port map (
@@ -209,8 +209,12 @@ begin
     case state is
       when INIT =>
         if data_counter = TILE_ROM_SIZE-1 then
-          next_state <= LOAD;
+          next_state <= PRELOAD;
         end if;
+
+      -- preload the byte from the tile ROM
+      when PRELOAD =>
+        next_state <= LOAD;
 
       when LOAD =>
         if data_counter = TILE_ROM_SIZE-1 then
@@ -250,20 +254,23 @@ begin
     end if;
   end process;
 
-  -- latch tile ROM data
-  latch_rom_data : process (sys_clk)
+  -- write ROM data
+  write_rom_data : process (sys_clk)
   begin
     if rising_edge(sys_clk) then
-      if cen_4 = '1' then
+      ioctl_wr <= '0';
+
+      if cen_4 = '1' and state = LOAD then
         ioctl_addr <= resize(tile_rom_addr, ioctl_addr'length);
         ioctl_data <= tile_rom_data;
+        ioctl_wr   <= '1';
       end if;
     end if;
   end process;
 
   tile_rom_addr <= to_unsigned(data_counter, tile_rom_addr'length);
 
-  ioctl_we <= '1' when state = LOAD else '0';
+  ioctl_download <= '1' when state = LOAD else '0';
 
   -- set composite sync
   vga_csync <= not (hsync xor vsync);

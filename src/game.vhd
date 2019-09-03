@@ -32,17 +32,19 @@ entity game is
     clk : in std_logic;
 
     -- SDRAM interface
-    sdram_addr  : out unsigned(SDRAM_INPUT_ADDR_WIDTH-1 downto 0);
-    sdram_din   : out std_logic_vector(SDRAM_INPUT_DATA_WIDTH-1 downto 0);
-    sdram_dout  : in std_logic_vector(SDRAM_OUTPUT_DATA_WIDTH-1 downto 0);
+    sdram_addr  : out unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
+    sdram_din   : out std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
+    sdram_dout  : in std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
     sdram_we    : out std_logic;
+    sdram_ack   : in std_logic;
     sdram_valid : in std_logic;
     sdram_ready : in std_logic;
 
     -- IOCTL interface
-    ioctl_addr : in unsigned(IOCTL_ADDR_WIDTH-1 downto 0);
-    ioctl_data : in std_logic_vector(IOCTL_DATA_WIDTH-1 downto 0);
-    ioctl_we   : in std_logic;
+    ioctl_addr     : in unsigned(IOCTL_ADDR_WIDTH-1 downto 0);
+    ioctl_data     : in byte_t;
+    ioctl_wr       : in std_logic;
+    ioctl_download : in std_logic;
 
     -- video signals
     hsync  : out std_logic;
@@ -193,9 +195,7 @@ begin
   )
   port map (
     reset => reset,
-
-    -- clock signals
-    clk => clk,
+    clk   => clk,
 
     -- ROM interface
     sprite_rom_addr => sprite_rom_addr,
@@ -212,13 +212,15 @@ begin
     sdram_din   => sdram_din,
     sdram_dout  => sdram_dout,
     sdram_we    => sdram_we,
+    sdram_ack   => sdram_ack,
     sdram_valid => sdram_valid,
     sdram_ready => sdram_ready,
 
     -- IOCTL interface
-    ioctl_addr => ioctl_addr,
-    ioctl_data => ioctl_data,
-    ioctl_we   => ioctl_we
+    ioctl_addr     => ioctl_addr,
+    ioctl_data     => ioctl_data,
+    ioctl_wr       => ioctl_wr,
+    ioctl_download => ioctl_download
   );
 
   -- main CPU

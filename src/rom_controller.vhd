@@ -24,16 +24,18 @@ use ieee.numeric_std.all;
 
 use work.rygar.all;
 
--- The ROM controller provides an interface to the GPU for accessing tile data.
+-- The ROM controller handles reading and writing ROM data to the SDRAM. It
+-- provides a read-only interface to the GPU for reading tile data. It also
+-- provides a write-only interface for storing the ROM data received through
+-- the MiSTer IOCTL interface.
 --
--- The original arcade hardware has multiple ROM chips that store the tile data
--- for the different graphics layers. Unfortunately, the Cyclone V chip doesn't
--- have enough memory blocks for us to implement these ROMs. Instead, we need
--- to store the tile data in the SDRAM.
+-- The original arcade hardware has multiple ROM chips that store things like
+-- the program data, tile data, sound data, etc. Unfortunately, the Cyclone
+-- V FPGA doesn't have enough memory blocks for us to implement all these ROMs.
+-- Instead, we need to store the them in the SDRAM.
 --
--- The tile ROMs are accessed concurrently by the GPU, so the job of the ROM
--- controller is to manage reading the tile data from the SDRAM in a fair, and
--- timely manner.
+-- The ROMs are all accessed concurrently, so the ROM controller is responsible
+-- for reading the ROM data from the SDRAM in a fair and timely manner.
 entity rom_controller is
   generic (
     SPRITE_ROM_OFFSET : natural;
@@ -50,35 +52,43 @@ entity rom_controller is
 
     -- ROM interface
     sprite_rom_addr : in unsigned(SPRITE_ROM_ADDR_WIDTH-1 downto 0);
-    sprite_rom_data : out std_logic_vector(SDRAM_OUTPUT_DATA_WIDTH-1 downto 0);
+    sprite_rom_data : out std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
     char_rom_addr   : in unsigned(CHAR_ROM_ADDR_WIDTH-1 downto 0);
-    char_rom_data   : out std_logic_vector(SDRAM_OUTPUT_DATA_WIDTH-1 downto 0);
+    char_rom_data   : out std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
     fg_rom_addr     : in unsigned(FG_ROM_ADDR_WIDTH-1 downto 0);
-    fg_rom_data     : out std_logic_vector(SDRAM_OUTPUT_DATA_WIDTH-1 downto 0);
+    fg_rom_data     : out std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
     bg_rom_addr     : in unsigned(BG_ROM_ADDR_WIDTH-1 downto 0);
-    bg_rom_data     : out std_logic_vector(SDRAM_OUTPUT_DATA_WIDTH-1 downto 0);
+    bg_rom_data     : out std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
 
     -- SDRAM interface
-    sdram_addr  : out unsigned(SDRAM_INPUT_ADDR_WIDTH-1 downto 0);
-    sdram_din   : out std_logic_vector(SDRAM_INPUT_DATA_WIDTH-1 downto 0);
-    sdram_dout  : in std_logic_vector(SDRAM_OUTPUT_DATA_WIDTH-1 downto 0);
+    sdram_addr  : out unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
+    sdram_din   : out std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
+    sdram_dout  : in std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
     sdram_we    : out std_logic;
+    sdram_ack   : in std_logic;
     sdram_valid : in std_logic;
     sdram_ready : in std_logic;
 
     -- IOCTL interface
-    ioctl_addr : in unsigned(IOCTL_ADDR_WIDTH-1 downto 0);
-    ioctl_data : in std_logic_vector(IOCTL_DATA_WIDTH-1 downto 0);
-    ioctl_we   : in std_logic
+    ioctl_addr     : in unsigned(IOCTL_ADDR_WIDTH-1 downto 0);
+    ioctl_data     : in byte_t;
+    ioctl_wr       : in std_logic;
+    ioctl_download : in std_logic
   );
 end rom_controller;
 
 architecture arch of rom_controller is
-  -- enums
+  type state_t is (IDLE, WRITE);
   type rom_t is (SPRITE_ROM, CHAR_ROM, FG_ROM, BG_ROM);
+
+  -- state signals
+  signal state, next_state : state_t;
 
   -- currently enabled ROM
   signal current_rom : rom_t;
+
+  -- control signals
+  signal start : std_logic;
 
   -- chip select signals
   signal sprite_rom_cs : std_logic;
@@ -87,16 +97,16 @@ architecture arch of rom_controller is
   signal bg_rom_cs     : std_logic;
 
   -- address mux signals
-  signal sprite_rom_sdram_addr : unsigned(SDRAM_INPUT_ADDR_WIDTH-1 downto 0);
-  signal char_rom_sdram_addr   : unsigned(SDRAM_INPUT_ADDR_WIDTH-1 downto 0);
-  signal fg_rom_sdram_addr     : unsigned(SDRAM_INPUT_ADDR_WIDTH-1 downto 0);
-  signal bg_rom_sdram_addr     : unsigned(SDRAM_INPUT_ADDR_WIDTH-1 downto 0);
-  signal ioctl_sdram_addr      : unsigned(SDRAM_INPUT_ADDR_WIDTH-1 downto 0);
+  signal ioctl_sdram_addr      : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
+  signal sprite_rom_sdram_addr : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
+  signal char_rom_sdram_addr   : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
+  signal fg_rom_sdram_addr     : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
+  signal bg_rom_sdram_addr     : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
 begin
   sprite_rom_segment : entity work.segment
   generic map (
     ROM_ADDR_WIDTH => SPRITE_ROM_ADDR_WIDTH,
-    SEGMENT_OFFSET => SPRITE_ROM_OFFSET
+    ROM_OFFSET     => SPRITE_ROM_OFFSET
   )
   port map (
     clk => clk,
@@ -116,7 +126,7 @@ begin
   char_rom_segment : entity work.segment
   generic map (
     ROM_ADDR_WIDTH => CHAR_ROM_ADDR_WIDTH,
-    SEGMENT_OFFSET => CHAR_ROM_OFFSET
+    ROM_OFFSET     => CHAR_ROM_OFFSET
   )
   port map (
     clk => clk,
@@ -136,7 +146,7 @@ begin
   fg_rom_segment : entity work.segment
   generic map (
     ROM_ADDR_WIDTH => FG_ROM_ADDR_WIDTH,
-    SEGMENT_OFFSET => FG_ROM_OFFSET
+    ROM_OFFSET     => FG_ROM_OFFSET
   )
   port map (
     clk => clk,
@@ -156,7 +166,7 @@ begin
   bg_rom_segment : entity work.segment
   generic map (
     ROM_ADDR_WIDTH => BG_ROM_ADDR_WIDTH,
-    SEGMENT_OFFSET => BG_ROM_OFFSET
+    ROM_OFFSET     => BG_ROM_OFFSET
   )
   port map (
     clk => clk,
@@ -173,6 +183,52 @@ begin
     sdram_valid => sdram_valid
   );
 
+  -- Convert bytes received from IOCTL interface into 32-bit words.
+  --
+  -- The SDRAM controller has a 32-bit interface, so we need to buffer bytes
+  -- received from the IOCTL interface in order to write 32-bit words to the
+  -- SDRAM.
+  download_buffer : entity work.download_buffer
+  generic map (SIZE => 4)
+  port map (
+    reset => reset,
+    clk   => clk,
+    din   => ioctl_data,
+    dout  => sdram_din,
+    we    => ioctl_download and ioctl_wr,
+    valid => start
+  );
+
+  -- state machine
+  fsm : process (state, start, sdram_ack)
+  begin
+    next_state <= state;
+
+    case state is
+      -- this is the default state, we just wait for the start signal
+      when IDLE =>
+        if start = '1' then
+          next_state <= WRITE;
+        end if;
+
+      -- write to the SDRAM
+      when WRITE =>
+        if sdram_ack = '1' then
+          next_state <= IDLE;
+        end if;
+    end case;
+  end process;
+
+  -- latch the next state
+  latch_next_state : process (clk, reset)
+  begin
+    if reset = '1' then
+      state <= IDLE;
+    elsif rising_edge(clk) then
+      state <= next_state;
+    end if;
+  end process;
+
   -- update the current ROM
   update_current_rom : process (clk, reset)
   begin
@@ -186,13 +242,16 @@ begin
   end process;
 
   -- set the chip select signals
-  sprite_rom_cs <= '1' when current_rom = SPRITE_ROM and ioctl_we = '0' else '0';
-  char_rom_cs   <= '1' when current_rom = CHAR_ROM   and ioctl_we = '0' else '0';
-  fg_rom_cs     <= '1' when current_rom = FG_ROM     and ioctl_we = '0' else '0';
-  bg_rom_cs     <= '1' when current_rom = BG_ROM     and ioctl_we = '0' else '0';
+  sprite_rom_cs <= '1' when state = IDLE and current_rom = SPRITE_ROM else '0';
+  char_rom_cs   <= '1' when state = IDLE and current_rom = CHAR_ROM   else '0';
+  fg_rom_cs     <= '1' when state = IDLE and current_rom = FG_ROM     else '0';
+  bg_rom_cs     <= '1' when state = IDLE and current_rom = BG_ROM     else '0';
 
-  -- set the IOCTL address if we're writing, otherwise set it to zero
-  ioctl_sdram_addr <= resize(ioctl_addr, ioctl_sdram_addr'length) when ioctl_we = '1' else (others => '0');
+  -- Set the IOCTL address if we're writing, otherwise set it to zero.
+  --
+  -- We need to divide the IOCTL address by four, because we're writing 32-bit
+  -- words to the SDRAM.
+  ioctl_sdram_addr <= resize(shift_right(ioctl_addr, 2), ioctl_sdram_addr'length) when ioctl_download = '1' else (others => '0');
 
   -- mux the SDRAM address
   sdram_addr <= ioctl_sdram_addr or
@@ -201,9 +260,6 @@ begin
                 fg_rom_sdram_addr or
                 bg_rom_sdram_addr;
 
-  -- set the SDRAM input data
-  sdram_din <= ioctl_data;
-
-  -- enable writing to the SDRAM if data is being written to the IOCTL
-  sdram_we <= ioctl_we;
+  -- set SDRAM write enable
+  sdram_we <= '1' when state = WRITE else '0';
 end architecture arch;
