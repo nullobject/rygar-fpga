@@ -53,13 +53,13 @@ entity gpu is
     ram_we   : in std_logic;
 
     -- ROM interface
-    sprite_rom_addr : out unsigned(SPRITE_ROM_ADDR_WIDTH-1 downto 0);
+    sprite_rom_addr : out unsigned(SPRITE_ROM_ADDR_WIDTH-1 downto 0) := (others => '0');
     sprite_rom_data : in std_logic_vector(SPRITE_ROM_DATA_WIDTH-1 downto 0);
-    char_rom_addr   : out unsigned(CHAR_ROM_ADDR_WIDTH-1 downto 0);
+    char_rom_addr   : out unsigned(CHAR_ROM_ADDR_WIDTH-1 downto 0) := (others => '0');
     char_rom_data   : in std_logic_vector(CHAR_ROM_DATA_WIDTH-1 downto 0);
-    fg_rom_addr     : out unsigned(FG_ROM_ADDR_WIDTH-1 downto 0);
+    fg_rom_addr     : out unsigned(FG_ROM_ADDR_WIDTH-1 downto 0) := (others => '0');
     fg_rom_data     : in std_logic_vector(FG_ROM_DATA_WIDTH-1 downto 0);
-    bg_rom_addr     : out unsigned(BG_ROM_ADDR_WIDTH-1 downto 0);
+    bg_rom_addr     : out unsigned(BG_ROM_ADDR_WIDTH-1 downto 0) := (others => '0');
     bg_rom_data     : in std_logic_vector(BG_ROM_DATA_WIDTH-1 downto 0);
 
     -- chip select signals
@@ -80,22 +80,22 @@ entity gpu is
 end gpu;
 
 architecture arch of gpu is
-  -- sprite RAM/ROM
+  -- sprite RAM
   signal sprite_ram_cpu_dout : byte_t;
   signal sprite_ram_gpu_addr : unsigned(SPRITE_RAM_GPU_ADDR_WIDTH-1 downto 0) := (others => '0');
   signal sprite_ram_gpu_dout : std_logic_vector(SPRITE_RAM_GPU_DATA_WIDTH-1 downto 0);
 
-  -- character RAM/ROM
+  -- character RAM
   signal char_ram_cpu_dout : byte_t;
   signal char_ram_gpu_addr : unsigned(CHAR_RAM_GPU_ADDR_WIDTH-1 downto 0) := (others => '0');
   signal char_ram_gpu_dout : std_logic_vector(CHAR_RAM_GPU_DATA_WIDTH-1 downto 0);
 
-  -- foreground RAM/ROM
+  -- foreground RAM
   signal fg_ram_cpu_dout : byte_t;
   signal fg_ram_gpu_addr : unsigned(FG_RAM_GPU_ADDR_WIDTH-1 downto 0) := (others => '0');
   signal fg_ram_gpu_dout : std_logic_vector(FG_RAM_GPU_DATA_WIDTH-1 downto 0);
 
-  -- background RAM/ROM
+  -- background RAM
   signal bg_ram_cpu_dout : byte_t;
   signal bg_ram_gpu_addr : unsigned(BG_RAM_GPU_ADDR_WIDTH-1 downto 0) := (others => '0');
   signal bg_ram_gpu_dout : std_logic_vector(BG_RAM_GPU_DATA_WIDTH-1 downto 0);
