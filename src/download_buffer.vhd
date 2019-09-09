@@ -63,9 +63,8 @@ begin
   begin
     if reset = '1' then
       counter <= 0;
-    elsif rising_edge(clk) then
       valid <= '0';
-
+    elsif rising_edge(clk) then
       if we = '1' then
         -- write the word to the output data bus
         dout((SIZE-counter)*8-1 downto (SIZE-counter-1)*8) <= din;
@@ -76,6 +75,8 @@ begin
         -- flush the buffer if it is full
         if counter = SIZE-1 then
           valid <= '1';
+        else
+          valid <= '0';
         end if;
       end if;
     end if;
