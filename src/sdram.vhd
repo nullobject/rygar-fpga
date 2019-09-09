@@ -47,6 +47,7 @@ entity sdram is
     din   : in std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
     dout  : out std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
     we    : in std_logic;
+    req   : in std_logic;
     ack   : out std_logic;
     valid : out std_logic;
     ready : out std_logic;
@@ -163,7 +164,7 @@ architecture arch of sdram is
   alias bank : unsigned(SDRAM_BANK_WIDTH-1 downto 0) is addr_reg(SDRAM_COL_WIDTH+SDRAM_ROW_WIDTH+SDRAM_BANK_WIDTH-1 downto SDRAM_COL_WIDTH+SDRAM_ROW_WIDTH);
 begin
   -- state machine
-  fsm : process (state, wait_counter, we_reg, load_mode_done, active_done, refresh_done, read_done, write_done, should_refresh)
+  fsm : process (state, wait_counter, req, we_reg, load_mode_done, active_done, refresh_done, read_done, write_done, should_refresh)
   begin
     next_state <= state;
 
@@ -195,7 +196,7 @@ begin
         if should_refresh = '1' then
           next_state <= REFRESH;
           next_cmd   <= CMD_AUTO_REFRESH;
-        else
+        elsif req = '1' then
           next_state <= ACTIVE;
           next_cmd   <= CMD_ACTIVE;
         end if;
@@ -291,10 +292,7 @@ begin
     end if;
   end process;
 
-  -- Latch the SDRAM data.
-  --
-  -- We need to latch the output data into a register, as it's bursted from the
-  -- SDRAM.
+  -- latch the output data into a register, as it's bursted from the SDRAM
   latch_sdram_data : process (clk)
   begin
     if rising_edge(clk) then
@@ -349,9 +347,7 @@ begin
       "0010" & col    when WRITE,  -- auto precharge
       (others => '0') when others;
 
-  -- Write the data to the SDRAM data bus if we're writing, otherwise set it to high impedance.
-  --
-  -- We need to decode the next 16-bit word from the write buffer.
+  -- decode the next 16-bit word from the write buffer
   sdram_dq <= din_reg((BURST_LENGTH-wait_counter)*SDRAM_DATA_WIDTH-1 downto (BURST_LENGTH-wait_counter-1)*SDRAM_DATA_WIDTH) when state = WRITE else (others => 'Z');
 
   -- set SDRAM data mask
