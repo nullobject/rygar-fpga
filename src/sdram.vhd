@@ -201,12 +201,6 @@ begin
           next_cmd   <= CMD_ACTIVE;
         end if;
 
-      -- execute an auto refresh
-      when REFRESH =>
-        if refresh_done = '1' then
-          next_state <= IDLE;
-        end if;
-
       -- activate the row
       when ACTIVE =>
         if active_done = '1' then
@@ -229,6 +223,16 @@ begin
       when WRITE =>
         if write_done = '1' then
           next_state <= IDLE;
+
+      -- execute an auto refresh
+      when REFRESH =>
+        if refresh_done = '1' then
+          if req = '1' then
+            next_state <= ACTIVE;
+            next_cmd   <= CMD_ACTIVE;
+          else
+            next_state <= IDLE;
+          end if;
         end if;
     end case;
   end process;
@@ -282,7 +286,7 @@ begin
   latch_input_signals : process (clk)
   begin
     if rising_edge(clk) then
-      if state = IDLE then
+      if state = IDLE or (state = REFRESH and refresh_done = '1') then
         -- we need to multiply the address by two, because we are converting
         -- from a 32-bit controller address to a 16-bit SDRAM address
         addr_reg <= shift_left(resize(addr, addr_reg'length), 1);
