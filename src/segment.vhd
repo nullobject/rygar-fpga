@@ -89,7 +89,10 @@ begin
   -- cache data received from the SDRAM
   cache_sdram_data : process (clk)
   begin
-    if rising_edge(clk) then
+    if reset = '1' then
+      cache_addr <= (others => '0');
+      cache_data <= (others => '0');
+    elsif rising_edge(clk) then
       if sdram_valid = '1' then
         cache_addr <= sdram_addr;
         cache_data <= sdram_data;
