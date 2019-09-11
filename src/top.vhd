@@ -56,7 +56,7 @@ entity top is
 end top;
 
 architecture arch of top is
-  constant TILE_ROM_SIZE : natural := 163840;
+  constant TILE_ROM_SIZE : natural := 212992;
 
   type state_t is (INIT, PRELOAD, LOAD, IDLE);
 
@@ -77,6 +77,7 @@ architecture arch of top is
   signal sdram_din   : std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
   signal sdram_dout  : std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
   signal sdram_we    : std_logic;
+  signal sdram_req   : std_logic;
   signal sdram_ack   : std_logic;
   signal sdram_ready : std_logic;
   signal sdram_valid : std_logic;
@@ -139,6 +140,7 @@ begin
     din   => sdram_din,
     dout  => sdram_dout,
     we    => sdram_we,
+    req   => sdram_req,
     ack   => sdram_ack,
     ready => sdram_ready,
     valid => sdram_valid,
@@ -167,6 +169,7 @@ begin
     sdram_din   => sdram_din,
     sdram_dout  => sdram_dout,
     sdram_we    => sdram_we,
+    sdram_req   => sdram_req,
     sdram_ack   => sdram_ack,
     sdram_valid => sdram_valid,
     sdram_ready => sdram_ready,

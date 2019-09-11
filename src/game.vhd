@@ -37,6 +37,7 @@ entity game is
     sdram_din   : out std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
     sdram_dout  : in std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
     sdram_we    : out std_logic;
+    sdram_req   : out std_logic;
     sdram_ack   : in std_logic;
     sdram_valid : in std_logic;
     sdram_ready : in std_logic;
@@ -80,14 +81,16 @@ architecture arch of game is
   signal cpu_halt_n  : std_logic;
 
   -- chip select signals
+  signal main_rom_cs    : std_logic;
+  signal main_rom_oe    : std_logic;
   signal prog_rom_1_cs  : std_logic;
   signal prog_rom_2_cs  : std_logic;
   signal prog_rom_3_cs  : std_logic;
   signal work_ram_cs    : std_logic;
+  signal sprite_ram_cs  : std_logic;
   signal char_ram_cs    : std_logic;
   signal fg_ram_cs      : std_logic;
   signal bg_ram_cs      : std_logic;
-  signal sprite_ram_cs  : std_logic;
   signal palette_ram_cs : std_logic;
   signal bank_cs        : std_logic;
   signal scroll_cs      : std_logic;
@@ -103,6 +106,7 @@ architecture arch of game is
   signal bg_rom_data     : std_logic_vector(BG_ROM_DATA_WIDTH-1 downto 0);
 
   -- data output signals
+  signal main_rom_data   : byte_t;
   signal prog_rom_1_dout : byte_t;
   signal prog_rom_2_dout : byte_t;
   signal prog_rom_3_dout : byte_t;
@@ -189,16 +193,21 @@ begin
   -- ROM controller
   rom_controller : entity work.rom_controller
   generic map (
-    SPRITE_ROM_OFFSET => 16#02000#,
-    CHAR_ROM_OFFSET   => 16#00000#,
-    FG_ROM_OFFSET     => 16#0A000#,
-    BG_ROM_OFFSET     => 16#12000#
+    MAIN_ROM_OFFSET   => 16#00000#,
+    CHAR_ROM_OFFSET   => 16#03000#,
+    SPRITE_ROM_OFFSET => 16#05000#,
+    FG_ROM_OFFSET     => 16#0D000#,
+    BG_ROM_OFFSET     => 16#15000#
   )
   port map (
     reset => reset,
     clk   => clk,
 
     -- ROM interface
+    main_rom_cs     => main_rom_cs,
+    main_rom_oe     => main_rom_oe,
+    main_rom_addr   => cpu_addr(MAIN_ROM_ADDR_WIDTH-1 downto 0),
+    main_rom_data   => main_rom_data,
     sprite_rom_addr => sprite_rom_addr,
     sprite_rom_data => sprite_rom_data,
     char_rom_addr   => char_rom_addr,
@@ -213,6 +222,7 @@ begin
     sdram_din   => sdram_din,
     sdram_dout  => sdram_dout,
     sdram_we    => sdram_we,
+    sdram_req   => sdram_req,
     sdram_ack   => sdram_ack,
     sdram_valid => sdram_valid,
     sdram_ready => sdram_ready,
@@ -248,7 +258,7 @@ begin
   -- GPU
   gpu : entity work.gpu
   generic map (
-    SPRITE_LAYER_ENABLE => true,
+    SPRITE_LAYER_ENABLE => false,
     CHAR_LAYER_ENABLE   => true,
     FG_LAYER_ENABLE     => false,
     BG_LAYER_ENABLE     => false
@@ -359,9 +369,14 @@ begin
   scroll_cs      <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"f800" and unsigned(cpu_addr) <= x"f805" else '0';
   bank_cs        <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) = x"f808" else '0';
 
+  main_rom_cs <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"0000" and unsigned(cpu_addr) <= x"bfff" else '0';
+  main_rom_oe <= not cpu_rd_n;
+
   -- mux CPU data input
-  cpu_din <= prog_rom_1_dout or
-             prog_rom_2_dout or
+  cpu_din <=
+             main_rom_data or
+             -- prog_rom_1_dout or
+             -- prog_rom_2_dout or
              prog_rom_3_dout or
              work_ram_dout or
              gpu_dout;

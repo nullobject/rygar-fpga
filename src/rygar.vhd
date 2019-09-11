@@ -38,7 +38,9 @@ package rygar is
   constant SDRAM_CTRL_ADDR_WIDTH : natural := 23; -- 8Mx32-bit
   constant SDRAM_CTRL_DATA_WIDTH : natural := 32;
 
-  -- RAM
+  -- RAM/ROM
+  constant MAIN_ROM_ADDR_WIDTH   : natural := 16;
+  constant MAIN_ROM_DATA_WIDTH   : natural := 8;
   constant PROG_ROM_1_ADDR_WIDTH : natural := 15; -- 32kB
   constant PROG_ROM_2_ADDR_WIDTH : natural := 14; -- 16kB
   constant PROG_ROM_3_ADDR_WIDTH : natural := 15; -- 32kB
@@ -64,14 +66,14 @@ package rygar is
   constant SPRITE_RAM_GPU_DATA_WIDTH  : natural := 64;
 
   -- tile ROMs
-  constant BG_ROM_ADDR_WIDTH     : natural := 15; -- 128kB
-  constant BG_ROM_DATA_WIDTH     : natural := 32;
+  constant SPRITE_ROM_ADDR_WIDTH : natural := 15; -- 128kB
+  constant SPRITE_ROM_DATA_WIDTH : natural := 32;
   constant CHAR_ROM_ADDR_WIDTH   : natural := 13; -- 32kB
   constant CHAR_ROM_DATA_WIDTH   : natural := 32;
   constant FG_ROM_ADDR_WIDTH     : natural := 15; -- 128kB
   constant FG_ROM_DATA_WIDTH     : natural := 32;
-  constant SPRITE_ROM_ADDR_WIDTH : natural := 15; -- 128kB
-  constant SPRITE_ROM_DATA_WIDTH : natural := 32;
+  constant BG_ROM_ADDR_WIDTH     : natural := 15; -- 128kB
+  constant BG_ROM_DATA_WIDTH     : natural := 32;
 
   -- each 8x8 tile is composed of four layers of pixel data (bitplanes)
   constant TILE_BPP : natural := 4;
