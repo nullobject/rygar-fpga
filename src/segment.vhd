@@ -79,23 +79,27 @@ architecture arch of segment is
   signal offset : natural range 0 to ROM_WORDS-1;
 
   -- control signals
-  signal hit : std_logic;
-  signal ack : std_logic;
+  signal init : std_logic;
+  signal hit  : std_logic;
+  signal ack  : std_logic;
 
   -- cache signals
   signal cache_addr : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
   signal cache_data : std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
 begin
   -- cache data received from the SDRAM
-  cache_sdram_data : process (clk)
+  cache_sdram_data : process (clk, reset)
   begin
     if reset = '1' then
-      cache_addr <= (others => '0');
-      cache_data <= (others => '0');
+      init <= '0';
     elsif rising_edge(clk) then
       if sdram_valid = '1' then
+        -- set the cache signals
         cache_addr <= sdram_addr;
         cache_data <= sdram_data;
+
+        -- assert the init signal after the cache has been filled
+        init <= '1';
       end if;
     end if;
   end process;
@@ -118,8 +122,9 @@ begin
     end if;
   end process;
 
-  -- assert the hit signal when the SDRAM address is already in the cache
-  hit <= '1' when sdram_addr = cache_addr else '0';
+  -- assert the hit signal when the cache has been filled, and the requested
+  -- address is in the cache
+  hit <= '1' when init = '1' and sdram_addr = cache_addr else '0';
 
   -- calculate the offset of the ROM address within a SDRAM word
   offset <= to_integer(rom_addr(OFFSET_WIDTH-1 downto 0)) when OFFSET_WIDTH > 0 else 0;
