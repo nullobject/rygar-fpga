@@ -62,6 +62,10 @@ entity game is
 end game;
 
 architecture arch of game is
+  constant BANKS : natural := 16;
+
+  constant BANK_REG_WIDTH : natural := ilog2(BANKS);
+
   -- clock enable signals
   signal cen_6 : std_logic;
   signal cen_4 : std_logic;
@@ -78,11 +82,8 @@ architecture arch of game is
   signal cpu_rfsh_n  : std_logic;
   signal cpu_int_n   : std_logic := '1';
   signal cpu_m1_n    : std_logic;
-  signal cpu_halt_n  : std_logic;
 
   -- chip select signals
-  signal main_rom_cs    : std_logic;
-  signal main_rom_oe    : std_logic;
   signal prog_rom_1_cs  : std_logic;
   signal prog_rom_2_cs  : std_logic;
   signal prog_rom_3_cs  : std_logic;
@@ -106,7 +107,6 @@ architecture arch of game is
   signal bg_rom_data     : std_logic_vector(BG_ROM_DATA_WIDTH-1 downto 0);
 
   -- data output signals
-  signal main_rom_data   : byte_t;
   signal prog_rom_1_dout : byte_t;
   signal prog_rom_2_dout : byte_t;
   signal prog_rom_3_dout : byte_t;
@@ -114,11 +114,11 @@ architecture arch of game is
   signal gpu_dout        : byte_t;
 
   -- currently bank register
-  signal current_bank_reg : unsigned(3 downto 0);
+  signal bank_reg : unsigned(BANK_REG_WIDTH-1 downto 0);
 
   -- scroll position registers
-  signal fg_scroll_pos_reg : pos_t;
-  signal bg_scroll_pos_reg : pos_t;
+  signal fg_scroll_pos_reg : pos_t := (x => (others => '0'), y => (others => '0'));
+  signal bg_scroll_pos_reg : pos_t := (x => (others => '0'), y => (others => '0'));
 
   -- video signals
   signal video : video_t;
@@ -148,36 +148,6 @@ begin
     edge => vblank_falling
   );
 
-  -- program ROM 1
-  prog_rom_1 : entity work.single_port_rom
-  generic map (ADDR_WIDTH => PROG_ROM_1_ADDR_WIDTH, INIT_FILE => "rom/cpu_5p.mif")
-  port map (
-    clk  => clk,
-    cs   => prog_rom_1_cs,
-    addr => cpu_addr(PROG_ROM_1_ADDR_WIDTH-1 downto 0),
-    dout => prog_rom_1_dout
-  );
-
-  -- program ROM 2
-  prog_rom_2 : entity work.single_port_rom
-  generic map (ADDR_WIDTH => PROG_ROM_2_ADDR_WIDTH, INIT_FILE => "rom/cpu_5m.mif")
-  port map (
-    clk  => clk,
-    cs   => prog_rom_2_cs,
-    addr => cpu_addr(PROG_ROM_2_ADDR_WIDTH-1 downto 0),
-    dout => prog_rom_2_dout
-  );
-
-  -- program ROM 3
-  prog_rom_3 : entity work.single_port_rom
-  generic map (ADDR_WIDTH => PROG_ROM_3_ADDR_WIDTH, INIT_FILE => "rom/cpu_5j.mif")
-  port map (
-    clk  => clk,
-    cs   => prog_rom_3_cs,
-    addr => current_bank_reg & cpu_addr(10 downto 0),
-    dout => prog_rom_3_dout
-  );
-
   -- work RAM
   work_ram : entity work.single_port_ram
   generic map (ADDR_WIDTH => WORK_RAM_ADDR_WIDTH)
@@ -192,22 +162,29 @@ begin
 
   -- ROM controller
   rom_controller : entity work.rom_controller
-  generic map (
-    MAIN_ROM_OFFSET   => 16#00000#,
-    CHAR_ROM_OFFSET   => 16#03000#,
-    SPRITE_ROM_OFFSET => 16#05000#,
-    FG_ROM_OFFSET     => 16#0D000#,
-    BG_ROM_OFFSET     => 16#15000#
-  )
   port map (
     reset => reset,
     clk   => clk,
 
-    -- ROM interface
-    main_rom_cs     => main_rom_cs,
-    main_rom_oe     => main_rom_oe,
-    main_rom_addr   => cpu_addr(MAIN_ROM_ADDR_WIDTH-1 downto 0),
-    main_rom_data   => main_rom_data,
+    -- program ROM #1 interface
+    prog_rom_1_cs   => prog_rom_1_cs,
+    prog_rom_1_oe   => not cpu_rd_n,
+    prog_rom_1_addr => cpu_addr(PROG_ROM_1_ADDR_WIDTH-1 downto 0),
+    prog_rom_1_data => prog_rom_1_dout,
+
+    -- program ROM #2 interface
+    prog_rom_2_cs   => prog_rom_2_cs,
+    prog_rom_2_oe   => not cpu_rd_n,
+    prog_rom_2_addr => cpu_addr(PROG_ROM_2_ADDR_WIDTH-1 downto 0),
+    prog_rom_2_data => prog_rom_2_dout,
+
+    -- program ROM #3 interface
+    prog_rom_3_cs   => prog_rom_3_cs,
+    prog_rom_3_oe   => not cpu_rd_n,
+    prog_rom_3_addr => bank_reg & cpu_addr(PROG_ROM_3_ADDR_WIDTH-BANK_REG_WIDTH-1 downto 0),
+    prog_rom_3_data => prog_rom_3_dout,
+
+    -- tile ROM interface
     sprite_rom_addr => sprite_rom_addr,
     sprite_rom_data => sprite_rom_data,
     char_rom_addr   => char_rom_addr,
@@ -248,7 +225,7 @@ begin
     RD_n                => cpu_rd_n,
     WR_n                => cpu_wr_n,
     RFSH_n              => cpu_rfsh_n,
-    HALT_n              => cpu_halt_n,
+    HALT_n              => open,
     BUSAK_n             => open,
     std_logic_vector(A) => cpu_addr,
     DI                  => cpu_din,
@@ -258,10 +235,10 @@ begin
   -- GPU
   gpu : entity work.gpu
   generic map (
-    SPRITE_LAYER_ENABLE => false,
+    SPRITE_LAYER_ENABLE => true,
     CHAR_LAYER_ENABLE   => true,
-    FG_LAYER_ENABLE     => false,
-    BG_LAYER_ENABLE     => false
+    FG_LAYER_ENABLE     => true,
+    BG_LAYER_ENABLE     => true
   )
   port map (
     -- clock signals
@@ -274,7 +251,7 @@ begin
     ram_dout => gpu_dout,
     ram_we   => not cpu_wr_n,
 
-    -- ROM interface
+    -- tile ROM interface
     sprite_rom_addr => sprite_rom_addr,
     sprite_rom_data => sprite_rom_data,
     char_rom_addr   => char_rom_addr,
@@ -316,21 +293,21 @@ begin
     end if;
   end process;
 
-  -- Set current bank register.
+  -- Set the bank register.
   --
-  -- This register selects the current bank for program ROM 3.
-  set_current_bank : process (clk)
+  -- The bank register selects the current bank for program ROM 3.
+  set_bank_register : process (clk)
   begin
     if rising_edge(clk) then
       if bank_cs = '1' and cpu_wr_n = '0' then
-        -- flip-flop 6J uses data lines 3 to 6
-        current_bank_reg <= unsigned(cpu_dout(6 downto 3));
+        -- from the schematic, flip-flop 6J uses data bus lines 3 to 6
+        bank_reg <= unsigned(cpu_dout(6 downto 3));
       end if;
     end if;
   end process;
 
   -- set foreground and background scroll position registers
-  set_scroll_pos : process (clk)
+  set_scroll_pos_registers : process (clk)
   begin
     if rising_edge(clk) then
       if scroll_cs = '1' and cpu_wr_n = '0' then
@@ -347,39 +324,33 @@ begin
     end if;
   end process;
 
-  -- $0000-$7fff PROGRAM ROM 1
-  -- $8000-$bfff PROGRAM ROM 2
-  -- $c000-$cfff WORK RAM
-  -- $d000-$d7ff CHARACTER RAM
-  -- $d800-$dbff FOREGROUND RAM
-  -- $dc00-$dfff BACKGROUND RAM
-  -- $e000-$e7ff SPRITE RAM
-  -- $e800-$efff PALETTE RAM
-  -- $f000-$f7ff PROGRAM ROM 3 (BANK SWITCHED)
-  -- $f800-$ffff
-  prog_rom_1_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"0000" and unsigned(cpu_addr) <= x"7fff" else '0';
-  prog_rom_2_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"8000" and unsigned(cpu_addr) <= x"bfff" else '0';
-  work_ram_cs    <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"c000" and unsigned(cpu_addr) <= x"cfff" else '0';
-  char_ram_cs    <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"d000" and unsigned(cpu_addr) <= x"d7ff" else '0';
-  fg_ram_cs      <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"d800" and unsigned(cpu_addr) <= x"dbff" else '0';
-  bg_ram_cs      <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"dc00" and unsigned(cpu_addr) <= x"dfff" else '0';
-  sprite_ram_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"e000" and unsigned(cpu_addr) <= x"e7ff" else '0';
-  palette_ram_cs <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"e800" and unsigned(cpu_addr) <= x"efff" else '0';
-  prog_rom_3_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"f000" and unsigned(cpu_addr) <= x"f7ff" else '0';
-  scroll_cs      <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"f800" and unsigned(cpu_addr) <= x"f805" else '0';
-  bank_cs        <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) = x"f808" else '0';
-
-  main_rom_cs <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and unsigned(cpu_addr) >= x"0000" and unsigned(cpu_addr) <= x"bfff" else '0';
-  main_rom_oe <= not cpu_rd_n;
+  --  address    description
+  -- ----------+-----------------
+  -- 0000-7fff | program ROM 1
+  -- 8000-bfff | program ROM 2
+  -- c000-cfff | work RAM
+  -- d000-d7ff | character RAM
+  -- d800-dbff | foreground RAM
+  -- dc00-dfff | background RAM
+  -- e000-e7ff | sprite RAM
+  -- e800-efff | palette RAM
+  -- f000-f7ff | program ROM 3
+  -- f800-f805 | scroll registers
+  --      f808 | bank register
+  prog_rom_1_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"0000" and cpu_addr <= x"7fff" else '0';
+  prog_rom_2_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"8000" and cpu_addr <= x"bfff" else '0';
+  work_ram_cs    <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"c000" and cpu_addr <= x"cfff" else '0';
+  char_ram_cs    <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"d000" and cpu_addr <= x"d7ff" else '0';
+  fg_ram_cs      <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"d800" and cpu_addr <= x"dbff" else '0';
+  bg_ram_cs      <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"dc00" and cpu_addr <= x"dfff" else '0';
+  sprite_ram_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"e000" and cpu_addr <= x"e7ff" else '0';
+  palette_ram_cs <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"e800" and cpu_addr <= x"efff" else '0';
+  prog_rom_3_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"f000" and cpu_addr <= x"f7ff" else '0';
+  scroll_cs      <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"f800" and cpu_addr <= x"f805" else '0';
+  bank_cs        <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr  = x"f808"                         else '0';
 
   -- mux CPU data input
-  cpu_din <=
-             main_rom_data or
-             -- prog_rom_1_dout or
-             -- prog_rom_2_dout or
-             prog_rom_3_dout or
-             work_ram_dout or
-             gpu_dout;
+  cpu_din <= prog_rom_1_dout or prog_rom_2_dout or prog_rom_3_dout or work_ram_dout or gpu_dout;
 
   -- set video signals
   hsync  <= video.hsync;

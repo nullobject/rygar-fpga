@@ -37,13 +37,6 @@ use work.rygar.all;
 -- The ROMs are all accessed concurrently, so the ROM controller is responsible
 -- for reading the ROM data from the SDRAM in a fair and timely manner.
 entity rom_controller is
-  generic (
-    MAIN_ROM_OFFSET   : natural;
-    SPRITE_ROM_OFFSET : natural;
-    CHAR_ROM_OFFSET   : natural;
-    FG_ROM_OFFSET     : natural;
-    BG_ROM_OFFSET     : natural
-  );
   port (
     -- reset
     reset : in std_logic;
@@ -51,11 +44,25 @@ entity rom_controller is
     -- clock
     clk : in std_logic;
 
-    -- ROM interface
-    main_rom_cs     : in std_logic;
-    main_rom_oe     : in std_logic;
-    main_rom_addr   : in unsigned(MAIN_ROM_ADDR_WIDTH-1 downto 0);
-    main_rom_data   : out std_logic_vector(MAIN_ROM_DATA_WIDTH-1 downto 0);
+    -- program ROM #1 interface
+    prog_rom_1_cs   : in std_logic;
+    prog_rom_1_oe   : in std_logic;
+    prog_rom_1_addr : in unsigned(PROG_ROM_1_ADDR_WIDTH-1 downto 0);
+    prog_rom_1_data : out std_logic_vector(PROG_ROM_1_DATA_WIDTH-1 downto 0);
+
+    -- program ROM #2 interface
+    prog_rom_2_cs   : in std_logic;
+    prog_rom_2_oe   : in std_logic;
+    prog_rom_2_addr : in unsigned(PROG_ROM_2_ADDR_WIDTH-1 downto 0);
+    prog_rom_2_data : out std_logic_vector(PROG_ROM_2_DATA_WIDTH-1 downto 0);
+
+    -- program ROM #3 interface
+    prog_rom_3_cs   : in std_logic;
+    prog_rom_3_oe   : in std_logic;
+    prog_rom_3_addr : in unsigned(PROG_ROM_3_ADDR_WIDTH-1 downto 0);
+    prog_rom_3_data : out std_logic_vector(PROG_ROM_3_DATA_WIDTH-1 downto 0);
+
+    -- tile ROM interface
     sprite_rom_addr : in unsigned(SPRITE_ROM_ADDR_WIDTH-1 downto 0);
     sprite_rom_data : out std_logic_vector(SPRITE_ROM_DATA_WIDTH-1 downto 0);
     char_rom_addr   : in unsigned(CHAR_ROM_ADDR_WIDTH-1 downto 0);
@@ -84,8 +91,9 @@ entity rom_controller is
 end rom_controller;
 
 architecture arch of rom_controller is
-  type rom_t is (NONE, MAIN_ROM, SPRITE_ROM, CHAR_ROM, FG_ROM, BG_ROM);
+  type rom_t is (NONE, PROG_ROM_1, PROG_ROM_2, PROG_ROM_3, SPRITE_ROM, CHAR_ROM, FG_ROM, BG_ROM);
 
+  -- current ROM
   signal rom : rom_t;
 
   -- control signals
@@ -93,14 +101,18 @@ architecture arch of rom_controller is
   signal req   : std_logic;
 
   -- request signals
-  signal main_rom_req   : std_logic;
+  signal prog_rom_1_req : std_logic;
+  signal prog_rom_2_req : std_logic;
+  signal prog_rom_3_req : std_logic;
   signal sprite_rom_req : std_logic;
   signal char_rom_req   : std_logic;
   signal fg_rom_req     : std_logic;
   signal bg_rom_req     : std_logic;
 
   -- enable signals
-  signal main_rom_en   : std_logic;
+  signal prog_rom_1_en : std_logic;
+  signal prog_rom_2_en : std_logic;
+  signal prog_rom_3_en : std_logic;
   signal sprite_rom_en : std_logic;
   signal char_rom_en   : std_logic;
   signal fg_rom_en     : std_logic;
@@ -108,30 +120,72 @@ architecture arch of rom_controller is
 
   -- address mux signals
   signal ioctl_sdram_addr      : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
-  signal main_rom_sdram_addr   : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
+  signal prog_rom_1_sdram_addr : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
+  signal prog_rom_2_sdram_addr : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
+  signal prog_rom_3_sdram_addr : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
   signal sprite_rom_sdram_addr : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
   signal char_rom_sdram_addr   : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
   signal fg_rom_sdram_addr     : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
   signal bg_rom_sdram_addr     : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
 begin
-  main_rom_segment : entity work.segment
+  prog_rom_1_segment : entity work.segment
   generic map (
-    ROM_ADDR_WIDTH => MAIN_ROM_ADDR_WIDTH,
-    ROM_DATA_WIDTH => MAIN_ROM_DATA_WIDTH,
-    ROM_OFFSET     => MAIN_ROM_OFFSET
+    ROM_ADDR_WIDTH => PROG_ROM_1_ADDR_WIDTH,
+    ROM_DATA_WIDTH => PROG_ROM_1_DATA_WIDTH,
+    ROM_OFFSET     => PROG_ROM_1_OFFSET
   )
   port map (
     reset       => reset,
     clk         => clk,
-    cs          => main_rom_cs,
-    oe          => main_rom_oe,
-    rom_addr    => main_rom_addr,
-    rom_data    => main_rom_data,
-    sdram_addr  => main_rom_sdram_addr,
+    cs          => prog_rom_1_cs,
+    oe          => prog_rom_1_oe,
+    rom_addr    => prog_rom_1_addr,
+    rom_data    => prog_rom_1_data,
+    sdram_addr  => prog_rom_1_sdram_addr,
     sdram_data  => sdram_dout,
-    sdram_req   => main_rom_req,
-    sdram_ack   => main_rom_en and sdram_ack,
-    sdram_valid => main_rom_en and sdram_valid
+    sdram_req   => prog_rom_1_req,
+    sdram_ack   => prog_rom_1_en and sdram_ack,
+    sdram_valid => prog_rom_1_en and sdram_valid
+  );
+
+  prog_rom_2_segment : entity work.segment
+  generic map (
+    ROM_ADDR_WIDTH => PROG_ROM_2_ADDR_WIDTH,
+    ROM_DATA_WIDTH => PROG_ROM_2_DATA_WIDTH,
+    ROM_OFFSET     => PROG_ROM_2_OFFSET
+  )
+  port map (
+    reset       => reset,
+    clk         => clk,
+    cs          => prog_rom_2_cs,
+    oe          => prog_rom_2_oe,
+    rom_addr    => prog_rom_2_addr,
+    rom_data    => prog_rom_2_data,
+    sdram_addr  => prog_rom_2_sdram_addr,
+    sdram_data  => sdram_dout,
+    sdram_req   => prog_rom_2_req,
+    sdram_ack   => prog_rom_2_en and sdram_ack,
+    sdram_valid => prog_rom_2_en and sdram_valid
+  );
+
+  prog_rom_3_segment : entity work.segment
+  generic map (
+    ROM_ADDR_WIDTH => PROG_ROM_3_ADDR_WIDTH,
+    ROM_DATA_WIDTH => PROG_ROM_3_DATA_WIDTH,
+    ROM_OFFSET     => PROG_ROM_3_OFFSET
+  )
+  port map (
+    reset       => reset,
+    clk         => clk,
+    cs          => prog_rom_3_cs,
+    oe          => prog_rom_3_oe,
+    rom_addr    => prog_rom_3_addr,
+    rom_data    => prog_rom_3_data,
+    sdram_addr  => prog_rom_3_sdram_addr,
+    sdram_data  => sdram_dout,
+    sdram_req   => prog_rom_3_req,
+    sdram_ack   => prog_rom_3_en and sdram_ack,
+    sdram_valid => prog_rom_3_en and sdram_valid
   );
 
   sprite_rom_segment : entity work.segment
@@ -227,8 +281,12 @@ begin
       rom <= NONE;
     elsif rising_edge(clk) then
       if rom = NONE or sdram_valid = '1' then
-        if main_rom_req = '1' then
-          rom <= MAIN_ROM;
+        if prog_rom_1_req = '1' then
+          rom <= PROG_ROM_1;
+        elsif prog_rom_2_req = '1' then
+          rom <= PROG_ROM_2;
+        elsif prog_rom_3_req = '1' then
+          rom <= PROG_ROM_3;
         elsif sprite_rom_req = '1' then
           rom <= SPRITE_ROM;
         elsif char_rom_req = '1' then
@@ -244,7 +302,9 @@ begin
     end if;
   end process;
 
-  main_rom_en   <= '1' when rom = MAIN_ROM   else '0';
+  prog_rom_1_en <= '1' when rom = PROG_ROM_1 else '0';
+  prog_rom_2_en <= '1' when rom = PROG_ROM_2 else '0';
+  prog_rom_3_en <= '1' when rom = PROG_ROM_3 else '0';
   sprite_rom_en <= '1' when rom = SPRITE_ROM else '0';
   char_rom_en   <= '1' when rom = CHAR_ROM   else '0';
   fg_rom_en     <= '1' when rom = FG_ROM     else '0';
@@ -256,7 +316,9 @@ begin
 
   -- mux the SDRAM address
   sdram_addr <= ioctl_sdram_addr      when ioctl_download = '1' else
-                main_rom_sdram_addr   when main_rom_req   = '1' else
+                prog_rom_1_sdram_addr when prog_rom_1_req = '1' else
+                prog_rom_2_sdram_addr when prog_rom_2_req = '1' else
+                prog_rom_3_sdram_addr when prog_rom_3_req = '1' else
                 sprite_rom_sdram_addr when sprite_rom_req = '1' else
                 char_rom_sdram_addr   when char_rom_req   = '1' else
                 fg_rom_sdram_addr     when fg_rom_req     = '1' else
@@ -264,7 +326,9 @@ begin
                 (others => '0');
 
   -- mux the request signals
-  req <= main_rom_req or
+  req <= prog_rom_1_req or
+         prog_rom_2_req or
+         prog_rom_3_req or
          sprite_rom_req or
          char_rom_req or
          fg_rom_req or
@@ -273,6 +337,6 @@ begin
   -- request data from the SDRAM
   sdram_req <= (ioctl_download and valid) or (not ioctl_download and req);
 
-  -- write to the SDRAM when we're downloading ROM data
+  -- write to the SDRAM while downloading ROM data from the IOCTL interface
   sdram_we <= ioctl_download;
 end architecture arch;

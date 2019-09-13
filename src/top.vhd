@@ -56,7 +56,7 @@ entity top is
 end top;
 
 architecture arch of top is
-  constant TILE_ROM_SIZE : natural := 212992;
+  constant RYGAR_ROM_SIZE : natural := 245760;
 
   type state_t is (INIT, PRELOAD, LOAD, IDLE);
 
@@ -70,7 +70,7 @@ architecture arch of top is
   signal state, next_state : state_t;
 
   -- counters
-  signal data_counter : natural range 0 to TILE_ROM_SIZE-1;
+  signal data_counter : natural range 0 to RYGAR_ROM_SIZE-1;
 
   -- SDRAM signals
   signal sdram_addr  : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
@@ -88,9 +88,9 @@ architecture arch of top is
   signal ioctl_wr       : std_logic;
   signal ioctl_download : std_logic;
 
-  -- tile ROM signals
-  signal tile_rom_addr : unsigned(ilog2(TILE_ROM_SIZE)-1 downto 0);
-  signal tile_rom_data : byte_t;
+  -- rygar ROM signals
+  signal rygar_rom_addr : unsigned(ilog2(RYGAR_ROM_SIZE)-1 downto 0);
+  signal rygar_rom_data : byte_t;
 
   -- sync signals
   signal hsync : std_logic;
@@ -192,35 +192,35 @@ begin
     b => b
   );
 
-  -- tile ROM
-  tile_rom : entity work.single_port_rom
+  -- rygar ROM
+  rygar_rom : entity work.single_port_rom
   generic map (
-    ADDR_WIDTH => ilog2(TILE_ROM_SIZE),
+    ADDR_WIDTH => ilog2(RYGAR_ROM_SIZE),
     INIT_FILE  => "rom/rygar.mif"
   )
   port map (
     clk  => sys_clk,
-    addr => tile_rom_addr,
-    dout => tile_rom_data
+    addr => rygar_rom_addr,
+    dout => rygar_rom_data
   );
 
   -- state machine
-  fsm : process (state, data_counter)
+  fsm : process (state, data_counter, sdram_ready)
   begin
     next_state <= state;
 
     case state is
       when INIT =>
-        if data_counter = TILE_ROM_SIZE-1 then
+        if sdram_ready = '1' then
           next_state <= PRELOAD;
         end if;
 
-      -- preload the byte from the tile ROM
+      -- preload the byte from the rygar ROM
       when PRELOAD =>
         next_state <= LOAD;
 
       when LOAD =>
-        if data_counter = TILE_ROM_SIZE-1 then
+        if data_counter = RYGAR_ROM_SIZE-1 then
           next_state <= IDLE;
         end if;
 
@@ -264,14 +264,14 @@ begin
       ioctl_wr <= '0';
 
       if cen_2 = '1' and state = LOAD then
-        ioctl_addr <= resize(tile_rom_addr, ioctl_addr'length);
-        ioctl_data <= tile_rom_data;
+        ioctl_addr <= resize(rygar_rom_addr, ioctl_addr'length);
+        ioctl_data <= rygar_rom_data;
         ioctl_wr   <= '1';
       end if;
     end if;
   end process;
 
-  tile_rom_addr <= to_unsigned(data_counter, tile_rom_addr'length);
+  rygar_rom_addr <= to_unsigned(data_counter, rygar_rom_addr'length);
 
   ioctl_download <= '1' when state = LOAD else '0';
 

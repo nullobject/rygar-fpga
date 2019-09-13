@@ -38,13 +38,35 @@ package rygar is
   constant SDRAM_CTRL_ADDR_WIDTH : natural := 23; -- 8Mx32-bit
   constant SDRAM_CTRL_DATA_WIDTH : natural := 32;
 
-  -- RAM/ROM
-  constant MAIN_ROM_ADDR_WIDTH   : natural := 16;
-  constant MAIN_ROM_DATA_WIDTH   : natural := 8;
+  -- work RAM
+  constant WORK_RAM_ADDR_WIDTH : natural := 12; -- 4kB
+
+  -- program ROMs
   constant PROG_ROM_1_ADDR_WIDTH : natural := 15; -- 32kB
+  constant PROG_ROM_1_DATA_WIDTH : natural := 8;
   constant PROG_ROM_2_ADDR_WIDTH : natural := 14; -- 16kB
+  constant PROG_ROM_2_DATA_WIDTH : natural := 8;
   constant PROG_ROM_3_ADDR_WIDTH : natural := 15; -- 32kB
-  constant WORK_RAM_ADDR_WIDTH   : natural := 12; -- 4kB
+  constant PROG_ROM_3_DATA_WIDTH : natural := 8;
+
+  -- tile ROMs
+  constant SPRITE_ROM_ADDR_WIDTH : natural := 15; -- 128kB
+  constant SPRITE_ROM_DATA_WIDTH : natural := 32;
+  constant CHAR_ROM_ADDR_WIDTH   : natural := 13; -- 32kB
+  constant CHAR_ROM_DATA_WIDTH   : natural := 32;
+  constant FG_ROM_ADDR_WIDTH     : natural := 15; -- 128kB
+  constant FG_ROM_DATA_WIDTH     : natural := 32;
+  constant BG_ROM_ADDR_WIDTH     : natural := 15; -- 128kB
+  constant BG_ROM_DATA_WIDTH     : natural := 32;
+
+  -- ROM offsets
+  constant PROG_ROM_1_OFFSET : natural := 16#00000#;
+  constant PROG_ROM_2_OFFSET : natural := 16#02000#;
+  constant PROG_ROM_3_OFFSET : natural := 16#03000#;
+  constant CHAR_ROM_OFFSET   : natural := 16#05000#;
+  constant SPRITE_ROM_OFFSET : natural := 16#07000#;
+  constant FG_ROM_OFFSET     : natural := 16#0F000#;
+  constant BG_ROM_OFFSET     : natural := 16#17000#;
 
   -- VRAM
   constant BG_RAM_CPU_ADDR_WIDTH      : natural := 10; -- 1kB
@@ -56,8 +78,6 @@ package rygar is
   constant FG_RAM_CPU_ADDR_WIDTH      : natural := 10; -- 1kB
   constant FG_RAM_GPU_ADDR_WIDTH      : natural := 10;
   constant FG_RAM_GPU_DATA_WIDTH      : natural := 8;
-  constant FRAME_BUFFER_ADDR_WIDTH    : natural := 16;
-  constant FRAME_BUFFER_DATA_WIDTH    : natural := 10;
   constant PALETTE_RAM_CPU_ADDR_WIDTH : natural := 11; -- 2kB
   constant PALETTE_RAM_GPU_ADDR_WIDTH : natural := 10;
   constant PALETTE_RAM_GPU_DATA_WIDTH : natural := 16;
@@ -65,15 +85,9 @@ package rygar is
   constant SPRITE_RAM_GPU_ADDR_WIDTH  : natural := 8;
   constant SPRITE_RAM_GPU_DATA_WIDTH  : natural := 64;
 
-  -- tile ROMs
-  constant SPRITE_ROM_ADDR_WIDTH : natural := 15; -- 128kB
-  constant SPRITE_ROM_DATA_WIDTH : natural := 32;
-  constant CHAR_ROM_ADDR_WIDTH   : natural := 13; -- 32kB
-  constant CHAR_ROM_DATA_WIDTH   : natural := 32;
-  constant FG_ROM_ADDR_WIDTH     : natural := 15; -- 128kB
-  constant FG_ROM_DATA_WIDTH     : natural := 32;
-  constant BG_ROM_ADDR_WIDTH     : natural := 15; -- 128kB
-  constant BG_ROM_DATA_WIDTH     : natural := 32;
+  -- frame buffer
+  constant FRAME_BUFFER_ADDR_WIDTH : natural := 16;
+  constant FRAME_BUFFER_DATA_WIDTH : natural := 10;
 
   -- each 8x8 tile is composed of four layers of pixel data (bitplanes)
   constant TILE_BPP : natural := 4;
