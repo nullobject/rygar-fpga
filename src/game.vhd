@@ -62,8 +62,10 @@ entity game is
 end game;
 
 architecture arch of game is
+  -- the number of banks in program ROM #3
   constant BANKS : natural := 16;
 
+  -- the number of bits in the bank register
   constant BANK_REG_WIDTH : natural := ilog2(BANKS);
 
   -- clock enable signals

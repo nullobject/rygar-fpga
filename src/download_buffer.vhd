@@ -24,7 +24,7 @@ use ieee.numeric_std.all;
 
 use work.rygar.all;
 
--- A download buffer writes a stream of bytes to an internal buffer. When the
+-- The download buffer writes a stream of bytes to an internal buffer. When the
 -- buffer is full, it is flushed as a single word.
 --
 -- For example, with a buffer size of four, every four bytes written will be
@@ -50,8 +50,7 @@ entity download_buffer is
     -- write enable
     we : in std_logic;
 
-    -- asserted when the data on the output bus is valid (i.e. the buffer has
-    -- been flushed)
+    -- when this signal is asserted, there is a valid word on the output bus
     valid : out std_logic
   );
 end download_buffer;

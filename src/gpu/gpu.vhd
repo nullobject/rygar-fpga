@@ -52,7 +52,7 @@ entity gpu is
     ram_dout : out byte_t;
     ram_we   : in std_logic;
 
-    -- ROM interface
+    -- tile ROM interface
     sprite_rom_addr : out unsigned(SPRITE_ROM_ADDR_WIDTH-1 downto 0) := (others => '0');
     sprite_rom_data : in std_logic_vector(SPRITE_ROM_DATA_WIDTH-1 downto 0);
     char_rom_addr   : out unsigned(CHAR_ROM_ADDR_WIDTH-1 downto 0) := (others => '0');
@@ -114,6 +114,14 @@ architecture arch of gpu is
   -- sprite priority data
   signal sprite_priority : priority_t;
 begin
+  -- video timing generator
+  video_gen : entity work.video_gen
+  port map (
+    clk   => clk,
+    cen_6 => cen_6,
+    video => video
+  );
+
   -- The sprite RAM (2kB) contains the sprite data.
   sprite_ram : entity work.true_dual_port_ram
   generic map (
@@ -354,14 +362,6 @@ begin
     -- video signals
     video => video,
     rgb   => rgb
-  );
-
-  -- video timing generator
-  video_gen : entity work.video_gen
-  port map (
-    clk   => clk,
-    cen_6 => cen_6,
-    video => video
   );
 
   -- mux GPU data output

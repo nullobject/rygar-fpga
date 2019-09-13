@@ -32,7 +32,7 @@ use work.rygar.all;
 -- burst two 16-bit words to read/write a single 32-bit word to the SDRAM.
 entity sdram is
   generic (
-    -- clock frequency in MHz
+    -- clock frequency (in MHz)
     CLK_FREQ : real
   );
   port (
