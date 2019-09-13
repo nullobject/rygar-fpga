@@ -196,7 +196,7 @@ begin
   tile_rom : entity work.single_port_rom
   generic map (
     ADDR_WIDTH => ilog2(TILE_ROM_SIZE),
-    INIT_FILE  => "rom/tiles.mif"
+    INIT_FILE  => "rom/rygar.mif"
   )
   port map (
     clk  => sys_clk,
