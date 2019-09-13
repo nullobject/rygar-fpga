@@ -131,12 +131,12 @@ architecture arch of game is
 begin
   -- generate a 6MHz clock enable signal
   clock_divider_6 : entity work.clock_divider
-  generic map (DIVISOR => 8)
+  generic map (DIVISOR => 10)
   port map (clk => clk, cen => cen_6);
 
   -- generate a 4MHz clock enable signal
   clock_divider_4 : entity work.clock_divider
-  generic map (DIVISOR => 12)
+  generic map (DIVISOR => 15)
   port map (clk => clk, cen => cen_4);
 
   -- detect falling edges of the VBLANK signal
