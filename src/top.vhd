@@ -114,7 +114,7 @@ begin
 
   -- generate a 2MHz clock enable signal
   clock_divider_2 : entity work.clock_divider
-  generic map (DIVISOR => 30)
+  generic map (DIVISOR => 24)
   port map (clk => sys_clk, cen => cen_2);
 
   -- Generate a reset pulse after powering on, or when KEY0 is pressed.
@@ -130,7 +130,7 @@ begin
 
   -- SDRAM controller
   sdram : entity work.sdram
-  generic map (CLK_FREQ => 60.0)
+  generic map (CLK_FREQ => 48.0)
   port map (
     reset => reset,
     clk   => sys_clk,
