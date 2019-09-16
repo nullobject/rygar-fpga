@@ -80,10 +80,10 @@ architecture arch of sdram is
   constant CMD_NOP          : command_t := "111";
 
   -- timing values taken directly from the datasheet
-  constant T_MRD : real := 14.0; -- ns
-  constant T_RC  : real := 63.0; -- ns
-  constant T_RCD : real := 21.0; -- ns
-  constant T_RP  : real := 21.0; -- ns
+  constant T_MRD : real := 12.0; -- ns
+  constant T_RC  : real := 60.0; -- ns
+  constant T_RCD : real := 18.0; -- ns
+  constant T_RP  : real := 18.0; -- ns
 
   -- the number of words in a burst
   constant BURST_LENGTH : natural := 2;
