@@ -32,6 +32,14 @@ entity game is
     -- clock
     clk : in std_logic;
 
+    -- player controls
+    joystick_1 : in byte_t;
+    joystick_2 : in byte_t;
+    start_1    : in std_logic;
+    start_2    : in std_logic;
+    coin_1     : in std_logic;
+    coin_2     : in std_logic;
+
     -- SDRAM interface
     sdram_addr  : out unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
     sdram_din   : out std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
@@ -95,8 +103,11 @@ architecture arch of game is
   signal fg_ram_cs      : std_logic;
   signal bg_ram_cs      : std_logic;
   signal palette_ram_cs : std_logic;
-  signal bank_cs        : std_logic;
   signal scroll_cs      : std_logic;
+  signal player_1_cs    : std_logic;
+  signal player_2_cs    : std_logic;
+  signal coin_cs        : std_logic;
+  signal bank_cs        : std_logic;
 
   -- ROM signals
   signal sprite_rom_addr : unsigned(SPRITE_ROM_ADDR_WIDTH-1 downto 0);
@@ -115,12 +126,13 @@ architecture arch of game is
   signal work_ram_dout   : byte_t;
   signal gpu_dout        : byte_t;
 
-  -- currently bank register
-  signal bank_reg : unsigned(BANK_REG_WIDTH-1 downto 0);
-
-  -- scroll position registers
+  -- registers
   signal fg_scroll_pos_reg : pos_t := (x => (others => '0'), y => (others => '0'));
   signal bg_scroll_pos_reg : pos_t := (x => (others => '0'), y => (others => '0'));
+  signal player_1_reg      : byte_t;
+  signal player_2_reg      : byte_t;
+  signal coin_reg          : byte_t;
+  signal bank_reg          : unsigned(BANK_REG_WIDTH-1 downto 0);
 
   -- video signals
   signal video : video_t;
@@ -326,6 +338,48 @@ begin
     end if;
   end process;
 
+  -- update the player one register with the joystick and button input state
+  set_player_1_register : process (clk)
+  begin
+    if rising_edge(clk) then
+      if player_1_cs = '1' and cpu_rd_n = '0' then
+        case cpu_addr(0) is
+          when '0' => player_1_reg <= "0000" & joystick_1(3 downto 0);
+          when '1' => player_1_reg <= "0000" & joystick_1(7 downto 4);
+        end case;
+      else
+        player_1_reg <= (others => '0');
+      end if;
+    end if;
+  end process;
+
+  -- update the player two register with the joystick and button inputs state
+  set_player_2_register : process (clk)
+  begin
+    if rising_edge(clk) then
+      if player_2_cs = '1' and cpu_rd_n = '0' then
+        case cpu_addr(0) is
+          when '0' => player_2_reg <= "0000" & joystick_2(3 downto 0);
+          when '1' => player_2_reg <= "0000" & joystick_2(7 downto 4);
+        end case;
+      else
+        player_2_reg <= (others => '0');
+      end if;
+    end if;
+  end process;
+
+  -- update the coin register with the start and coin input state
+  set_coin_register : process (clk)
+  begin
+    if rising_edge(clk) then
+      if coin_cs = '1' and cpu_rd_n = '0' then
+        coin_reg <= "0000" & coin_2 & coin_1 & start_2 & start_1;
+      else
+        coin_reg <= (others => '0');
+      end if;
+    end if;
+  end process;
+
   --  address    description
   -- ----------+-----------------
   -- 0000-7fff | program ROM 1
@@ -338,6 +392,9 @@ begin
   -- e800-efff | palette RAM
   -- f000-f7ff | program ROM 3
   -- f800-f805 | scroll registers
+  -- f800-f801 | player 1
+  -- f802-f803 | player 2
+  --      f804 | coin
   --      f808 | bank register
   prog_rom_1_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"0000" and cpu_addr <= x"7fff" else '0';
   prog_rom_2_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"8000" and cpu_addr <= x"bfff" else '0';
@@ -349,10 +406,20 @@ begin
   palette_ram_cs <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"e800" and cpu_addr <= x"efff" else '0';
   prog_rom_3_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"f000" and cpu_addr <= x"f7ff" else '0';
   scroll_cs      <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"f800" and cpu_addr <= x"f805" else '0';
+  player_1_cs    <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"f800" and cpu_addr <= x"f801" else '0';
+  player_2_cs    <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"f802" and cpu_addr <= x"f803" else '0';
+  coin_cs        <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr  = x"f804"                         else '0';
   bank_cs        <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr  = x"f808"                         else '0';
 
   -- mux CPU data input
-  cpu_din <= prog_rom_1_dout or prog_rom_2_dout or prog_rom_3_dout or work_ram_dout or gpu_dout;
+  cpu_din <= prog_rom_1_dout or
+             prog_rom_2_dout or
+             prog_rom_3_dout or
+             work_ram_dout or
+             gpu_dout or
+             player_1_reg or
+             player_2_reg or
+             coin_reg;
 
   -- set video signals
   hsync  <= video.hsync;

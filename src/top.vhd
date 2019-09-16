@@ -164,6 +164,14 @@ begin
     reset => reset,
     clk   => sys_clk,
 
+    -- player controls
+    joystick_1 => (others => '0'),
+    joystick_2 => (others => '0'),
+    start_1    => '0',
+    start_2    => '0',
+    coin_1     => '0',
+    coin_2     => '0',
+
     -- SDRAM interface
     sdram_addr  => sdram_addr,
     sdram_din   => sdram_din,
