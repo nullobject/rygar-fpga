@@ -64,7 +64,7 @@ architecture arch of top is
 
   -- clock signals
   signal sys_clk : std_logic;
-  signal cen_2   : std_logic;
+  signal cen_4   : std_logic;
 
   -- state signals
   signal state, next_state : state_t;
@@ -112,11 +112,6 @@ begin
     locked   => open
   );
 
-  -- generate a 2MHz clock enable signal
-  clock_divider_2 : entity work.clock_divider
-  generic map (DIVISOR => 24)
-  port map (clk => sys_clk, cen => cen_2);
-
   -- Generate a reset pulse after powering on, or when KEY0 is pressed.
   --
   -- The Z80 needs to be reset after powering on, otherwise it may load garbage
@@ -162,7 +157,11 @@ begin
   game : entity work.game
   port map (
     reset => reset,
-    clk   => sys_clk,
+
+    clk    => sys_clk,
+    cen_12 => open,
+    cen_6  => open,
+    cen_4  => cen_4,
 
     -- player controls
     joystick_1 => (others => '0'),
@@ -243,7 +242,7 @@ begin
     if reset = '1' then
       state <= INIT;
     elsif rising_edge(sys_clk) then
-      if cen_2 = '1' then
+      if cen_4 = '1' then
         state <= next_state;
       end if;
     end if;
@@ -255,7 +254,7 @@ begin
     if reset = '1' then
       data_counter <= 0;
     elsif rising_edge(sys_clk) then
-      if cen_2 = '1' then
+      if cen_4 = '1' then
         if state /= next_state then -- state changing
           data_counter <= 0;
         else
@@ -271,7 +270,7 @@ begin
     if rising_edge(sys_clk) then
       ioctl_wr <= '0';
 
-      if cen_2 = '1' and state = LOAD then
+      if cen_4 = '1' and state = LOAD then
         ioctl_addr <= resize(rygar_rom_addr, ioctl_addr'length);
         ioctl_data <= rygar_rom_data;
         ioctl_wr   <= '1';

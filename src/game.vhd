@@ -32,6 +32,11 @@ entity game is
     -- clock
     clk : in std_logic;
 
+    -- clock enable signals
+    cen_12 : buffer std_logic;
+    cen_6  : buffer std_logic;
+    cen_4  : buffer std_logic;
+
     -- player controls
     joystick_1 : in byte_t;
     joystick_2 : in byte_t;
@@ -75,10 +80,6 @@ architecture arch of game is
 
   -- the number of bits in the bank register
   constant BANK_REG_WIDTH : natural := ilog2(BANKS);
-
-  -- clock enable signals
-  signal cen_6 : std_logic;
-  signal cen_4 : std_logic;
 
   -- CPU signals
   signal cpu_cen     : std_logic;
@@ -143,6 +144,11 @@ architecture arch of game is
   -- RGB data
   signal rgb : rgb_t;
 begin
+  -- generate a 12MHz clock enable signal
+  clock_divider_12 : entity work.clock_divider
+  generic map (DIVISOR => 4)
+  port map (clk => clk, cen => cen_12);
+
   -- generate a 6MHz clock enable signal
   clock_divider_6 : entity work.clock_divider
   generic map (DIVISOR => 8)
