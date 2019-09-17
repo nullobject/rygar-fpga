@@ -138,8 +138,17 @@ localparam CONF_STR = {
   "A.Rygar;;",
   "F,rom;",
   "-;",
+  "O1,Aspect Ratio,Original,Wide;",
+  "O35,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
+  "-;",
+  "O89,Lives,3,4,5,2;",
+  "OA,Cabinet,Upright,Cocktail;",
+  "OBC,Bonus Life,50K 200K 500K,100K 300K 600K,200K 500K,100K;",
+  "ODE,Difficulty,Easy,Normal,Hard,Hardest;",
+  "OF,Allow Continue,Yes,No;",
+  "-;",
   "R0,Reset;",
-  "J1,Jump,Fire,Start 1P,Start 2P,Coin;",
+  "J1,Fire,Jump,Start 1P,Start 2P,Coin;",
   "V,v",`BUILD_DATE
 };
 
@@ -199,6 +208,8 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 
 wire [3:0] R, G, B;
 wire HSync, VSync, HBlank, VBlank;
+wire [2:0] scale = status[5:3];
+wire scandoubler = (scale || forced_scandoubler);
 
 video_mixer #(.LINE_LENGTH(256), .HALF_DEPTH(1)) video_mixer
 (
@@ -209,7 +220,7 @@ video_mixer #(.LINE_LENGTH(256), .HALF_DEPTH(1)) video_mixer
   .ce_pix_out(CE_PIXEL),
 
   .scanlines(0),
-  .scandoubler(forced_scandoubler),
+  .scandoubler(scandoubler),
   .hq2x(scale==1),
   .mono(0)
 );
@@ -254,15 +265,15 @@ sdram #(.CLK_FREQ(48.0)) sdram
 wire       pressed = ps2_key[9];
 wire [7:0] code    = ps2_key[7:0];
 
-reg btn_left    = 0;
-reg btn_right   = 0;
-reg btn_down    = 0;
-reg btn_up      = 0;
-reg btn_jump    = 0;
-reg btn_fire    = 0;
-reg btn_start_1 = 0;
-reg btn_start_2 = 0;
-reg btn_coin    = 0;
+reg key_left    = 0;
+reg key_right   = 0;
+reg key_down    = 0;
+reg key_up      = 0;
+reg key_jump    = 0;
+reg key_fire    = 0;
+reg key_start_1 = 0;
+reg key_start_2 = 0;
+reg key_coin    = 0;
 
 always @(posedge clk_sys) begin
   reg old_state;
@@ -270,28 +281,28 @@ always @(posedge clk_sys) begin
 
   if (old_state != ps2_key[10]) begin
     case (code)
-      'h75: btn_up      <= pressed; // up
-      'h72: btn_down    <= pressed; // down
-      'h6B: btn_left    <= pressed; // left
-      'h74: btn_right   <= pressed; // right
-      'h16: btn_start_1 <= pressed; // 1
-      'h1E: btn_start_2 <= pressed; // 2
-      'h2E: btn_coin    <= pressed; // 5
-      'h14: btn_fire    <= pressed; // ctrl
-      'h11: btn_jump    <= pressed; // alt
+      'h75: key_up      <= pressed; // up
+      'h72: key_down    <= pressed; // down
+      'h6B: key_left    <= pressed; // left
+      'h74: key_right   <= pressed; // right
+      'h16: key_start_1 <= pressed; // 1
+      'h1E: key_start_2 <= pressed; // 2
+      'h2E: key_coin    <= pressed; // 5
+      'h14: key_fire    <= pressed; // ctrl
+      'h11: key_jump    <= pressed; // alt
     endcase
   end
 end
 
-wire up      = btn_up      | joy[3];
-wire down    = btn_down    | joy[2];
-wire left    = btn_left    | joy[1];
-wire right   = btn_right   | joy[0];
-wire jump    = btn_jump    | joy[4];
-wire fire    = btn_fire    | joy[5];
-wire start_1 = btn_start_1 | joy[6];
-wire start_2 = btn_start_2 | joy[7];
-wire coin    = btn_coin    | joy[8];
+wire up      = key_up      | joy[3];
+wire down    = key_down    | joy[2];
+wire left    = key_left    | joy[1];
+wire right   = key_right   | joy[0];
+wire jump    = key_jump    | joy[4];
+wire fire    = key_fire    | joy[5];
+wire start_1 = key_start_1 | joy[6];
+wire start_2 = key_start_2 | joy[7];
+wire coin    = key_coin    | joy[8];
 
 game game
 (
@@ -305,6 +316,12 @@ game game
   .start_2(start_2),
   .coin_1(coin),
   .coin_2(1'b0),
+
+  .dip_allow_continue(~status[15]),
+  .dip_bonus_life(status[12:11]),
+  .dip_cabinet(~status[10]),
+  .dip_difficulty(status[14:13]),
+  .dip_lives(status[9:8]),
 
   .sdram_addr(sdram_addr),
   .sdram_din(sdram_din),

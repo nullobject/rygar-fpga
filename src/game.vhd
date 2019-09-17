@@ -45,6 +45,13 @@ entity game is
     coin_1     : in std_logic;
     coin_2     : in std_logic;
 
+    -- DIP switches
+    dip_allow_continue : in std_logic;
+    dip_bonus_life     : in std_logic_vector(1 downto 0);
+    dip_cabinet        : in std_logic;
+    dip_difficulty     : in std_logic_vector(1 downto 0);
+    dip_lives          : in std_logic_vector(1 downto 0);
+
     -- SDRAM interface
     sdram_addr  : out unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
     sdram_din   : out std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
@@ -108,6 +115,8 @@ architecture arch of game is
   signal player_1_cs    : std_logic;
   signal player_2_cs    : std_logic;
   signal coin_cs        : std_logic;
+  signal dip_sw_1_cs    : std_logic;
+  signal dip_sw_2_cs    : std_logic;
   signal bank_cs        : std_logic;
 
   -- ROM signals
@@ -133,6 +142,8 @@ architecture arch of game is
   signal player_1_reg      : byte_t;
   signal player_2_reg      : byte_t;
   signal coin_reg          : byte_t;
+  signal dip_sw_1_reg      : byte_t;
+  signal dip_sw_2_reg      : byte_t;
   signal bank_reg          : unsigned(BANK_REG_WIDTH-1 downto 0);
 
   -- video signals
@@ -386,6 +397,36 @@ begin
     end if;
   end process;
 
+  -- update the DIP switch #1 register
+  set_dip_sw_1_register : process (clk)
+  begin
+    if rising_edge(clk) then
+      if dip_sw_1_cs = '1' and cpu_rd_n = '0' then
+        case cpu_addr(0) is
+          when '0' => dip_sw_1_reg <= "00000000";
+          when '1' => dip_sw_1_reg <= "00000" & dip_cabinet & dip_lives;
+        end case;
+      else
+        dip_sw_1_reg <= (others => '0');
+      end if;
+    end if;
+  end process;
+
+  -- update the DIP switch #2 register
+  set_dip_sw_2_register : process (clk)
+  begin
+    if rising_edge(clk) then
+      if dip_sw_2_cs = '1' and cpu_rd_n = '0' then
+        case cpu_addr(0) is
+          when '0' => dip_sw_2_reg <= "0000" & dip_difficulty & dip_bonus_life;
+          when '1' => dip_sw_2_reg <= "0000" & dip_allow_continue & "000";
+        end case;
+      else
+        dip_sw_2_reg <= (others => '0');
+      end if;
+    end if;
+  end process;
+
   --  address    description
   -- ----------+-----------------
   -- 0000-7fff | program ROM 1
@@ -401,6 +442,8 @@ begin
   -- f800-f801 | player 1
   -- f802-f803 | player 2
   --      f804 | coin
+  -- f806-f807 | DIP switch 1
+  -- f808-f809 | DIP switch 2
   --      f808 | bank register
   prog_rom_1_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"0000" and cpu_addr <= x"7fff" else '0';
   prog_rom_2_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"8000" and cpu_addr <= x"bfff" else '0';
@@ -415,6 +458,8 @@ begin
   player_1_cs    <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"f800" and cpu_addr <= x"f801" else '0';
   player_2_cs    <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"f802" and cpu_addr <= x"f803" else '0';
   coin_cs        <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr  = x"f804"                         else '0';
+  dip_sw_1_cs    <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"f806" and cpu_addr <= x"f807" else '0';
+  dip_sw_2_cs    <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"f808" and cpu_addr <= x"f809" else '0';
   bank_cs        <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr  = x"f808"                         else '0';
 
   -- mux CPU data input
@@ -425,7 +470,9 @@ begin
              gpu_dout or
              player_1_reg or
              player_2_reg or
-             coin_reg;
+             coin_reg or
+             dip_sw_1_reg or
+             dip_sw_2_reg;
 
   -- set video signals
   hsync  <= video.hsync;
