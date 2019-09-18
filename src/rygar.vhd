@@ -131,6 +131,7 @@ package rygar is
   constant COLOR_DEPTH_B : natural := 4;
 
   subtype byte_t is std_logic_vector(7 downto 0);
+  subtype nibble_t is std_logic_vector(3 downto 0);
 
   -- represents a RGB colour value
   type rgb_t is record

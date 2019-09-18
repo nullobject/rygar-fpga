@@ -135,15 +135,11 @@ architecture arch of game is
   signal prog_rom_3_dout : byte_t;
   signal work_ram_dout   : byte_t;
   signal gpu_dout        : byte_t;
+  signal io_dout         : nibble_t;
 
   -- registers
   signal fg_scroll_pos_reg : pos_t := (x => (others => '0'), y => (others => '0'));
   signal bg_scroll_pos_reg : pos_t := (x => (others => '0'), y => (others => '0'));
-  signal player_1_reg      : byte_t;
-  signal player_2_reg      : byte_t;
-  signal coin_reg          : byte_t;
-  signal dip_sw_1_reg      : byte_t;
-  signal dip_sw_2_reg      : byte_t;
   signal bank_reg          : unsigned(BANK_REG_WIDTH-1 downto 0);
 
   -- video signals
@@ -355,77 +351,16 @@ begin
     end if;
   end process;
 
-  -- update the player one register with the joystick and button input state
-  set_player_1_register : process (clk)
-  begin
-    if rising_edge(clk) then
-      if player_1_cs = '1' and cpu_rd_n = '0' then
-        case cpu_addr(0) is
-          when '0' => player_1_reg <= "0000" & joystick_1(3 downto 0);
-          when '1' => player_1_reg <= "0000" & joystick_1(7 downto 4);
-        end case;
-      else
-        player_1_reg <= (others => '0');
-      end if;
-    end if;
-  end process;
-
-  -- update the player two register with the joystick and button inputs state
-  set_player_2_register : process (clk)
-  begin
-    if rising_edge(clk) then
-      if player_2_cs = '1' and cpu_rd_n = '0' then
-        case cpu_addr(0) is
-          when '0' => player_2_reg <= "0000" & joystick_2(3 downto 0);
-          when '1' => player_2_reg <= "0000" & joystick_2(7 downto 4);
-        end case;
-      else
-        player_2_reg <= (others => '0');
-      end if;
-    end if;
-  end process;
-
-  -- update the coin register with the start and coin input state
-  set_coin_register : process (clk)
-  begin
-    if rising_edge(clk) then
-      if coin_cs = '1' and cpu_rd_n = '0' then
-        coin_reg <= "0000" & coin_1 & coin_2 & start_1 & start_2;
-      else
-        coin_reg <= (others => '0');
-      end if;
-    end if;
-  end process;
-
-  -- update the DIP switch #1 register
-  set_dip_sw_1_register : process (clk)
-  begin
-    if rising_edge(clk) then
-      if dip_sw_1_cs = '1' and cpu_rd_n = '0' then
-        case cpu_addr(0) is
-          when '0' => dip_sw_1_reg <= "00000000";
-          when '1' => dip_sw_1_reg <= "00000" & dip_cabinet & dip_lives;
-        end case;
-      else
-        dip_sw_1_reg <= (others => '0');
-      end if;
-    end if;
-  end process;
-
-  -- update the DIP switch #2 register
-  set_dip_sw_2_register : process (clk)
-  begin
-    if rising_edge(clk) then
-      if dip_sw_2_cs = '1' and cpu_rd_n = '0' then
-        case cpu_addr(0) is
-          when '0' => dip_sw_2_reg <= "0000" & dip_difficulty & dip_bonus_life;
-          when '1' => dip_sw_2_reg <= "0000" & dip_allow_continue & "000";
-        end case;
-      else
-        dip_sw_2_reg <= (others => '0');
-      end if;
-    end if;
-  end process;
+  -- mux joystick, coin, and DIP switch data
+  io_dout <= joystick_1(3 downto 0)              when player_1_cs = '1' and cpu_rd_n = '0' and cpu_addr(0) = '0' else
+             joystick_1(7 downto 4)              when player_1_cs = '1' and cpu_rd_n = '0' and cpu_addr(0) = '1' else
+             joystick_2(3 downto 0)              when player_2_cs = '1' and cpu_rd_n = '0' and cpu_addr(0) = '0' else
+             joystick_2(7 downto 4)              when player_2_cs = '1' and cpu_rd_n = '0' and cpu_addr(0) = '1' else
+             coin_1 & coin_2 & start_1 & start_2 when coin_cs     = '1' and cpu_rd_n = '0' and cpu_addr(0) = '0' else
+             "0" & dip_cabinet & dip_lives       when dip_sw_1_cs = '1' and cpu_rd_n = '0' and cpu_addr(0) = '1' else
+             dip_difficulty & dip_bonus_life     when dip_sw_2_cs = '1' and cpu_rd_n = '0' and cpu_addr(0) = '0' else
+             dip_allow_continue & "000"          when dip_sw_2_cs = '1' and cpu_rd_n = '0' and cpu_addr(0) = '1' else
+             (others => '0');
 
   --  address    description
   -- ----------+-----------------
@@ -468,11 +403,7 @@ begin
              prog_rom_3_dout or
              work_ram_dout or
              gpu_dout or
-             player_1_reg or
-             player_2_reg or
-             coin_reg or
-             dip_sw_1_reg or
-             dip_sw_2_reg;
+             io_dout;
 
   -- set video signals
   hsync  <= video.hsync;
