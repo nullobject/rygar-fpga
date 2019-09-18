@@ -64,9 +64,9 @@ package rygar is
   constant PROG_ROM_2_OFFSET : natural := 16#02000#;
   constant PROG_ROM_3_OFFSET : natural := 16#03000#;
   constant CHAR_ROM_OFFSET   : natural := 16#05000#;
-  constant SPRITE_ROM_OFFSET : natural := 16#07000#;
-  constant FG_ROM_OFFSET     : natural := 16#0F000#;
-  constant BG_ROM_OFFSET     : natural := 16#17000#;
+  constant FG_ROM_OFFSET     : natural := 16#07000#;
+  constant BG_ROM_OFFSET     : natural := 16#0F000#;
+  constant SPRITE_ROM_OFFSET : natural := 16#17000#;
 
   -- VRAM
   constant BG_RAM_CPU_ADDR_WIDTH      : natural := 10; -- 1kB
