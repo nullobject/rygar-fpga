@@ -23,6 +23,8 @@ rom:
 					 rom/vid_6e.bin -binary -offset 0x64000 \
 					 rom/vid_6c.bin -binary -offset 0x6C000 \
 					 rom/vid_6b.bin -binary -offset 0x74000 \
+					 rom/cpu_4h.bin -binary -offset 0x7C000 \
+					 rom/cpu_1f.bin -binary -offset 0x80000 \
 					 -o rom/rygar.mif -mif
 	cat rom/5.5p \
 			rom/cpu_5m.bin \
@@ -40,6 +42,8 @@ rom:
 			rom/vid_6e.bin \
 			rom/vid_6c.bin \
 			rom/vid_6b.bin \
+			rom/cpu_4h.bin \
+			rom/cpu_1f.bin \
 			> rom/a.rygar.rom
 
 clean:
