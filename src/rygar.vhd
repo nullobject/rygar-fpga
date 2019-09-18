@@ -60,13 +60,15 @@ package rygar is
   constant BG_ROM_DATA_WIDTH     : natural := 32;
 
   -- ROM offsets
-  constant PROG_ROM_1_OFFSET : natural := 16#00000#;
-  constant PROG_ROM_2_OFFSET : natural := 16#02000#;
-  constant PROG_ROM_3_OFFSET : natural := 16#03000#;
-  constant CHAR_ROM_OFFSET   : natural := 16#05000#;
-  constant FG_ROM_OFFSET     : natural := 16#07000#;
-  constant BG_ROM_OFFSET     : natural := 16#0F000#;
-  constant SPRITE_ROM_OFFSET : natural := 16#17000#;
+  constant PROG_ROM_1_OFFSET  : natural := 16#00000#;
+  constant PROG_ROM_2_OFFSET  : natural := 16#08000#;
+  constant PROG_ROM_3_OFFSET  : natural := 16#0C000#;
+  constant CHAR_ROM_OFFSET    : natural := 16#14000#;
+  constant FG_ROM_OFFSET      : natural := 16#1C000#;
+  constant BG_ROM_OFFSET      : natural := 16#3C000#;
+  constant SPRITE_ROM_OFFSET  : natural := 16#5C000#;
+  constant SOUND_ROM_1_OFFSET : natural := 16#7C000#;
+  constant SOUND_ROM_2_OFFSET : natural := 16#80000#;
 
   -- VRAM
   constant BG_RAM_CPU_ADDR_WIDTH      : natural := 10; -- 1kB

@@ -34,7 +34,7 @@ entity segment is
     -- the width of the ROM data bus
     ROM_DATA_WIDTH : natural;
 
-    -- the offset of the ROM data in the SDRAM
+    -- the byte offset of the ROM data in the SDRAM
     ROM_OFFSET : natural := 0
   );
   port (
@@ -131,8 +131,11 @@ begin
   -- extract the word at the requested offset in the cache
   rom_data <= cache_data((ROM_WORDS-offset)*ROM_DATA_WIDTH-1 downto (ROM_WORDS-offset-1)*ROM_DATA_WIDTH) when cs = '1' and oe = '1' else (others => '0');
 
-  -- convert from a ROM address to a SDRAM address
-  sdram_addr <= resize(shift_right(rom_addr, OFFSET_WIDTH), SDRAM_CTRL_ADDR_WIDTH) + ROM_OFFSET;
+  -- Convert from a ROM address to a SDRAM address.
+  --
+  -- We need to divide the ROM offset by four, because we are converting to
+  -- a 32-bit SDRAM address.
+  sdram_addr <= resize(shift_right(rom_addr, OFFSET_WIDTH), SDRAM_CTRL_ADDR_WIDTH) + ROM_OFFSET/4;
 
   -- request data from the SDRAM unless there is a cache hit, or we just loaded
   -- data from the SDRAM but we haven't cached it yet
