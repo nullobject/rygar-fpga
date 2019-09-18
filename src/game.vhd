@@ -190,7 +190,7 @@ begin
   -- ROM controller
   rom_controller : entity work.rom_controller
   port map (
-    -- reset => reset,
+    reset => reset,
     clk   => clk,
 
     -- program ROM #1 interface

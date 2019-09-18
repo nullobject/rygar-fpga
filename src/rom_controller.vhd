@@ -266,7 +266,6 @@ begin
   download_buffer : entity work.download_buffer
   generic map (SIZE => 4)
   port map (
-    reset => reset,
     clk   => clk,
     din   => ioctl_data,
     dout  => sdram_din,
