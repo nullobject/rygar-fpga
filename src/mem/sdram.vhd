@@ -26,7 +26,7 @@ use ieee.math_real.all;
 use work.rygar.all;
 
 -- The SDRAM controller provides a symmetric 32-bit synchronous read-write
--- interface to a 16Mx16-bit SDRAM memory module.
+-- interface to a 16Mx16-bit SDRAM chip.
 --
 -- Because the SDRAM data bus is only 16-bits wide, so the controller must
 -- burst two 16-bit words to read/write a single 32-bit word to the SDRAM.

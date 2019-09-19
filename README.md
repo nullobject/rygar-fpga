@@ -1,17 +1,42 @@
-# rygar-mister
+# Rygar (1986)
 
-A MiSTer core for the Rygar arcade game. I also wrote an emulator for Rygar, which you can play [here](https://rygar.joshbassett.info/).
+<img alt="Rygar" src="https://github.com/nullobject/rygar-fpga/raw/master/doc/rygar-banner.jpg" />
 
-<img alt="Rygar" src="https://raw.githubusercontent.com/nullobject/rygar/master/rygar.png" />
+Rygar was one of my favourite arcade games as a kid. It was originally built in 1986 by Tecmo, a Japanese video game company, and saw later releases on consoles like Nintendo Entertainment System, Sega Master System, Commodore 64, Atari Lynx, etc.
 
-Compiling:
+I began this project by writing an [emulator](https://github.com/nullobject/rygar-emu), so I could focus on learning how the arcade game works, without having to worry about the FPGA side of things.
 
-    $ make compile
+## Building the ROM
 
-Programming:
+To build the ROM file for this core, you will need a copy of the MAME ROMs. They are not include with this project, but you should be able to find them easily.
+
+### Linux/MacOS
+
+Build the ROM file from the Rygar MAME ROMs:
+
+    $ ./build-rom.sh rygar.zip
+
+### Windows
+
+Build the ROM file from the Rygar MAME ROMs:
+
+    $ ./build-rom.bat rygar.zip
+
+## Development
+
+Compile the core:
+
+    $ make build
+
+Program the FPGA:
 
     $ make program
 
-Generate MIFs from ROMs:
+## Shout Outs
 
-    $ srec_cat cpu_5j.bin -binary -o cpu_5j.mif -mif
+* Jose Tejada (@topapate)
+* Bruno Silva (@eubrunosilvapt)
+
+## Licence
+
+Rygar is licensed under the MIT licence. See the LICENCE file for more details.
