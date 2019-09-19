@@ -13,9 +13,7 @@ set_global_assignment -name VHDL_FILE src/gpu/sprite_layer.vhd
 set_global_assignment -name VHDL_FILE src/gpu/video_gen.vhd
 set_global_assignment -name VHDL_FILE src/mem/dual_port_ram.vhd
 set_global_assignment -name VHDL_FILE src/mem/single_port_ram.vhd
-set_global_assignment -name VHDL_FILE src/mem/single_port_rom.vhd
 set_global_assignment -name VHDL_FILE src/mem/true_dual_port_ram.vhd
-set_global_assignment -name VHDL_FILE src/reset_gen.vhd
 set_global_assignment -name VHDL_FILE src/rom_controller.vhd
 set_global_assignment -name VHDL_FILE src/rygar.vhd
 set_global_assignment -name VHDL_FILE src/sdram.vhd
