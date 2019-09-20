@@ -26,10 +26,7 @@ use work.rygar.all;
 
 -- The sprite blitter copies sprite data from the tile ROM to the frame buffer.
 --
--- The ready signal is asserted when the blitter is ready to execute a blit
--- operation.
---
--- A blit operation is triggered by setting the sprite descriptor and asserting
+-- A blit operation is requested by setting the sprite descriptor and asserting
 -- the start signal. Once all the pixels have been copied to the frame buffer,
 -- the ready signal is again asserted by the blitter.
 entity sprite_blitter is
@@ -41,8 +38,11 @@ entity sprite_blitter is
     -- sprite descriptor
     sprite : in sprite_t;
 
-    -- control signals
+    -- The ready signal is asserted when the blitter is ready to execute a blit
+    -- operation.
     ready : out std_logic;
+
+    -- A blit operation is requested when the start signal is asserted.
     start : in std_logic;
 
     -- sprite ROM
@@ -52,7 +52,7 @@ entity sprite_blitter is
     -- frame buffer
     frame_buffer_addr : out unsigned(FRAME_BUFFER_ADDR_WIDTH-1 downto 0);
     frame_buffer_data : out std_logic_vector(FRAME_BUFFER_DATA_WIDTH-1 downto 0);
-    frame_buffer_wren : out std_logic
+    frame_buffer_we   : out std_logic
   );
 end sprite_blitter;
 
@@ -193,7 +193,7 @@ begin
   end process;
 
   -- write to the frame buffer when we're blitting to the visible part of the frame
-  frame_buffer_wren <= '1' when state = BLIT and tile_pixel /= "0000" and dest_pos.x(8) = '0' and dest_pos.y(8) = '0' else '0';
+  frame_buffer_we <= '1' when state = BLIT and tile_pixel /= "0000" and dest_pos.x(8) = '0' and dest_pos.y(8) = '0' else '0';
 
   -- set ready output
   ready <= '1' when state = IDLE else '0';

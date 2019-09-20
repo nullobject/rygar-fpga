@@ -29,10 +29,6 @@ use ieee.numeric_std.all;
 -- reading and writing, so that while one page is being written to, the other
 -- is being read from.
 --
--- When the flip signal is asserted, the page behaviour is swapped. The page
--- that was previously being written to will be read from, and the page that
--- was being read from will be written to.
---
 -- The frame buffer automatically clears pixels during read operations, so that
 -- the page is clean when it is flipped.
 entity frame_buffer is
@@ -42,79 +38,85 @@ entity frame_buffer is
   );
   port (
     -- clock
-    clk : in std_logic := '1';
+    clk : in std_logic;
 
     -- chip select
     cs : in std_logic := '1';
 
-    -- flip the pages
+    -- When the flip signal is asserted, the memory pages are swapped. The page
+    -- that was previously being written to will be read from, and the page
+    -- that was being read from will be written to.
     flip : in std_logic := '0';
 
-    -- write port
-    addr_wr : in unsigned(ADDR_WIDTH-1 downto 0);
-    din     : in std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    wren    : in std_logic := '0';
+    -- port A (write)
+    addr_a : in unsigned(ADDR_WIDTH-1 downto 0);
+    din_a  : in std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+    we_a   : in std_logic := '0';
 
-    -- read port
-    addr_rd : in unsigned(ADDR_WIDTH-1 downto 0);
-    dout    : out std_logic_vector(DATA_WIDTH-1 downto 0);
-    rden    : in std_logic := '1'
+    -- port B (read)
+    addr_b : in unsigned(ADDR_WIDTH-1 downto 0);
+    dout_b : out std_logic_vector(DATA_WIDTH-1 downto 0);
+    re_b   : in std_logic := '1'
   );
 end frame_buffer;
 
 architecture arch of frame_buffer is
-  signal addr_a, addr_b : unsigned(ADDR_WIDTH-1 downto 0);
-  signal din_a, din_b   : std_logic_vector(DATA_WIDTH-1 downto 0);
-  signal dout_a, dout_b : std_logic_vector(DATA_WIDTH-1 downto 0);
-  signal rden_a, rden_b : std_logic;
-  signal wren_a, wren_b : std_logic;
+  type page_t is record
+    addr : unsigned(ADDR_WIDTH-1 downto 0);
+    din  : std_logic_vector(DATA_WIDTH-1 downto 0);
+    dout : std_logic_vector(DATA_WIDTH-1 downto 0);
+    re   : std_logic;
+    we   : std_logic;
+  end record page_t;
+
+  signal page_1, page_2 : page_t;
 begin
-  page_a : entity work.dual_port_ram
+  page_1_ram : entity work.dual_port_ram
   generic map (
     ADDR_WIDTH => ADDR_WIDTH,
     DATA_WIDTH => DATA_WIDTH
   )
   port map (
-    clk     => clk,
-    cs      => cs,
-    addr_wr => addr_a,
-    din     => din_a,
-    wren    => wren_a,
-    addr_rd => addr_a,
-    dout    => dout_a,
-    rden    => rden_a
+    clk    => clk,
+    cs     => cs,
+    addr_a => page_1.addr,
+    din_a  => page_1.din,
+    we_a   => page_1.we,
+    addr_b => page_1.addr,
+    dout_b => page_1.dout,
+    re_b   => page_1.re
   );
 
-  page_b : entity work.dual_port_ram
+  page_2_ram : entity work.dual_port_ram
   generic map (
     ADDR_WIDTH => ADDR_WIDTH,
     DATA_WIDTH => DATA_WIDTH
   )
   port map (
-    clk     => clk,
-    cs      => cs,
-    addr_wr => addr_b,
-    din     => din_b,
-    wren    => wren_b,
-    addr_rd => addr_b,
-    dout    => dout_b,
-    rden    => rden_b
+    clk    => clk,
+    cs     => cs,
+    addr_a => page_2.addr,
+    din_a  => page_2.din,
+    we_a   => page_2.we,
+    addr_b => page_2.addr,
+    dout_b => page_2.dout,
+    re_b   => page_2.re
   );
 
-  addr_a <= addr_rd when flip = '0' else addr_wr;
-  addr_b <= addr_rd when flip = '1' else addr_wr;
+  page_1.addr <= addr_b when flip = '0' else addr_a;
+  page_2.addr <= addr_b when flip = '1' else addr_a;
 
-  rden_a <= rden;
-  rden_b <= rden;
+  page_1.re <= re_b;
+  page_2.re <= re_b;
 
-  wren_a <= wren when flip = '1' else rden;
-  wren_b <= wren when flip = '0' else rden;
+  page_1.we <= we_a when flip = '1' else re_b;
+  page_2.we <= we_a when flip = '0' else re_b;
 
-  din_a <= din when wren = '1' and flip = '1' else (others => '0');
-  din_b <= din when wren = '1' and flip = '0' else (others => '0');
+  page_1.din <= din_a when we_a = '1' and flip = '1' else (others => '0');
+  page_2.din <= din_a when we_a = '1' and flip = '0' else (others => '0');
 
   -- set data
-  dout <= dout_a when rden = '1' and flip = '0' else
-          dout_b when rden = '1' and flip = '1' else
-          (others => '0');
+  dout_b <= page_1.dout when re_b = '1' and flip = '0' else
+            page_2.dout when re_b = '1' and flip = '1' else
+            (others => '0');
 end architecture arch;

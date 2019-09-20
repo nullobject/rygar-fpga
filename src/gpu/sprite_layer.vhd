@@ -63,19 +63,22 @@ entity sprite_layer is
 end sprite_layer;
 
 architecture arch of sprite_layer is
+  -- the pixel offset of the sprite layer
+  constant OFFSET : natural := 2;
+
   type state_t is (IDLE, LOAD, LATCH, BLIT, JUMP, DONE, FLIP);
 
   -- state signals
   signal state, next_state : state_t;
 
   -- frame buffer
-  signal frame_buffer_addr_rd : unsigned(FRAME_BUFFER_ADDR_WIDTH-1 downto 0);
-  signal frame_buffer_addr_wr : unsigned(FRAME_BUFFER_ADDR_WIDTH-1 downto 0);
-  signal frame_buffer_din     : std_logic_vector(FRAME_BUFFER_DATA_WIDTH-1 downto 0);
-  signal frame_buffer_dout    : std_logic_vector(FRAME_BUFFER_DATA_WIDTH-1 downto 0);
-  signal frame_buffer_flip    : std_logic;
-  signal frame_buffer_rden    : std_logic;
-  signal frame_buffer_wren    : std_logic;
+  signal frame_buffer_flip   : std_logic;
+  signal frame_buffer_addr_a : unsigned(FRAME_BUFFER_ADDR_WIDTH-1 downto 0);
+  signal frame_buffer_din_a  : std_logic_vector(FRAME_BUFFER_DATA_WIDTH-1 downto 0);
+  signal frame_buffer_we_a   : std_logic;
+  signal frame_buffer_addr_b : unsigned(FRAME_BUFFER_ADDR_WIDTH-1 downto 0);
+  signal frame_buffer_dout_b : std_logic_vector(FRAME_BUFFER_DATA_WIDTH-1 downto 0);
+  signal frame_buffer_re_b   : std_logic;
 
   -- sprite counter
   signal sprite_counter : natural range 0 to 255;
@@ -98,15 +101,15 @@ begin
 
     flip => frame_buffer_flip,
 
-    -- write-only port
-    addr_wr => frame_buffer_addr_wr,
-    din     => frame_buffer_din,
-    wren    => frame_buffer_wren,
+    -- port A (write)
+    addr_a => frame_buffer_addr_a,
+    din_a  => frame_buffer_din_a,
+    we_a   => frame_buffer_we_a,
 
-    -- read-only port
-    addr_rd => frame_buffer_addr_rd,
-    dout    => frame_buffer_dout,
-    rden    => frame_buffer_rden
+    -- port B (read)
+    addr_b => frame_buffer_addr_b,
+    dout_b => frame_buffer_dout_b,
+    re_b   => frame_buffer_re_b
   );
 
   sprite_biltter : entity work.sprite_blitter
@@ -125,9 +128,9 @@ begin
     rom_data => rom_data,
 
     -- frame buffer
-    frame_buffer_addr => frame_buffer_addr_wr,
-    frame_buffer_data => frame_buffer_din,
-    frame_buffer_wren => frame_buffer_wren
+    frame_buffer_addr => frame_buffer_addr_a,
+    frame_buffer_data => frame_buffer_din_a,
+    frame_buffer_we   => frame_buffer_we_a
   );
 
   -- state machine
@@ -245,8 +248,8 @@ begin
   begin
     if rising_edge(clk) then
       if cen_6 = '1' then
-        priority <= unsigned(frame_buffer_dout(9 downto 8));
-        data     <= frame_buffer_dout(7 downto 0);
+        priority <= unsigned(frame_buffer_dout_b(9 downto 8));
+        data     <= frame_buffer_dout_b(7 downto 0);
       end if;
     end if;
   end process;
@@ -257,13 +260,9 @@ begin
   -- the frame is done when all the sprites have been blitted
   frame_done <= '1' when sprite_counter = sprite_counter'high else '0';
 
-  -- Load graphics data from the frame buffer.
-  --
-  -- While the current two pixels are being rendered, we need to fetch data for
-  -- the next two pixels, so they are loaded in time to render them on the
-  -- screen.
-  frame_buffer_addr_rd <= video.pos.y(7 downto 0) & (video.pos.x(7 downto 0)+2);
+  -- load graphics data from the frame buffer
+  frame_buffer_addr_b <= video.pos.y(7 downto 0) & (video.pos.x(7 downto 0)+OFFSET);
 
-  -- read from the frame buffer when video output is enabled
-  frame_buffer_rden <= cen_6 and video.enable;
+  -- enable reading from the frame buffer when video output is enabled
+  frame_buffer_re_b <= cen_6 and video.enable;
 end architecture arch;

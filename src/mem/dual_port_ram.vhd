@@ -37,15 +37,15 @@ entity dual_port_ram is
     -- chip select
     cs : in std_logic := '1';
 
-    -- write port
-    addr_wr : in unsigned(ADDR_WIDTH-1 downto 0);
-    din     : in std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    wren    : in std_logic := '1';
+    -- port A (write)
+    addr_a : in unsigned(ADDR_WIDTH-1 downto 0);
+    din_a  : in std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
+    we_a   : in std_logic := '1';
 
-    -- read port
-    addr_rd : in unsigned(ADDR_WIDTH-1 downto 0);
-    dout    : out std_logic_vector(DATA_WIDTH-1 downto 0);
-    rden    : in std_logic := '1'
+    -- port B (read)
+    addr_b : in unsigned(ADDR_WIDTH-1 downto 0);
+    dout_b : out std_logic_vector(DATA_WIDTH-1 downto 0);
+    re_b   : in std_logic := '1'
   );
 end dual_port_ram;
 
@@ -80,15 +80,15 @@ begin
     widthad_b                          => ADDR_WIDTH
   )
   port map (
-    address_a => std_logic_vector(addr_wr),
-    address_b => std_logic_vector(addr_rd),
+    address_a => std_logic_vector(addr_a),
+    address_b => std_logic_vector(addr_b),
     clock0    => clk,
-    wren_a    => cs and wren,
-    rden_b    => cs and rden,
-    data_a    => din,
+    wren_a    => cs and we_a,
+    rden_b    => cs and re_b,
+    data_a    => din_a,
     q_b       => q
   );
 
   -- output
-  dout <= q when cs = '1' else (others => '0');
+  dout_b <= q when cs = '1' else (others => '0');
 end architecture arch;

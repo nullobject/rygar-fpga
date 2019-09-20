@@ -33,26 +33,21 @@ entity true_dual_port_ram is
     DATA_WIDTH_B : natural := 8
   );
   port (
-    -- clock
-    clk_a, clk_b : in std_logic;
-
-    -- chip select
-    cs_a, cs_b : in std_logic := '1';
-
-    -- address
+    -- port A
+    clk_a  : in std_logic;
+    cs_a   : in std_logic := '1';
     addr_a : in unsigned(ADDR_WIDTH_A-1 downto 0);
-    addr_b : in unsigned(ADDR_WIDTH_B-1 downto 0);
-
-    -- data in
-    din_a : in std_logic_vector(DATA_WIDTH_A-1 downto 0) := (others => '0');
-    din_b : in std_logic_vector(DATA_WIDTH_B-1 downto 0) := (others => '0');
-
-    -- data out
+    din_a  : in std_logic_vector(DATA_WIDTH_A-1 downto 0) := (others => '0');
     dout_a : out std_logic_vector(DATA_WIDTH_A-1 downto 0);
-    dout_b : out std_logic_vector(DATA_WIDTH_B-1 downto 0);
+    we_a   : in std_logic := '0';
 
-    -- write enable
-    we_a, we_b : in std_logic := '0'
+    -- port B
+    clk_b  : in std_logic;
+    cs_b   : in std_logic := '1';
+    addr_b : in unsigned(ADDR_WIDTH_B-1 downto 0);
+    din_b  : in std_logic_vector(DATA_WIDTH_B-1 downto 0) := (others => '0');
+    dout_b : out std_logic_vector(DATA_WIDTH_B-1 downto 0);
+    we_b   : in std_logic := '0'
   );
 end true_dual_port_ram;
 
