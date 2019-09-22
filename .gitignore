@@ -1,10 +1,10 @@
-*.bmp
 *.qws
+*.zip
+a.rygar.rom
 build_id.v
 c5_pin_model_dump.txt
 db
 incremental_db
 jtag.cdf
 output_files
-rom
 rygar_assignment_defaults.qdf

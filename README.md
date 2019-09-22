@@ -6,25 +6,27 @@ Rygar was one of my favourite arcade games as a kid. It was originally built in 
 
 I began this project by writing an [emulator](https://github.com/nullobject/rygar-emu), so I could focus on learning how the arcade game works, without having to worry about the FPGA side of things.
 
-## Building the ROM
+## Generating the ROM
 
-To build the ROM file for this core, you will need a copy of the MAME ROMs. They are not include with this project, but you should be able to find them easily.
+To run the game on MiSTer, you will need to generate the `a.rygar.rom` ROM file and copy it to your MiSTer.
+
+You will need a copy of the MAME ROMs to generate the Rygar ROM file (not include with this project).
 
 ### Linux/MacOS
 
-Build the ROM file from the Rygar MAME ROMs:
+To generate the ROM file, run the following script with the path to the MAME ROMs as an argument:
 
-    $ ./build-rom.sh rygar.zip
+    $ ./build-rom.sh mame/rygar.zip
 
 ### Windows
 
-Build the ROM file from the Rygar MAME ROMs:
+To generate the ROM file, run the following script:
 
-    $ ./build-rom.bat rygar.zip
+    build-rom.bat
 
 ## Development
 
-Compile the core:
+Compile the FPGA core:
 
     $ make build
 
