@@ -59,7 +59,14 @@ function build_rom () {
 function check_md5 () {
   echo "Checking MD5"
 
-  MD5=$(md5sum $TARGET_ROM | cut -d " " -f 1)
+  if [[ -x "$(command -v md5sum)" ]]; then
+    MD5=$(md5sum $TARGET_ROM | cut -d " " -f 1)
+  elif [[ -x "$(command -v md5)" ]]; then
+    MD5=$(md5 -q $TARGET_ROM)
+  else
+    echo "ERROR: No MD5 command is available."
+    exit 1
+  fi
 
   if [[ "$MD5" != "$TARGET_MD5" ]]; then
     echo "WARNING: The MD5 for the target ROM is invalid. Please check your source ROM files."
