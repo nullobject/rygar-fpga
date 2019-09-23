@@ -294,12 +294,12 @@ always @(posedge clk_sys) begin
   end
 end
 
-wire up      = key_up      | joy[3];
-wire down    = key_down    | joy[2];
-wire left    = key_left    | joy[1];
 wire right   = key_right   | joy[0];
-wire jump    = key_jump    | joy[4];
-wire fire    = key_fire    | joy[5];
+wire left    = key_left    | joy[1];
+wire down    = key_down    | joy[2];
+wire up      = key_up      | joy[3];
+wire fire    = key_fire    | joy[4];
+wire jump    = key_jump    | joy[5];
 wire start_1 = key_start_1 | joy[6];
 wire start_2 = key_start_2 | joy[7];
 wire coin    = key_coin    | joy[8];
