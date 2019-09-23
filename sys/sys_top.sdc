@@ -18,12 +18,12 @@ derive_clock_uncertainty
 
 # This is tAC in the data sheet
 set_input_delay -max -clock SDRAM_CLK 6.0 [get_ports SDRAM_DQ[*]]
-# this is tOH in the data sheet
+# This is tOH in the data sheet
 set_input_delay -min -clock SDRAM_CLK 2.5 [get_ports SDRAM_DQ[*]]
 
 # This is tIS in the data sheet (setup time)
 set_output_delay -max -clock SDRAM_CLK 1.5 [get_ports {SDRAM_*}]
-# This is tiH in the data sheet (hold time)
+# This is tIH in the data sheet (hold time)
 set_output_delay -min -clock SDRAM_CLK 1.5 [get_ports {SDRAM_*}]
 
 # Decouple different clock groups (to simplify routing)
