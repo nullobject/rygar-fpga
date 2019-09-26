@@ -67,23 +67,26 @@ entity sdram is
 end sdram;
 
 architecture arch of sdram is
-  subtype command_t is std_logic_vector(2 downto 0);
+  subtype command_t is std_logic_vector(3 downto 0);
 
   -- commands
-  constant CMD_LOAD_MODE    : command_t := "000";
-  constant CMD_AUTO_REFRESH : command_t := "001";
-  constant CMD_PRECHARGE    : command_t := "010";
-  constant CMD_ACTIVE       : command_t := "011";
-  constant CMD_WRITE        : command_t := "100";
-  constant CMD_READ         : command_t := "101";
-  constant CMD_STOP         : command_t := "110";
-  constant CMD_NOP          : command_t := "111";
+  constant CMD_DESELECT     : command_t := "1---";
+  constant CMD_LOAD_MODE    : command_t := "0000";
+  constant CMD_AUTO_REFRESH : command_t := "0001";
+  constant CMD_PRECHARGE    : command_t := "0010";
+  constant CMD_ACTIVE       : command_t := "0011";
+  constant CMD_WRITE        : command_t := "0100";
+  constant CMD_READ         : command_t := "0101";
+  constant CMD_STOP         : command_t := "0110";
+  constant CMD_NOP          : command_t := "0111";
 
-  -- timing values taken directly from the datasheet
-  constant T_MRD : real := 12.0; -- ns
-  constant T_RC  : real := 60.0; -- ns
-  constant T_RCD : real := 18.0; -- ns
-  constant T_RP  : real := 18.0; -- ns
+  -- timing values taken directly from the datasheet (in nanoseconds)
+  constant T_DESL : real := 200000.0; -- startup delay
+  constant T_MRD  : real :=     12.0; -- mode register cycle time
+  constant T_RC   : real :=     60.0; -- row cycle time
+  constant T_RCD  : real :=     18.0; -- RAS to CAS delay
+  constant T_RP   : real :=     18.0; -- precharge to activate delay
+  constant T_REFI : real :=   7800.0; -- average refresh interval
 
   -- the number of words in a burst
   constant BURST_LENGTH : natural := 2;
@@ -111,6 +114,9 @@ architecture arch of sdram is
   -- calculate the clock period in nanoseconds
   constant CLK_PERIOD : real := 1.0/CLK_FREQ*1000.0;
 
+  -- the number of clock cycles to wait before initialising the device
+  constant DESELECT_WAIT : natural := natural(ceil(T_DESL/CLK_PERIOD));
+
   -- the number of clock cycles to wait while a LOAD MODE command is being
   -- executed
   constant LOAD_MODE_WAIT : natural := natural(ceil(T_MRD/CLK_PERIOD));
@@ -127,9 +133,8 @@ architecture arch of sdram is
   -- executed
   constant PRECHARGE_WAIT : natural := natural(ceil(T_RP/CLK_PERIOD));
 
-  -- the number of clock cycles between each AUTO REFRESH command, which needs
-  -- to be executed 8192 times every 64ms
-  constant REFRESH_MAX : natural := natural(floor(64000000.0/8192.0/CLK_PERIOD));
+  -- the number of clock cycles between each AUTO REFRESH command
+  constant REFRESH_MAX : natural := natural(floor(T_REFI/CLK_PERIOD));
 
   type state_t is (INIT, MODE, IDLE, ACTIVE, READ, WRITE, REFRESH);
 
@@ -149,7 +154,7 @@ architecture arch of sdram is
   signal should_refresh : std_logic;
 
   -- counters
-  signal wait_counter    : natural range 0 to 31;
+  signal wait_counter    : natural range 0 to 16383;
   signal refresh_counter : natural range 0 to 1023;
 
   -- registers
@@ -175,6 +180,8 @@ begin
       -- execute the initialisation sequence
       when INIT =>
         if wait_counter = 0 then
+          next_cmd <= CMD_DESELECT;
+        elsif wait_counter = DESELECT_WAIT-1 then
           next_cmd <= CMD_PRECHARGE;
         elsif wait_counter = PRECHARGE_WAIT-1 then
           next_cmd <= CMD_AUTO_REFRESH;
@@ -342,7 +349,7 @@ begin
   sdram_cke <= '0' when state = INIT and wait_counter = 0 else '1';
 
 	-- set SDRAM control signals
-  (sdram_cs_n, sdram_ras_n, sdram_cas_n, sdram_we_n) <= '0' & cmd;
+  (sdram_cs_n, sdram_ras_n, sdram_cas_n, sdram_we_n) <= cmd;
 
   -- set SDRAM bank
   with state select
