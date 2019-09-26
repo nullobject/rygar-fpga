@@ -17,19 +17,19 @@ create_generated_clock -name HDMI_CLK \
 
 derive_clock_uncertainty
 
-# this is tAC in the data sheet
-set_input_delay -clock SDRAM_CLK -max 6 [get_ports {SDRAM_DQ[*]}]
+# data access delay (tAC) plus a small margin to allow for propagation delay
+set_input_delay -clock SDRAM_CLK -max [expr 6.0 + 0.5] [get_ports {SDRAM_DQ[*]}]
 
-# this is tOH in the data sheet
+# data output hold time (tOH)
 set_input_delay -clock SDRAM_CLK -min 2.5 [get_ports {SDRAM_DQ[*]}]
 
-# this is tIS in the data sheet (setup time)
+# data input setup time (tIS)
 set_output_delay -clock SDRAM_CLK -max 1.5 [get_ports {SDRAM_A* SDRAM_BA* SDRAM_D* SDRAM_CKE SDRAM_n*}]
 
-# this is tIH in the data sheet (hold time)
+# data input hold time (tIH)
 set_output_delay -clock SDRAM_CLK -min -0.8 [get_ports {SDRAM_A* SDRAM_BA* SDRAM_D* SDRAM_CKE SDRAM_n*}]
 
-# Select proper edges for timing calculations
+# use proper edges for the timing calculations
 set_multicycle_path -setup -end \
 									  -rise_from [get_clocks {SDRAM_CLK}] \
 										-rise_to [get_clocks {emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}] 2
