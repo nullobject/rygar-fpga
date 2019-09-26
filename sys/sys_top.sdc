@@ -35,11 +35,11 @@ set_multicycle_path -setup -end \
 										-rise_to [get_clocks {emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}] 2
 
 # Decouple different clock groups (to simplify routing)
-set_clock_groups -asynchronous \
-                 -group [get_clocks {*|pll|pll_inst|altera_pll_i|*[*].*|divclk}] \
-                 -group [get_clocks {pll_hdmi|pll_hdmi_inst|altera_pll_i|*[0].*|divclk}] \
+set_clock_groups -exclusive \
+                 -group [get_clocks {FPGA_CLK1_50 FPGA_CLK2_50 FPGA_CLK3_50}] \
                  -group [get_clocks {*|h2f_user0_clk}] \
-                 -group [get_clocks {FPGA_CLK1_50 FPGA_CLK2_50 FPGA_CLK3_50}]
+                 -group [get_clocks {pll_hdmi|pll_hdmi_inst|altera_pll_i|*[0].*|divclk}] \
+                 -group [get_clocks {*|pll|pll_inst|altera_pll_i|*[*].*|divclk}]
 
 set_output_delay -clock HDMI_CLK -max 4.0 [get_ports {HDMI_TX_D[*] HDMI_TX_DE HDMI_TX_HS HDMI_TX_VS}]
 set_output_delay -clock HDMI_CLK -min 3.0 [get_ports {HDMI_TX_D[*] HDMI_TX_DE HDMI_TX_HS HDMI_TX_VS}]
