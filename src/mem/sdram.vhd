@@ -133,8 +133,9 @@ architecture arch of sdram is
   -- executed
   constant PRECHARGE_WAIT : natural := natural(ceil(T_RP/CLK_PERIOD));
 
-  -- the number of clock cycles between each AUTO REFRESH command
-  constant REFRESH_MAX : natural := natural(floor(T_REFI/CLK_PERIOD));
+  -- the number of clock cycles between each AUTO REFRESH command, with a small
+  -- margin to allow for pending reads/writes
+  constant REFRESH_MAX : natural := natural(floor(T_REFI/CLK_PERIOD))-10;
 
   type state_t is (INIT, MODE, IDLE, ACTIVE, READ, WRITE, REFRESH);
 
