@@ -86,6 +86,7 @@ architecture arch of sdram is
   constant T_RC   : real :=     60.0; -- row cycle time
   constant T_RCD  : real :=     18.0; -- RAS to CAS delay
   constant T_RP   : real :=     18.0; -- precharge to activate delay
+  constant T_WR   : real :=     12.0; -- write recovery time
   constant T_REFI : real :=   7800.0; -- average refresh interval
 
   -- the number of words in a burst
@@ -129,13 +130,19 @@ architecture arch of sdram is
   -- executed
   constant AUTO_REFRESH_WAIT : natural := natural(ceil(T_RC/CLK_PERIOD));
 
-  -- the number of clock cycles to wait while PRECHARGE command is being
+  -- the number of clock cycles to wait while a PRECHARGE command is being
   -- executed
   constant PRECHARGE_WAIT : natural := natural(ceil(T_RP/CLK_PERIOD));
 
   -- the number of clock cycles between each AUTO REFRESH command, with a small
   -- margin to allow for pending reads/writes
   constant REFRESH_MAX : natural := natural(floor(T_REFI/CLK_PERIOD))-10;
+
+  -- the number of clock cycles to wait while a READ command is being executed
+  constant READ_WAIT : natural := CAS_LATENCY+BURST_LENGTH;
+
+  -- the number of clock cycles to wait while a WRITE command is being executed
+  constant WRITE_WAIT : natural := BURST_LENGTH+natural(ceil((T_WR+T_RP)/CLK_PERIOD));
 
   type state_t is (INIT, MODE, IDLE, ACTIVE, READ, WRITE, REFRESH);
 
@@ -279,7 +286,7 @@ begin
       if state /= next_state then -- state changing
         wait_counter <= 0;
       else
-        wait_counter <= wait_counter + 1;
+        wait_counter <= wait_counter+1;
       end if;
     end if;
   end process;
@@ -296,7 +303,7 @@ begin
       if state = REFRESH then
         refresh_counter <= 0;
       else
-        refresh_counter <= refresh_counter + 1;
+        refresh_counter <= refresh_counter+1;
       end if;
     end if;
   end process;
@@ -330,8 +337,8 @@ begin
   active_done    <= '1' when wait_counter = ACTIVE_WAIT-1       else '0';
   refresh_done   <= '1' when wait_counter = AUTO_REFRESH_WAIT-1 else '0';
   first_word     <= '1' when wait_counter = CAS_LATENCY         else '0';
-  read_done      <= '1' when wait_counter = CAS_LATENCY+1       else '0';
-  write_done     <= '1' when wait_counter = BURST_LENGTH-1      else '0';
+  read_done      <= '1' when wait_counter = READ_WAIT-1         else '0';
+  write_done     <= '1' when wait_counter = WRITE_WAIT-1        else '0';
   should_refresh <= '1' when refresh_counter >= REFRESH_MAX-1   else '0';
 
   -- the ack signal is asserted when a operation has started
