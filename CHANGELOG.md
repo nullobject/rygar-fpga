@@ -8,6 +8,7 @@
 * Add 270 degree phase shift to SDRAM clock
 * Fix SDRAM timing constraints
 * Fix SDRAM startup sequence
+* Add SDRAM write recovery delay
 
 ## v1.0.0-beta.0 (2019-09-22)
 

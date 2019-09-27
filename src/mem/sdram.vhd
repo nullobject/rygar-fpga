@@ -86,6 +86,7 @@ architecture arch of sdram is
   constant T_RC   : real :=     60.0; -- row cycle time
   constant T_RCD  : real :=     18.0; -- RAS to CAS delay
   constant T_RP   : real :=     18.0; -- precharge to activate delay
+  constant T_WR   : real :=     12.0; -- write recovery time
   constant T_REFI : real :=   7800.0; -- average refresh interval
 
   -- the number of words in a burst
@@ -141,7 +142,7 @@ architecture arch of sdram is
   constant READ_WAIT : natural := CAS_LATENCY+BURST_LENGTH;
 
   -- the number of clock cycles to wait while a WRITE command is being executed
-  constant WRITE_WAIT : natural := BURST_LENGTH;
+  constant WRITE_WAIT : natural := BURST_LENGTH+natural(ceil((T_WR+T_RP)/CLK_PERIOD));
 
   type state_t is (INIT, MODE, IDLE, ACTIVE, READ, WRITE, REFRESH);
 
@@ -285,7 +286,7 @@ begin
       if state /= next_state then -- state changing
         wait_counter <= 0;
       else
-        wait_counter <= wait_counter + 1;
+        wait_counter <= wait_counter+1;
       end if;
     end if;
   end process;
@@ -302,7 +303,7 @@ begin
       if state = REFRESH then
         refresh_counter <= 0;
       else
-        refresh_counter <= refresh_counter + 1;
+        refresh_counter <= refresh_counter+1;
       end if;
     end if;
   end process;
