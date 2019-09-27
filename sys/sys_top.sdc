@@ -34,7 +34,7 @@ set_multicycle_path -setup -end \
 									  -rise_from [get_clocks {SDRAM_CLK}] \
 										-rise_to [get_clocks {emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}] 2
 
-# Decouple different clock groups (to simplify routing)
+# decouple different clock groups (to simplify routing)
 set_clock_groups -exclusive \
                  -group [get_clocks {FPGA_CLK1_50 FPGA_CLK2_50 FPGA_CLK3_50}] \
                  -group [get_clocks {*|h2f_user0_clk}] \

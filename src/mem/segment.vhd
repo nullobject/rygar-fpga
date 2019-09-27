@@ -44,14 +44,12 @@ entity segment is
     -- clock
     clk : in std_logic;
 
-    -- When the chip select signal is asserted, the memory segment may request
-    -- data from the ROM controller when it is required (i.e. not in the
-    -- cache).
+    -- when the chip select signal is asserted, the segment may request data
+    -- from the ROM controller when it is required (i.e. not in the cache)
     cs : in std_logic := '1';
 
-    -- When the output enable signal is asserted, the output buffer is enabled
-    -- and the word from the requested address will be placed on the ROM data
-    -- bus.
+    -- when the output enable signal is asserted, the output buffer is enabled
+    -- and the word at the requested address will be placed on the ROM data bus
     oe : in std_logic := '1';
 
     -- ROM interface

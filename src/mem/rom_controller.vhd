@@ -333,7 +333,7 @@ begin
          fg_rom_req or
          bg_rom_req;
 
-  -- request data from the SDRAM
+  -- request a read/write operation from the SDRAM
   sdram_req <= (ioctl_download and valid) or (not ioctl_download and req);
 
   -- write to the SDRAM while downloading ROM data from the IOCTL interface

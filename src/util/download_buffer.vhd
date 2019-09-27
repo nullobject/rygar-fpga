@@ -50,7 +50,7 @@ entity download_buffer is
     -- write enable
     we : in std_logic;
 
-    -- when this signal is asserted, there is a valid word on the output bus
+    -- when the valid signal is asserted there is a word on the output data bus
     valid : out std_logic
   );
 end download_buffer;
