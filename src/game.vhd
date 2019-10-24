@@ -136,6 +136,11 @@ architecture arch of game is
   signal gpu_dout        : byte_t;
   signal io_dout         : nibble_t;
 
+  -- download signals
+  signal download_addr : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
+  signal download_data : std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
+  signal download_req  : std_logic;
+
   -- registers
   signal fg_scroll_pos_reg : pos_t := (x => (others => '0'), y => (others => '0'));
   signal bg_scroll_pos_reg : pos_t := (x => (others => '0'), y => (others => '0'));
@@ -186,6 +191,19 @@ begin
     we   => not cpu_wr_n
   );
 
+  -- The SDRAM controller has a 32-bit interface, so we need to buffer the
+  -- bytes received from the IOCTL interface in order to write 32-bit words to
+  -- the SDRAM.
+  download_buffer : entity work.download_buffer
+  generic map (SIZE => 4)
+  port map (
+    clk   => clk,
+    din   => ioctl_data,
+    dout  => download_data,
+    we    => ioctl_download and ioctl_wr,
+    valid => download_req
+  );
+
   -- ROM controller
   rom_controller : entity work.rom_controller
   port map (
@@ -193,32 +211,52 @@ begin
     clk   => clk,
 
     -- program ROM #1 interface
-    prog_rom_1_cs   => prog_rom_1_cs,
+    prog_rom_1_cs   => prog_rom_1_cs and cpu_rfsh_n and not ioctl_download,
     prog_rom_1_oe   => not cpu_rd_n,
     prog_rom_1_addr => cpu_addr(PROG_ROM_1_ADDR_WIDTH-1 downto 0),
     prog_rom_1_data => prog_rom_1_dout,
 
     -- program ROM #2 interface
-    prog_rom_2_cs   => prog_rom_2_cs,
+    prog_rom_2_cs   => prog_rom_2_cs and cpu_rfsh_n and not ioctl_download,
     prog_rom_2_oe   => not cpu_rd_n,
     prog_rom_2_addr => cpu_addr(PROG_ROM_2_ADDR_WIDTH-1 downto 0),
     prog_rom_2_data => prog_rom_2_dout,
 
     -- program ROM #3 interface
-    prog_rom_3_cs   => prog_rom_3_cs,
+    prog_rom_3_cs   => prog_rom_3_cs and cpu_rfsh_n and not ioctl_download,
     prog_rom_3_oe   => not cpu_rd_n,
     prog_rom_3_addr => bank_reg & cpu_addr(PROG_ROM_3_ADDR_WIDTH-BANK_REG_WIDTH-1 downto 0),
     prog_rom_3_data => prog_rom_3_dout,
 
-    -- tile ROM interface
+    -- sprite ROM interface
+    sprite_rom_cs   => not ioctl_download,
+    sprite_rom_oe   => '1',
     sprite_rom_addr => sprite_rom_addr,
     sprite_rom_data => sprite_rom_data,
-    char_rom_addr   => char_rom_addr,
-    char_rom_data   => char_rom_data,
-    fg_rom_addr     => fg_rom_addr,
-    fg_rom_data     => fg_rom_data,
-    bg_rom_addr     => bg_rom_addr,
-    bg_rom_data     => bg_rom_data,
+
+    -- character ROM interface
+    char_rom_cs   => not ioctl_download,
+    char_rom_oe   => '1',
+    char_rom_addr => char_rom_addr,
+    char_rom_data => char_rom_data,
+
+    -- foreground ROM interface
+    fg_rom_cs   => not ioctl_download,
+    fg_rom_oe   => '1',
+    fg_rom_addr => fg_rom_addr,
+    fg_rom_data => fg_rom_data,
+
+    -- background ROM interface
+    bg_rom_cs   => not ioctl_download,
+    bg_rom_oe   => '1',
+    bg_rom_addr => bg_rom_addr,
+    bg_rom_data => bg_rom_data,
+
+    -- download interface
+    download_addr => download_addr,
+    download_data => download_data,
+    download_we   => ioctl_download,
+    download_req  => download_req,
 
     -- SDRAM interface
     sdram_addr  => sdram_addr,
@@ -227,16 +265,12 @@ begin
     sdram_req   => sdram_req,
     sdram_ack   => sdram_ack,
     sdram_valid => sdram_valid,
-
-    -- IOCTL interface
-    ioctl_addr     => ioctl_addr,
-    ioctl_data     => ioctl_data,
-    ioctl_wr       => ioctl_wr,
-    ioctl_download => ioctl_download
+    sdram_q     => sdram_q
   );
 
   -- main CPU
   cpu : entity work.T80s
+  generic map (IOWait => 1)
   port map (
     RESET_n             => not reset,
     CLK                 => clk,
@@ -348,6 +382,10 @@ begin
     end if;
   end process;
 
+  -- we need to divide the address by four, because we're converting from
+  -- a 8-bit IOCTL address to a 32-bit SDRAM address
+  download_addr <= resize(shift_right(ioctl_addr, 2), download_addr'length);
+
   -- mux joystick, coin, and DIP switch data
   io_dout <= joystick_1(3 downto 0)              when player_1_cs = '1' and cpu_rd_n = '0' and cpu_addr(0) = '0' else
              joystick_1(7 downto 4)              when player_1_cs = '1' and cpu_rd_n = '0' and cpu_addr(0) = '1' else
@@ -377,22 +415,22 @@ begin
   -- f806-f807 | DIP switch 1
   -- f808-f809 | DIP switch 2
   --      f808 | bank register
-  prog_rom_1_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"0000" and cpu_addr <= x"7fff" else '0';
-  prog_rom_2_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"8000" and cpu_addr <= x"bfff" else '0';
-  work_ram_cs    <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"c000" and cpu_addr <= x"cfff" else '0';
-  char_ram_cs    <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"d000" and cpu_addr <= x"d7ff" else '0';
-  fg_ram_cs      <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"d800" and cpu_addr <= x"dbff" else '0';
-  bg_ram_cs      <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"dc00" and cpu_addr <= x"dfff" else '0';
-  sprite_ram_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"e000" and cpu_addr <= x"e7ff" else '0';
-  palette_ram_cs <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"e800" and cpu_addr <= x"efff" else '0';
-  prog_rom_3_cs  <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"f000" and cpu_addr <= x"f7ff" else '0';
-  scroll_cs      <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"f800" and cpu_addr <= x"f805" else '0';
-  player_1_cs    <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"f800" and cpu_addr <= x"f801" else '0';
-  player_2_cs    <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"f802" and cpu_addr <= x"f803" else '0';
-  coin_cs        <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr  = x"f804"                         else '0';
-  dip_sw_1_cs    <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"f806" and cpu_addr <= x"f807" else '0';
-  dip_sw_2_cs    <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr >= x"f808" and cpu_addr <= x"f809" else '0';
-  bank_cs        <= '1' when cpu_mreq_n = '0' and cpu_rfsh_n = '1' and cpu_addr  = x"f808"                         else '0';
+  prog_rom_1_cs  <= '1' when cpu_addr >= x"0000" and cpu_addr <= x"7fff" else '0';
+  prog_rom_2_cs  <= '1' when cpu_addr >= x"8000" and cpu_addr <= x"bfff" else '0';
+  work_ram_cs    <= '1' when cpu_addr >= x"c000" and cpu_addr <= x"cfff" else '0';
+  char_ram_cs    <= '1' when cpu_addr >= x"d000" and cpu_addr <= x"d7ff" else '0';
+  fg_ram_cs      <= '1' when cpu_addr >= x"d800" and cpu_addr <= x"dbff" else '0';
+  bg_ram_cs      <= '1' when cpu_addr >= x"dc00" and cpu_addr <= x"dfff" else '0';
+  sprite_ram_cs  <= '1' when cpu_addr >= x"e000" and cpu_addr <= x"e7ff" else '0';
+  palette_ram_cs <= '1' when cpu_addr >= x"e800" and cpu_addr <= x"efff" else '0';
+  prog_rom_3_cs  <= '1' when cpu_addr >= x"f000" and cpu_addr <= x"f7ff" else '0';
+  scroll_cs      <= '1' when cpu_addr >= x"f800" and cpu_addr <= x"f805" else '0';
+  player_1_cs    <= '1' when cpu_addr >= x"f800" and cpu_addr <= x"f801" else '0';
+  player_2_cs    <= '1' when cpu_addr >= x"f802" and cpu_addr <= x"f803" else '0';
+  coin_cs        <= '1' when cpu_addr  = x"f804"                         else '0';
+  dip_sw_1_cs    <= '1' when cpu_addr >= x"f806" and cpu_addr <= x"f807" else '0';
+  dip_sw_2_cs    <= '1' when cpu_addr >= x"f808" and cpu_addr <= x"f809" else '0';
+  bank_cs        <= '1' when cpu_addr  = x"f808"                         else '0';
 
   -- mux CPU data input
   cpu_din <= prog_rom_1_dout or
