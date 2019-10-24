@@ -28,8 +28,8 @@ use work.rygar.all;
 -- The SDRAM controller provides a symmetric 32-bit synchronous read-write
 -- interface to a 16Mx16-bit SDRAM chip.
 --
--- Because the SDRAM data bus is only 16-bits wide, so the controller must
--- burst two 16-bit words to read/write a single 32-bit word to the SDRAM.
+-- Because the SDRAM data bus is only 16-bits wide, the controller must burst
+-- two 16-bit words to read/write a single 32-bit word to the SDRAM.
 entity sdram is
   generic (
     -- clock frequency (in MHz)
@@ -42,15 +42,28 @@ entity sdram is
     -- clock
     clk : in std_logic;
 
-    -- controller interface
-    addr  : in unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
-    din   : in std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
-    dout  : out std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
-    we    : in std_logic;
-    req   : in std_logic;
-    ack   : out std_logic;
+    -- address bus
+    addr : in unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
+
+    -- input data bus
+    data : in std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
+
+    -- When the write enable signal is asserted, a write operation will be performed.
+    we : in std_logic;
+
+    -- When the request signal is asserted, an operation will be performed.
+    req : in std_logic;
+
+    -- The acknowledge signal is asserted by the SDRAM controller when
+    -- a request has been accepted.
+    ack : out std_logic;
+
+    -- The valid signal is asserted when there is a valid word on the output
+    -- data bus.
     valid : out std_logic;
-    ready : out std_logic;
+
+    -- output data bus
+    q : out std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
 
     -- SDRAM interface
     sdram_a     : out unsigned(SDRAM_ADDR_WIDTH-1 downto 0);
@@ -126,23 +139,23 @@ architecture arch of sdram is
   -- executed
   constant ACTIVE_WAIT : natural := natural(ceil(T_RCD/CLK_PERIOD));
 
-  -- the number of clock cycles to wait while an AUTO REFRESH command is being
+  -- the number of clock cycles to wait while a REFRESH command is being
   -- executed
-  constant AUTO_REFRESH_WAIT : natural := natural(ceil(T_RC/CLK_PERIOD));
+  constant REFRESH_WAIT : natural := natural(ceil(T_RC/CLK_PERIOD));
 
   -- the number of clock cycles to wait while a PRECHARGE command is being
   -- executed
   constant PRECHARGE_WAIT : natural := natural(ceil(T_RP/CLK_PERIOD));
-
-  -- the number of clock cycles between each AUTO REFRESH command, with a small
-  -- margin to allow for pending reads/writes
-  constant REFRESH_MAX : natural := natural(floor(T_REFI/CLK_PERIOD))-10;
 
   -- the number of clock cycles to wait while a READ command is being executed
   constant READ_WAIT : natural := CAS_LATENCY+BURST_LENGTH;
 
   -- the number of clock cycles to wait while a WRITE command is being executed
   constant WRITE_WAIT : natural := BURST_LENGTH+natural(ceil((T_WR+T_RP)/CLK_PERIOD));
+
+  -- the number of clock cycles before the memory controller needs to refresh
+  -- the SDRAM
+  constant REFRESH_INTERVAL : natural := natural(floor(T_REFI/CLK_PERIOD))-10;
 
   type state_t is (INIT, MODE, IDLE, ACTIVE, READ, WRITE, REFRESH);
 
@@ -153,6 +166,7 @@ architecture arch of sdram is
   signal cmd, next_cmd : command_t := CMD_NOP;
 
   -- control signals
+  signal start          : std_logic;
   signal load_mode_done : std_logic;
   signal active_done    : std_logic;
   signal refresh_done   : std_logic;
@@ -166,10 +180,10 @@ architecture arch of sdram is
   signal refresh_counter : natural range 0 to 1023;
 
   -- registers
-  signal addr_reg : unsigned(SDRAM_CTRL_ADDR_WIDTH downto 0);
-  signal din_reg  : std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
-  signal dout_reg : std_logic_vector(SDRAM_DATA_WIDTH-1 downto 0);
+  signal addr_reg : unsigned(SDRAM_COL_WIDTH+SDRAM_ROW_WIDTH+SDRAM_BANK_WIDTH-1 downto 0);
+  signal data_reg : std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
   signal we_reg   : std_logic;
+  signal q_reg    : std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
 
   -- aliases to decode the address register
   alias col  : unsigned(SDRAM_COL_WIDTH-1 downto 0) is addr_reg(SDRAM_COL_WIDTH-1 downto 0);
@@ -193,9 +207,9 @@ begin
           next_cmd <= CMD_PRECHARGE;
         elsif wait_counter = PRECHARGE_WAIT-1 then
           next_cmd <= CMD_AUTO_REFRESH;
-        elsif wait_counter = PRECHARGE_WAIT+AUTO_REFRESH_WAIT-1 then
+        elsif wait_counter = PRECHARGE_WAIT+REFRESH_WAIT-1 then
           next_cmd <= CMD_AUTO_REFRESH;
-        elsif wait_counter = PRECHARGE_WAIT+AUTO_REFRESH_WAIT+AUTO_REFRESH_WAIT-1 then
+        elsif wait_counter = PRECHARGE_WAIT+REFRESH_WAIT+REFRESH_WAIT-1 then
           next_state <= MODE;
           next_cmd   <= CMD_LOAD_MODE;
         end if;
@@ -231,7 +245,10 @@ begin
       -- execute a read command
       when READ =>
         if read_done = '1' then
-          if req = '1' then
+          if should_refresh = '1' then
+            next_state <= REFRESH;
+            next_cmd   <= CMD_AUTO_REFRESH;
+          elsif req = '1' then
             next_state <= ACTIVE;
             next_cmd   <= CMD_ACTIVE;
           else
@@ -242,7 +259,10 @@ begin
       -- execute a write command
       when WRITE =>
         if write_done = '1' then
-          if req = '1' then
+          if should_refresh = '1' then
+            next_state <= REFRESH;
+            next_cmd   <= CMD_AUTO_REFRESH;
+          elsif req = '1' then
             next_state <= ACTIVE;
             next_cmd   <= CMD_ACTIVE;
           else
@@ -275,9 +295,8 @@ begin
     end if;
   end process;
 
-  -- Update the wait counter.
-  --
-  -- The wait counter is used to hold the state for a number of clock cycles.
+  -- the wait counter is used to hold the current state for a number of clock
+  -- cycles
   update_wait_counter : process (clk, reset)
   begin
     if reset = '1' then
@@ -291,16 +310,13 @@ begin
     end if;
   end process;
 
-  -- Update the refresh counter.
-  --
-  -- The refresh counter is used to periodically trigger an auto refresh
-  -- command.
+  -- the refresh counter is used to periodically trigger a refresh operation
   update_refresh_counter : process (clk, reset)
   begin
     if reset = '1' then
       refresh_counter <= 0;
     elsif rising_edge(clk) then
-      if state = REFRESH then
+      if state = REFRESH and wait_counter = 0 then
         refresh_counter <= 0;
       else
         refresh_counter <= refresh_counter+1;
@@ -308,52 +324,62 @@ begin
     end if;
   end process;
 
-  -- latch the input signals
-  latch_input_signals : process (clk)
+  -- latch the rquest
+  latch_request : process (clk)
   begin
     if rising_edge(clk) then
-      if state = IDLE or (state = READ and read_done = '1') or (state = WRITE and write_done = '1') or (state = REFRESH and refresh_done = '1') then
+      if start = '1' then
         -- we need to multiply the address by two, because we are converting
         -- from a 32-bit controller address to a 16-bit SDRAM address
         addr_reg <= shift_left(resize(addr, addr_reg'length), 1);
-        din_reg  <= din;
+        data_reg <= data;
         we_reg   <= we;
       end if;
     end if;
   end process;
 
-  -- latch the output data into a register, as it's bursted from the SDRAM
+  -- latch the output data as it's bursted from the SDRAM
   latch_sdram_data : process (clk)
   begin
     if rising_edge(clk) then
-      if state = READ and first_word = '1' then
-        dout_reg <= sdram_dq;
+      valid <= '0';
+
+      if state = READ then
+        if first_word = '1' then
+          q_reg(31 downto 16) <= sdram_dq;
+        elsif read_done = '1' then
+          q_reg(15 downto 0) <= sdram_dq;
+          valid <= '1';
+        end if;
       end if;
     end if;
   end process;
 
-  -- set control signals
-  load_mode_done <= '1' when wait_counter = LOAD_MODE_WAIT-1    else '0';
-  active_done    <= '1' when wait_counter = ACTIVE_WAIT-1       else '0';
-  refresh_done   <= '1' when wait_counter = AUTO_REFRESH_WAIT-1 else '0';
-  first_word     <= '1' when wait_counter = CAS_LATENCY         else '0';
-  read_done      <= '1' when wait_counter = READ_WAIT-1         else '0';
-  write_done     <= '1' when wait_counter = WRITE_WAIT-1        else '0';
-  should_refresh <= '1' when refresh_counter >= REFRESH_MAX-1   else '0';
+  -- set wait signals
+  load_mode_done <= '1' when wait_counter = LOAD_MODE_WAIT-1 else '0';
+  active_done    <= '1' when wait_counter = ACTIVE_WAIT-1    else '0';
+  refresh_done   <= '1' when wait_counter = REFRESH_WAIT-1   else '0';
+  first_word     <= '1' when wait_counter = CAS_LATENCY      else '0';
+  read_done      <= '1' when wait_counter = READ_WAIT-1      else '0';
+  write_done     <= '1' when wait_counter = WRITE_WAIT-1     else '0';
 
-  -- the ack signal is asserted when a operation has started
+  -- the SDRAM should be refreshed when the refresh interval has elapsed
+  should_refresh <= '1' when refresh_counter >= REFRESH_INTERVAL-1 else '0';
+
+  -- a new request is only allowed at the end of the IDLE, READ, WRITE, and
+  -- REFRESH states
+  start <= '1' when (state = IDLE) or
+                    (state = READ and read_done = '1') or
+                    (state = WRITE and write_done = '1') or
+                    (state = REFRESH and refresh_done = '1') else '0';
+
+  -- assert the acknowledge signal at the beginning of the ACTIVE state
   ack <= '1' when state = ACTIVE and wait_counter = 0 else '0';
 
-  -- the valid signal is asserted after a read operation has completed
-  valid <= '1' when state = READ and read_done = '1' else '0';
-
-  -- the memory controller is ready if we're in the IDLE state
-  ready <= '1' when state = IDLE else '0';
-
   -- set output data
-  dout <= dout_reg & sdram_dq;
+  q <= q_reg;
 
-  -- deassert the clock enable at the beginning of the initialisation sequence
+  -- deassert the clock enable at the beginning of the INIT state
   sdram_cke <= '0' when state = INIT and wait_counter = 0 else '1';
 
 	-- set SDRAM control signals
@@ -378,7 +404,7 @@ begin
       (others => '0') when others;
 
   -- decode the next 16-bit word from the write buffer
-  sdram_dq <= din_reg((BURST_LENGTH-wait_counter)*SDRAM_DATA_WIDTH-1 downto (BURST_LENGTH-wait_counter-1)*SDRAM_DATA_WIDTH) when state = WRITE else (others => 'Z');
+  sdram_dq <= data_reg((BURST_LENGTH-wait_counter)*SDRAM_DATA_WIDTH-1 downto (BURST_LENGTH-wait_counter-1)*SDRAM_DATA_WIDTH) when state = WRITE else (others => 'Z');
 
   -- set SDRAM data mask
   sdram_dqmh <= '0';
