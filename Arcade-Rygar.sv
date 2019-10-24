@@ -226,13 +226,12 @@ video_mixer #(.LINE_LENGTH(256), .HALF_DEPTH(1)) video_mixer
 );
 
 wire [22:0] sdram_addr;
-wire [31:0] sdram_din;
-wire [31:0] sdram_dout;
+wire [31:0] sdram_data;
 wire sdram_we;
 wire sdram_req;
 wire sdram_ack;
-wire sdram_ready;
 wire sdram_valid;
+wire [31:0] sdram_q;
 
 sdram #(.CLK_FREQ(48.0)) sdram
 (
@@ -241,13 +240,12 @@ sdram #(.CLK_FREQ(48.0)) sdram
 
   // controller interface
   .addr(sdram_addr),
-  .din(sdram_din),
-  .dout(sdram_dout),
+  .data(sdram_data),
   .we(sdram_we),
   .req(sdram_req),
   .ack(sdram_ack),
-  .ready(sdram_ready),
   .valid(sdram_valid),
+  .q(sdram_q),
 
   // SDRAM interface
   .sdram_a(SDRAM_A),
@@ -324,13 +322,12 @@ game game
   .dip_lives(status[9:8]),
 
   .sdram_addr(sdram_addr),
-  .sdram_din(sdram_din),
-  .sdram_dout(sdram_dout),
+  .sdram_data(sdram_data),
   .sdram_we(sdram_we),
   .sdram_req(sdram_req),
   .sdram_ack(sdram_ack),
-  .sdram_ready(sdram_ready),
   .sdram_valid(sdram_valid),
+  .sdram_q(sdram_q),
 
   .ioctl_addr(ioctl_addr),
   .ioctl_data(ioctl_data),

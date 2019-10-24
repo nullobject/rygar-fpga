@@ -74,13 +74,11 @@ entity rom_controller is
 
     -- SDRAM interface
     sdram_addr  : out unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
-    sdram_din   : out std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
-    sdram_dout  : in std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
+    sdram_data  : out std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
     sdram_we    : out std_logic;
     sdram_req   : out std_logic;
     sdram_ack   : in std_logic;
     sdram_valid : in std_logic;
-    sdram_ready : in std_logic;
 
     -- IOCTL interface
     ioctl_addr     : in unsigned(IOCTL_ADDR_WIDTH-1 downto 0);
