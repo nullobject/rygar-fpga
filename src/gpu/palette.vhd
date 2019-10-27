@@ -22,7 +22,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-use work.rygar.all;
+use work.common.all;
 
 -- The palette combines data from the different graphics layers to produce an
 -- actual RGB value that can be rendered on the screen.

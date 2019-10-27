@@ -22,7 +22,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-use work.rygar.all;
+use work.common.all;
 
 -- The ROM controller handles reading and writing ROM data to the SDRAM. It
 -- provides a read-only interface to the GPU for reading tile data. It also

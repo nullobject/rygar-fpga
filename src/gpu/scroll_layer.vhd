@@ -22,7 +22,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-use work.rygar.all;
+use work.common.all;
 
 -- The scroll module handles the scrolling foreground and background layers in
 -- the graphics pipeline.

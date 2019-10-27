@@ -302,7 +302,7 @@ wire start_1 = key_start_1 | joy[6];
 wire start_2 = key_start_2 | joy[7];
 wire coin    = key_coin    | joy[8];
 
-game game
+rygar rygar
 (
   .reset(RESET | ioctl_download | status[0] | buttons[1]),
   .clk(clk_sys),

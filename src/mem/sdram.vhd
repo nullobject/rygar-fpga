@@ -23,7 +23,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use ieee.math_real.all;
 
-use work.rygar.all;
+use work.common.all;
 
 -- The SDRAM controller provides a symmetric 32-bit synchronous read-write
 -- interface to a 16Mx16-bit SDRAM chip.
