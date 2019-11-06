@@ -36,8 +36,8 @@ entity edge_detector is
     -- data input
     data : in std_logic;
 
-    -- edge output strobe
-    edge : out std_logic
+    -- output data
+    q : out std_logic
   );
 end edge_detector;
 
@@ -52,7 +52,7 @@ begin
     end if;
   end process;
 
-  edge <= (not t1 and t0) when RISING else
-          (t1 and not t0) when FALLING else
-          '0';
+  q <= (not t1 and t0) when RISING else
+       (t1 and not t0) when FALLING else
+       '0';
 end architecture arch;

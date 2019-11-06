@@ -176,7 +176,7 @@ begin
   port map (
     clk  => clk,
     data => video.vblank,
-    edge => vblank_falling
+    q    => vblank_falling
   );
 
   -- work RAM
