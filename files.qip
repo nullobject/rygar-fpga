@@ -1,4 +1,4 @@
-set_global_assignment -name QIP_FILE src/t80/T80.qip
+set_global_assignment -name QIP_FILE src/t80.qip
 set_global_assignment -name VHDL_FILE src/common.vhd
 set_global_assignment -name VHDL_FILE src/gpu/char_layer.vhd
 set_global_assignment -name VHDL_FILE src/gpu/frame_buffer.vhd
