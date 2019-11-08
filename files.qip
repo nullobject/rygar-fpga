@@ -1,3 +1,4 @@
+set_global_assignment -name QIP_FILE src/opl3.qip
 set_global_assignment -name QIP_FILE src/t80.qip
 set_global_assignment -name VHDL_FILE src/common.vhd
 set_global_assignment -name VHDL_FILE src/gpu/char_layer.vhd
@@ -16,6 +17,7 @@ set_global_assignment -name VHDL_FILE src/mem/single_port_ram.vhd
 set_global_assignment -name VHDL_FILE src/mem/single_port_rom.vhd
 set_global_assignment -name VHDL_FILE src/mem/true_dual_port_ram.vhd
 set_global_assignment -name VHDL_FILE src/rygar.vhd
+set_global_assignment -name VHDL_FILE src/sound.vhd
 set_global_assignment -name VHDL_FILE src/util/clock_divider.vhd
 set_global_assignment -name VHDL_FILE src/util/download_buffer.vhd
 set_global_assignment -name VHDL_FILE src/util/edge_detector.vhd

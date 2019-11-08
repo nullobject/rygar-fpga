@@ -76,7 +76,9 @@ entity rygar is
     -- RGB
     r : out std_logic_vector(COLOR_DEPTH_R-1 downto 0);
     g : out std_logic_vector(COLOR_DEPTH_G-1 downto 0);
-    b : out std_logic_vector(COLOR_DEPTH_B-1 downto 0)
+    b : out std_logic_vector(COLOR_DEPTH_B-1 downto 0);
+
+    audio : out audio_t
   );
 end rygar;
 
@@ -117,6 +119,7 @@ architecture arch of rygar is
   signal dip_sw_1_cs    : std_logic;
   signal dip_sw_2_cs    : std_logic;
   signal bank_cs        : std_logic;
+  signal sound_cs       : std_logic;
 
   -- ROM signals
   signal sprite_rom_addr : unsigned(SPRITE_ROM_ADDR_WIDTH-1 downto 0);
@@ -270,12 +273,10 @@ begin
 
   -- main CPU
   cpu : entity work.T80s
-  generic map (IOWait => 1)
   port map (
     RESET_n             => not reset,
     CLK                 => clk,
     CEN                 => cen_4,
-    WAIT_n              => '1',
     INT_n               => cpu_int_n,
     M1_n                => cpu_m1_n,
     MREQ_n              => cpu_mreq_n,
@@ -335,6 +336,18 @@ begin
     rgb   => rgb
   );
 
+  -- A request is sent to the sound subsystem when the CPU writes a byte to
+  -- address 0xf806.
+  sound : entity work.sound
+  port map (
+    reset => reset,
+    clk   => clk,
+    cen   => cen_4,
+    req   => sound_cs and not cpu_wr_n,
+    data  => cpu_dout,
+    audio => audio
+  );
+
   -- Trigger an interrupt on the falling edge of the VBLANK signal.
   --
   -- Once the interrupt request has been accepted by the CPU, it is
@@ -351,8 +364,6 @@ begin
     end if;
   end process;
 
-  -- Set the bank register.
-  --
   -- The bank register selects the current bank for program ROM 3.
   set_bank_register : process (clk)
   begin
@@ -409,12 +420,13 @@ begin
   -- e800-efff | palette RAM
   -- f000-f7ff | program ROM 3
   -- f800-f805 | scroll registers
+  --      f807 | sound
+  --      f808 | bank register
   -- f800-f801 | player 1
   -- f802-f803 | player 2
   --      f804 | coin
   -- f806-f807 | DIP switch 1
   -- f808-f809 | DIP switch 2
-  --      f808 | bank register
   prog_rom_1_cs  <= '1' when cpu_addr >= x"0000" and cpu_addr <= x"7fff" else '0';
   prog_rom_2_cs  <= '1' when cpu_addr >= x"8000" and cpu_addr <= x"bfff" else '0';
   work_ram_cs    <= '1' when cpu_addr >= x"c000" and cpu_addr <= x"cfff" else '0';
@@ -425,12 +437,13 @@ begin
   palette_ram_cs <= '1' when cpu_addr >= x"e800" and cpu_addr <= x"efff" else '0';
   prog_rom_3_cs  <= '1' when cpu_addr >= x"f000" and cpu_addr <= x"f7ff" else '0';
   scroll_cs      <= '1' when cpu_addr >= x"f800" and cpu_addr <= x"f805" else '0';
+  sound_cs       <= '1' when cpu_addr  = x"f806"                         else '0';
+  bank_cs        <= '1' when cpu_addr  = x"f808"                         else '0';
   player_1_cs    <= '1' when cpu_addr >= x"f800" and cpu_addr <= x"f801" else '0';
   player_2_cs    <= '1' when cpu_addr >= x"f802" and cpu_addr <= x"f803" else '0';
   coin_cs        <= '1' when cpu_addr  = x"f804"                         else '0';
   dip_sw_1_cs    <= '1' when cpu_addr >= x"f806" and cpu_addr <= x"f807" else '0';
   dip_sw_2_cs    <= '1' when cpu_addr >= x"f808" and cpu_addr <= x"f809" else '0';
-  bank_cs        <= '1' when cpu_addr  = x"f808"                         else '0';
 
   -- mux CPU data input
   cpu_din <= prog_rom_1_dout or
