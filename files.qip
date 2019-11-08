@@ -13,6 +13,7 @@ set_global_assignment -name VHDL_FILE src/mem/rom_controller.vhd
 set_global_assignment -name VHDL_FILE src/mem/sdram.vhd
 set_global_assignment -name VHDL_FILE src/mem/segment.vhd
 set_global_assignment -name VHDL_FILE src/mem/single_port_ram.vhd
+set_global_assignment -name VHDL_FILE src/mem/single_port_rom.vhd
 set_global_assignment -name VHDL_FILE src/mem/true_dual_port_ram.vhd
 set_global_assignment -name VHDL_FILE src/rygar.vhd
 set_global_assignment -name VHDL_FILE src/util/clock_divider.vhd
