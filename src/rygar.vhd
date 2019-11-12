@@ -33,9 +33,10 @@ entity rygar is
     clk : in std_logic;
 
     -- clock enable signals
-    cen_12 : buffer std_logic;
-    cen_6  : buffer std_logic;
-    cen_4  : buffer std_logic;
+    cen_384 : buffer std_logic;
+    cen_12  : buffer std_logic;
+    cen_6   : buffer std_logic;
+    cen_4   : buffer std_logic;
 
     -- player controls
     joystick_1 : in byte_t;
@@ -172,6 +173,11 @@ begin
   clock_divider_4 : entity work.clock_divider
   generic map (DIVISOR => 12)
   port map (clk => clk, cen => cen_4);
+
+  -- generate a 384KHz clock enable signal
+  clock_divider_384 : entity work.clock_divider
+  generic map (DIVISOR => 125)
+  port map (clk => clk, cen => cen_384);
 
   -- detect falling edges of the VBLANK signal
   vblank_edge_detector : entity work.edge_detector
@@ -340,12 +346,13 @@ begin
   -- address 0xf806.
   sound : entity work.sound
   port map (
-    reset => reset,
-    clk   => clk,
-    cen   => cen_4,
-    req   => sound_cs and not cpu_wr_n,
-    data  => cpu_dout,
-    audio => audio
+    reset   => reset,
+    clk     => clk,
+    cen_4   => cen_4,
+    cen_384 => cen_384,
+    req     => sound_cs and not cpu_wr_n,
+    data    => cpu_dout,
+    audio   => audio
   );
 
   -- Trigger an interrupt on the falling edge of the VBLANK signal.

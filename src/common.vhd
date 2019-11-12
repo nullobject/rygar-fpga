@@ -62,7 +62,7 @@ package common is
   -- sound ROMs
   constant SOUND_ROM_1_ADDR_WIDTH : natural := 14;
   constant SOUND_ROM_1_DATA_WIDTH : natural := 8;
-  constant SOUND_ROM_2_ADDR_WIDTH : natural := 14;
+  constant SOUND_ROM_2_ADDR_WIDTH : natural := 15;
   constant SOUND_ROM_2_DATA_WIDTH : natural := 8;
 
   -- ROM offsets
