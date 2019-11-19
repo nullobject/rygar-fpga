@@ -37,6 +37,18 @@ entity sound is
     req  : in std_logic;
     data : in byte_t;
 
+    -- sound ROM #1 interface
+    sound_rom_1_cs   : out std_logic;
+    sound_rom_1_oe   : out std_logic;
+    sound_rom_1_addr : out unsigned(SOUND_ROM_1_ADDR_WIDTH-1 downto 0);
+    sound_rom_1_data : in byte_t;
+
+    -- sound ROM #2 interface
+    sound_rom_2_cs   : out std_logic;
+    sound_rom_2_oe   : out std_logic;
+    sound_rom_2_addr : out unsigned(SOUND_ROM_2_ADDR_WIDTH-1 downto 0);
+    sound_rom_2_data : in byte_t;
+
     -- audio data
     audio : out audio_t
   );
@@ -55,16 +67,13 @@ architecture arch of sound is
   signal cpu_int_n  : std_logic := '1';
 
   -- chip select signals
-  signal sound_rom_1_cs : std_logic;
-  signal sound_ram_cs   : std_logic;
-  signal req_cs         : std_logic;
-  signal req_off_cs     : std_logic;
+  signal sound_ram_cs : std_logic;
+  signal req_cs       : std_logic;
+  signal req_off_cs   : std_logic;
 
   -- data signals
-  signal sound_rom_1_data : byte_t;
-  signal sound_rom_2_data : byte_t;
-  signal sound_ram_data   : byte_t;
-  signal req_data         : byte_t;
+  signal sound_ram_data : byte_t;
+  signal req_data       : byte_t;
 
   -- registers
   signal data_reg : byte_t;
@@ -102,31 +111,6 @@ begin
     std_logic_vector(A) => cpu_addr,
     DI                  => cpu_din,
     DO                  => cpu_dout
-  );
-
-  -- contains sound program data
-  sound_rom_1 : entity work.single_port_rom
-  generic map (
-    ADDR_WIDTH => SOUND_ROM_1_ADDR_WIDTH,
-    INIT_FILE  => "rom/cpu_4h.mif"
-  )
-  port map (
-    clk  => clk,
-    cs   => sound_rom_1_cs,
-    addr => cpu_addr(SOUND_ROM_1_ADDR_WIDTH-1 downto 0),
-    dout => sound_rom_1_data
-  );
-
-  -- contains PCM data
-  sound_rom_2 : entity work.single_port_rom
-  generic map (
-    ADDR_WIDTH => SOUND_ROM_2_ADDR_WIDTH,
-    INIT_FILE  => "rom/cpu_1f.mif"
-  )
-  port map (
-    clk  => clk,
-    addr => pcm_addr,
-    dout => sound_rom_2_data
   );
 
   sound_ram : entity work.single_port_ram
@@ -207,17 +191,24 @@ begin
   -- d000-dfff | PCM high
   -- e000-efff | PCM volume
   -- f000-ffff | request off
-  sound_rom_1_cs <= '1' when cpu_addr >= x"0000" and cpu_addr <= x"3fff" and cpu_mreq_n = '0' and cpu_rfsh_n = '1' else '0';
-  sound_ram_cs   <= '1' when cpu_addr >= x"4000" and cpu_addr <= x"7fff" and cpu_mreq_n = '0' and cpu_rfsh_n = '1' else '0';
-  fm_cs          <= '1' when cpu_addr >= x"8000" and cpu_addr <= x"bfff" and cpu_mreq_n = '0' and cpu_rfsh_n = '1' else '0';
-  req_cs         <= '1' when cpu_addr >= x"c000" and cpu_addr <= x"ffff" and cpu_mreq_n = '0' and cpu_rfsh_n = '1' else '0';
-  pcm_low_cs     <= '1' when cpu_addr >= x"c000" and cpu_addr <= x"cfff" and cpu_mreq_n = '0' and cpu_rfsh_n = '1' else '0';
-  pcm_high_cs    <= '1' when cpu_addr >= x"d000" and cpu_addr <= x"dfff" and cpu_mreq_n = '0' and cpu_rfsh_n = '1' else '0';
-  pcm_vol_cs     <= '1' when cpu_addr >= x"e000" and cpu_addr <= x"efff" and cpu_mreq_n = '0' and cpu_rfsh_n = '1' else '0';
-  req_off_cs     <= '1' when cpu_addr >= x"f000" and cpu_addr <= x"ffff" and cpu_mreq_n = '0' and cpu_rfsh_n = '1' else '0';
+  sound_rom_1_cs <= '1' when cpu_addr >= x"0000" and cpu_addr <= x"3fff" and cpu_rfsh_n = '1' else '0';
+  sound_ram_cs   <= '1' when cpu_addr >= x"4000" and cpu_addr <= x"7fff" and cpu_rfsh_n = '1' else '0';
+  fm_cs          <= '1' when cpu_addr >= x"8000" and cpu_addr <= x"bfff" and cpu_rfsh_n = '1' else '0';
+  req_cs         <= '1' when cpu_addr >= x"c000" and cpu_addr <= x"ffff" and cpu_rfsh_n = '1' else '0';
+  pcm_low_cs     <= '1' when cpu_addr >= x"c000" and cpu_addr <= x"cfff" and cpu_rfsh_n = '1' else '0';
+  pcm_high_cs    <= '1' when cpu_addr >= x"d000" and cpu_addr <= x"dfff" and cpu_rfsh_n = '1' else '0';
+  pcm_vol_cs     <= '1' when cpu_addr >= x"e000" and cpu_addr <= x"efff" and cpu_rfsh_n = '1' else '0';
+  req_off_cs     <= '1' when cpu_addr >= x"f000" and cpu_addr <= x"ffff" and cpu_rfsh_n = '1' else '0';
 
   -- set request data
   req_data <= data_reg when req_cs = '1' and cpu_rd_n = '0' else (others => '0');
+
+  sound_rom_1_oe   <= not cpu_rd_n;
+  sound_rom_1_addr <= cpu_addr(SOUND_ROM_1_ADDR_WIDTH-1 downto 0);
+
+  sound_rom_2_cs   <= not pcm_done;
+  sound_rom_2_oe   <= '1';
+  sound_rom_2_addr <= pcm_addr;
 
   -- mux CPU data input
   cpu_din <= sound_rom_1_data or

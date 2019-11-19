@@ -61,6 +61,18 @@ entity rom_controller is
     prog_rom_3_addr : in unsigned(PROG_ROM_3_ADDR_WIDTH-1 downto 0);
     prog_rom_3_data : out std_logic_vector(PROG_ROM_3_DATA_WIDTH-1 downto 0);
 
+    -- sound ROM #1 interface
+    sound_rom_1_cs   : in std_logic;
+    sound_rom_1_oe   : in std_logic;
+    sound_rom_1_addr : in unsigned(SOUND_ROM_1_ADDR_WIDTH-1 downto 0);
+    sound_rom_1_data : out std_logic_vector(SOUND_ROM_1_DATA_WIDTH-1 downto 0);
+
+    -- sound ROM #2 interface
+    sound_rom_2_cs   : in std_logic;
+    sound_rom_2_oe   : in std_logic;
+    sound_rom_2_addr : in unsigned(SOUND_ROM_2_ADDR_WIDTH-1 downto 0);
+    sound_rom_2_data : out std_logic_vector(SOUND_ROM_2_DATA_WIDTH-1 downto 0);
+
     -- sprite ROM interface
     sprite_rom_cs   : in std_logic;
     sprite_rom_oe   : in std_logic;
@@ -103,51 +115,58 @@ entity rom_controller is
 end rom_controller;
 
 architecture arch of rom_controller is
-  type rom_t is (NONE, PROG_ROM_1, PROG_ROM_2, PROG_ROM_3, SPRITE_ROM, CHAR_ROM, FG_ROM, BG_ROM);
+  type rom_t is (NONE, PROG_ROM_1, PROG_ROM_2, PROG_ROM_3, SOUND_ROM_1, SOUND_ROM_2, SPRITE_ROM, CHAR_ROM, FG_ROM, BG_ROM);
 
   -- ROM signals
   signal rom, next_rom, pending_rom : rom_t;
 
   -- ROM request signals
-  signal prog_rom_1_ctrl_req : std_logic;
-  signal prog_rom_2_ctrl_req : std_logic;
-  signal prog_rom_3_ctrl_req : std_logic;
-  signal sprite_rom_ctrl_req : std_logic;
-  signal char_rom_ctrl_req   : std_logic;
-  signal fg_rom_ctrl_req     : std_logic;
-  signal bg_rom_ctrl_req     : std_logic;
+  signal prog_rom_1_ctrl_req  : std_logic;
+  signal prog_rom_2_ctrl_req  : std_logic;
+  signal prog_rom_3_ctrl_req  : std_logic;
+  signal sound_rom_1_ctrl_req : std_logic;
+  signal sound_rom_2_ctrl_req : std_logic;
+  signal sprite_rom_ctrl_req  : std_logic;
+  signal char_rom_ctrl_req    : std_logic;
+  signal fg_rom_ctrl_req      : std_logic;
+  signal bg_rom_ctrl_req      : std_logic;
 
   -- ROM acknowledge signals
-  signal prog_rom_1_ctrl_ack : std_logic;
-  signal prog_rom_2_ctrl_ack : std_logic;
-  signal prog_rom_3_ctrl_ack : std_logic;
-  signal sprite_rom_ctrl_ack : std_logic;
-  signal char_rom_ctrl_ack   : std_logic;
-  signal fg_rom_ctrl_ack     : std_logic;
-  signal bg_rom_ctrl_ack     : std_logic;
+  signal prog_rom_1_ctrl_ack  : std_logic;
+  signal prog_rom_2_ctrl_ack  : std_logic;
+  signal prog_rom_3_ctrl_ack  : std_logic;
+  signal sound_rom_1_ctrl_ack : std_logic;
+  signal sound_rom_2_ctrl_ack : std_logic;
+  signal sprite_rom_ctrl_ack  : std_logic;
+  signal char_rom_ctrl_ack    : std_logic;
+  signal fg_rom_ctrl_ack      : std_logic;
+  signal bg_rom_ctrl_ack      : std_logic;
 
   -- ROM valid signals
-  signal prog_rom_1_ctrl_valid : std_logic;
-  signal prog_rom_2_ctrl_valid : std_logic;
-  signal prog_rom_3_ctrl_valid : std_logic;
-  signal sprite_rom_ctrl_valid : std_logic;
-  signal char_rom_ctrl_valid   : std_logic;
-  signal fg_rom_ctrl_valid     : std_logic;
-  signal bg_rom_ctrl_valid     : std_logic;
+  signal prog_rom_1_ctrl_valid  : std_logic;
+  signal prog_rom_2_ctrl_valid  : std_logic;
+  signal prog_rom_3_ctrl_valid  : std_logic;
+  signal sound_rom_1_ctrl_valid : std_logic;
+  signal sound_rom_2_ctrl_valid : std_logic;
+  signal sprite_rom_ctrl_valid  : std_logic;
+  signal char_rom_ctrl_valid    : std_logic;
+  signal fg_rom_ctrl_valid      : std_logic;
+  signal bg_rom_ctrl_valid      : std_logic;
 
   -- address mux signals
-  signal prog_rom_1_ctrl_addr : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
-  signal prog_rom_2_ctrl_addr : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
-  signal prog_rom_3_ctrl_addr : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
-  signal sprite_rom_ctrl_addr : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
-  signal char_rom_ctrl_addr   : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
-  signal fg_rom_ctrl_addr     : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
-  signal bg_rom_ctrl_addr     : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
+  signal prog_rom_1_ctrl_addr  : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
+  signal prog_rom_2_ctrl_addr  : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
+  signal prog_rom_3_ctrl_addr  : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
+  signal sound_rom_1_ctrl_addr : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
+  signal sound_rom_2_ctrl_addr : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
+  signal sprite_rom_ctrl_addr  : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
+  signal char_rom_ctrl_addr    : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
+  signal fg_rom_ctrl_addr      : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
+  signal bg_rom_ctrl_addr      : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
 
   -- control signals
   signal ctrl_req : std_logic;
 begin
-
   prog_rom_1_segment : entity work.segment
   generic map (
     ROM_ADDR_WIDTH => PROG_ROM_1_ADDR_WIDTH,
@@ -206,6 +225,46 @@ begin
     ctrl_data  => sdram_q,
     rom_addr   => prog_rom_3_addr,
     rom_data   => prog_rom_3_data
+  );
+
+  sound_rom_1_segment : entity work.segment
+  generic map (
+    ROM_ADDR_WIDTH => SOUND_ROM_1_ADDR_WIDTH,
+    ROM_DATA_WIDTH => SOUND_ROM_1_DATA_WIDTH,
+    ROM_OFFSET     => SOUND_ROM_1_OFFSET
+  )
+  port map (
+    reset      => reset,
+    clk        => clk,
+    cs         => sound_rom_1_cs,
+    oe         => sound_rom_1_oe,
+    ctrl_addr  => sound_rom_1_ctrl_addr,
+    ctrl_req   => sound_rom_1_ctrl_req,
+    ctrl_ack   => sound_rom_1_ctrl_ack,
+    ctrl_valid => sound_rom_1_ctrl_valid,
+    ctrl_data  => sdram_q,
+    rom_addr   => sound_rom_1_addr,
+    rom_data   => sound_rom_1_data
+  );
+
+  sound_rom_2_segment : entity work.segment
+  generic map (
+    ROM_ADDR_WIDTH => SOUND_ROM_2_ADDR_WIDTH,
+    ROM_DATA_WIDTH => SOUND_ROM_2_DATA_WIDTH,
+    ROM_OFFSET     => SOUND_ROM_2_OFFSET
+  )
+  port map (
+    reset      => reset,
+    clk        => clk,
+    cs         => sound_rom_2_cs,
+    oe         => sound_rom_2_oe,
+    ctrl_addr  => sound_rom_2_ctrl_addr,
+    ctrl_req   => sound_rom_2_ctrl_req,
+    ctrl_ack   => sound_rom_2_ctrl_ack,
+    ctrl_valid => sound_rom_2_ctrl_valid,
+    ctrl_data  => sdram_q,
+    rom_addr   => sound_rom_2_addr,
+    rom_data   => sound_rom_2_data
   );
 
   sprite_rom_segment : entity work.segment
@@ -312,51 +371,61 @@ begin
   end process;
 
   -- mux the next ROM in priority order
-  next_rom <= PROG_ROM_1 when prog_rom_1_ctrl_req = '1' else
-              PROG_ROM_2 when prog_rom_2_ctrl_req = '1' else
-              PROG_ROM_3 when prog_rom_3_ctrl_req = '1' else
-              SPRITE_ROM when sprite_rom_ctrl_req = '1' else
-              CHAR_ROM   when char_rom_ctrl_req   = '1' else
-              FG_ROM     when fg_rom_ctrl_req     = '1' else
-              BG_ROM     when bg_rom_ctrl_req     = '1' else
+  next_rom <= PROG_ROM_1  when prog_rom_1_ctrl_req  = '1' else
+              PROG_ROM_2  when prog_rom_2_ctrl_req  = '1' else
+              PROG_ROM_3  when prog_rom_3_ctrl_req  = '1' else
+              SOUND_ROM_1 when sound_rom_1_ctrl_req = '1' else
+              SOUND_ROM_2 when sound_rom_2_ctrl_req = '1' else
+              SPRITE_ROM  when sprite_rom_ctrl_req  = '1' else
+              CHAR_ROM    when char_rom_ctrl_req    = '1' else
+              FG_ROM      when fg_rom_ctrl_req      = '1' else
+              BG_ROM      when bg_rom_ctrl_req      = '1' else
               NONE;
 
   -- route SDRAM acknowledge signal to the current ROM
-  prog_rom_1_ctrl_ack <= sdram_ack when rom = PROG_ROM_1 else '0';
-  prog_rom_2_ctrl_ack <= sdram_ack when rom = PROG_ROM_2 else '0';
-  prog_rom_3_ctrl_ack <= sdram_ack when rom = PROG_ROM_3 else '0';
-  sprite_rom_ctrl_ack <= sdram_ack when rom = SPRITE_ROM else '0';
-  char_rom_ctrl_ack   <= sdram_ack when rom = CHAR_ROM   else '0';
-  fg_rom_ctrl_ack     <= sdram_ack when rom = FG_ROM     else '0';
-  bg_rom_ctrl_ack     <= sdram_ack when rom = BG_ROM     else '0';
+  prog_rom_1_ctrl_ack  <= sdram_ack when rom = PROG_ROM_1  else '0';
+  prog_rom_2_ctrl_ack  <= sdram_ack when rom = PROG_ROM_2  else '0';
+  prog_rom_3_ctrl_ack  <= sdram_ack when rom = PROG_ROM_3  else '0';
+  sound_rom_1_ctrl_ack <= sdram_ack when rom = SOUND_ROM_1 else '0';
+  sound_rom_2_ctrl_ack <= sdram_ack when rom = SOUND_ROM_2 else '0';
+  sprite_rom_ctrl_ack  <= sdram_ack when rom = SPRITE_ROM  else '0';
+  char_rom_ctrl_ack    <= sdram_ack when rom = CHAR_ROM    else '0';
+  fg_rom_ctrl_ack      <= sdram_ack when rom = FG_ROM      else '0';
+  bg_rom_ctrl_ack      <= sdram_ack when rom = BG_ROM      else '0';
 
   -- route SDRAM valid signal to the pending ROM
-  prog_rom_1_ctrl_valid <= sdram_valid when pending_rom = PROG_ROM_1 else '0';
-  prog_rom_2_ctrl_valid <= sdram_valid when pending_rom = PROG_ROM_2 else '0';
-  prog_rom_3_ctrl_valid <= sdram_valid when pending_rom = PROG_ROM_3 else '0';
-  sprite_rom_ctrl_valid <= sdram_valid when pending_rom = SPRITE_ROM else '0';
-  char_rom_ctrl_valid   <= sdram_valid when pending_rom = CHAR_ROM   else '0';
-  fg_rom_ctrl_valid     <= sdram_valid when pending_rom = FG_ROM     else '0';
-  bg_rom_ctrl_valid     <= sdram_valid when pending_rom = BG_ROM     else '0';
+  prog_rom_1_ctrl_valid  <= sdram_valid when pending_rom = PROG_ROM_1  else '0';
+  prog_rom_2_ctrl_valid  <= sdram_valid when pending_rom = PROG_ROM_2  else '0';
+  prog_rom_3_ctrl_valid  <= sdram_valid when pending_rom = PROG_ROM_3  else '0';
+  sound_rom_1_ctrl_valid <= sdram_valid when pending_rom = SOUND_ROM_1 else '0';
+  sound_rom_2_ctrl_valid <= sdram_valid when pending_rom = SOUND_ROM_2 else '0';
+  sprite_rom_ctrl_valid  <= sdram_valid when pending_rom = SPRITE_ROM  else '0';
+  char_rom_ctrl_valid    <= sdram_valid when pending_rom = CHAR_ROM    else '0';
+  fg_rom_ctrl_valid      <= sdram_valid when pending_rom = FG_ROM      else '0';
+  bg_rom_ctrl_valid      <= sdram_valid when pending_rom = BG_ROM      else '0';
 
   -- mux ROM request
   ctrl_req <= prog_rom_1_ctrl_req or
               prog_rom_2_ctrl_req or
               prog_rom_3_ctrl_req or
+              sound_rom_1_ctrl_req or
+              sound_rom_2_ctrl_req or
               sprite_rom_ctrl_req or
               char_rom_ctrl_req or
               fg_rom_ctrl_req or
               bg_rom_ctrl_req;
 
   -- mux SDRAM address
-  sdram_addr <= download_addr        when download_we         = '1' else
-                prog_rom_1_ctrl_addr when prog_rom_1_ctrl_req = '1' else
-                prog_rom_2_ctrl_addr when prog_rom_2_ctrl_req = '1' else
-                prog_rom_3_ctrl_addr when prog_rom_3_ctrl_req = '1' else
-                sprite_rom_ctrl_addr when sprite_rom_ctrl_req = '1' else
-                char_rom_ctrl_addr   when char_rom_ctrl_req   = '1' else
-                fg_rom_ctrl_addr     when fg_rom_ctrl_req     = '1' else
-                bg_rom_ctrl_addr     when bg_rom_ctrl_req     = '1' else
+  sdram_addr <= download_addr         when download_we          = '1' else
+                prog_rom_1_ctrl_addr  when prog_rom_1_ctrl_req  = '1' else
+                prog_rom_2_ctrl_addr  when prog_rom_2_ctrl_req  = '1' else
+                prog_rom_3_ctrl_addr  when prog_rom_3_ctrl_req  = '1' else
+                sound_rom_1_ctrl_addr when sound_rom_1_ctrl_req = '1' else
+                sound_rom_2_ctrl_addr when sound_rom_2_ctrl_req = '1' else
+                sprite_rom_ctrl_addr  when sprite_rom_ctrl_req  = '1' else
+                char_rom_ctrl_addr    when char_rom_ctrl_req    = '1' else
+                fg_rom_ctrl_addr      when fg_rom_ctrl_req      = '1' else
+                bg_rom_ctrl_addr      when bg_rom_ctrl_req      = '1' else
                 (others => '0');
 
   -- set SDRAM data input

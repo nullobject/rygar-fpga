@@ -112,6 +112,10 @@ architecture arch of rygar is
   signal char_ram_cs    : std_logic;
   signal fg_ram_cs      : std_logic;
   signal bg_ram_cs      : std_logic;
+  signal sound_rom_1_cs : std_logic;
+  signal sound_rom_2_cs : std_logic;
+  signal sound_rom_1_oe : std_logic;
+  signal sound_rom_2_oe : std_logic;
   signal palette_ram_cs : std_logic;
   signal scroll_cs      : std_logic;
   signal player_1_cs    : std_logic;
@@ -123,22 +127,26 @@ architecture arch of rygar is
   signal sound_cs       : std_logic;
 
   -- ROM signals
-  signal sprite_rom_addr : unsigned(SPRITE_ROM_ADDR_WIDTH-1 downto 0);
-  signal sprite_rom_data : std_logic_vector(SPRITE_ROM_DATA_WIDTH-1 downto 0);
-  signal char_rom_addr   : unsigned(CHAR_ROM_ADDR_WIDTH-1 downto 0);
-  signal char_rom_data   : std_logic_vector(CHAR_ROM_DATA_WIDTH-1 downto 0);
-  signal fg_rom_addr     : unsigned(FG_ROM_ADDR_WIDTH-1 downto 0);
-  signal fg_rom_data     : std_logic_vector(FG_ROM_DATA_WIDTH-1 downto 0);
-  signal bg_rom_addr     : unsigned(BG_ROM_ADDR_WIDTH-1 downto 0);
-  signal bg_rom_data     : std_logic_vector(BG_ROM_DATA_WIDTH-1 downto 0);
+  signal sprite_rom_addr  : unsigned(SPRITE_ROM_ADDR_WIDTH-1 downto 0);
+  signal sprite_rom_data  : std_logic_vector(SPRITE_ROM_DATA_WIDTH-1 downto 0);
+  signal char_rom_addr    : unsigned(CHAR_ROM_ADDR_WIDTH-1 downto 0);
+  signal char_rom_data    : std_logic_vector(CHAR_ROM_DATA_WIDTH-1 downto 0);
+  signal fg_rom_addr      : unsigned(FG_ROM_ADDR_WIDTH-1 downto 0);
+  signal fg_rom_data      : std_logic_vector(FG_ROM_DATA_WIDTH-1 downto 0);
+  signal bg_rom_addr      : unsigned(BG_ROM_ADDR_WIDTH-1 downto 0);
+  signal bg_rom_data      : std_logic_vector(BG_ROM_DATA_WIDTH-1 downto 0);
+  signal sound_rom_1_addr : unsigned(SOUND_ROM_1_ADDR_WIDTH-1 downto 0);
+  signal sound_rom_2_addr : unsigned(SOUND_ROM_2_ADDR_WIDTH-1 downto 0);
 
   -- data output signals
-  signal prog_rom_1_dout : byte_t;
-  signal prog_rom_2_dout : byte_t;
-  signal prog_rom_3_dout : byte_t;
-  signal work_ram_dout   : byte_t;
-  signal gpu_dout        : byte_t;
-  signal io_dout         : nibble_t;
+  signal prog_rom_1_dout  : byte_t;
+  signal prog_rom_2_dout  : byte_t;
+  signal prog_rom_3_dout  : byte_t;
+  signal sound_rom_1_data : byte_t;
+  signal sound_rom_2_data : byte_t;
+  signal work_ram_dout    : byte_t;
+  signal gpu_dout         : byte_t;
+  signal io_dout          : nibble_t;
 
   -- download signals
   signal download_addr : unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
@@ -236,6 +244,18 @@ begin
     prog_rom_3_oe   => not cpu_rd_n,
     prog_rom_3_addr => bank_reg & cpu_addr(PROG_ROM_3_ADDR_WIDTH-BANK_REG_WIDTH-1 downto 0),
     prog_rom_3_data => prog_rom_3_dout,
+
+    -- sound ROM #1 interface
+    sound_rom_1_cs   => sound_rom_1_cs and not ioctl_download,
+    sound_rom_1_oe   => sound_rom_1_oe,
+    sound_rom_1_addr => sound_rom_1_addr,
+    sound_rom_1_data => sound_rom_1_data,
+
+    -- sound ROM #2 interface
+    sound_rom_2_cs   => sound_rom_2_cs and not ioctl_download,
+    sound_rom_2_oe   => sound_rom_2_oe,
+    sound_rom_2_addr => sound_rom_2_addr,
+    sound_rom_2_data => sound_rom_2_data,
 
     -- sprite ROM interface
     sprite_rom_cs   => not ioctl_download,
@@ -346,13 +366,29 @@ begin
   -- address 0xf806.
   sound : entity work.sound
   port map (
-    reset   => reset,
+    reset => reset,
+
     clk     => clk,
     cen_4   => cen_4,
     cen_384 => cen_384,
-    req     => sound_cs and not cpu_wr_n,
-    data    => cpu_dout,
-    audio   => audio
+
+    -- CPU interface
+    req  => sound_cs and not cpu_wr_n,
+    data => cpu_dout,
+
+    -- sound ROM #1 interface
+    sound_rom_1_cs   => sound_rom_1_cs,
+    sound_rom_1_oe   => sound_rom_1_oe,
+    sound_rom_1_addr => sound_rom_1_addr,
+    sound_rom_1_data => sound_rom_1_data,
+
+    -- sound ROM #2 interface
+    sound_rom_2_cs   => sound_rom_2_cs,
+    sound_rom_2_oe   => sound_rom_2_oe,
+    sound_rom_2_addr => sound_rom_2_addr,
+    sound_rom_2_data => sound_rom_2_data,
+
+    audio => audio
   );
 
   -- Trigger an interrupt on the falling edge of the VBLANK signal.
