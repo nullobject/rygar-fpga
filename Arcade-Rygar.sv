@@ -341,7 +341,9 @@ rygar rygar
 
   .r(R),
   .g(G),
-  .b(B)
+  .b(B),
+
+  .audio(AUDIO_L)
 );
 
 endmodule

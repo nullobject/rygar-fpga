@@ -305,7 +305,7 @@ begin
       if state /= next_state then -- state changing
         wait_counter <= 0;
       else
-        wait_counter <= wait_counter+1;
+        wait_counter <= wait_counter + 1;
       end if;
     end if;
   end process;
@@ -319,7 +319,7 @@ begin
       if state = REFRESH and wait_counter = 0 then
         refresh_counter <= 0;
       else
-        refresh_counter <= refresh_counter+1;
+        refresh_counter <= refresh_counter + 1;
       end if;
     end if;
   end process;

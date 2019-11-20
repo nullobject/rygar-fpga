@@ -59,6 +59,12 @@ package common is
   constant BG_ROM_ADDR_WIDTH     : natural := 15; -- 128kB
   constant BG_ROM_DATA_WIDTH     : natural := 32;
 
+  -- sound ROMs
+  constant SOUND_ROM_1_ADDR_WIDTH : natural := 14;
+  constant SOUND_ROM_1_DATA_WIDTH : natural := 8;
+  constant SOUND_ROM_2_ADDR_WIDTH : natural := 15;
+  constant SOUND_ROM_2_DATA_WIDTH : natural := 8;
+
   -- ROM offsets
   constant PROG_ROM_1_OFFSET  : natural := 16#00000#;
   constant PROG_ROM_2_OFFSET  : natural := 16#08000#;
@@ -86,6 +92,9 @@ package common is
   constant SPRITE_RAM_CPU_ADDR_WIDTH  : natural := 11; -- 2kB
   constant SPRITE_RAM_GPU_ADDR_WIDTH  : natural := 8;
   constant SPRITE_RAM_GPU_DATA_WIDTH  : natural := 64;
+
+  -- sound RAM
+  constant SOUND_RAM_ADDR_WIDTH : natural := 11;
 
   -- frame buffer
   constant FRAME_BUFFER_ADDR_WIDTH : natural := 16;
@@ -192,6 +201,9 @@ package common is
 
   -- represents a graphics layer
   type layer_t is (SPRITE_LAYER, CHAR_LAYER, FG_LAYER, BG_LAYER, FILL_LAYER);
+
+  -- represents an audio sample
+  subtype audio_t is signed(15 downto 0);
 
   -- calculates the log2 of the given number
   function ilog2(n : natural) return natural;

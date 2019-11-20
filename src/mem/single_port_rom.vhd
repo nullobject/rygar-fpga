@@ -22,37 +22,55 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
--- Generates a pulse when a rising or falling edge is detected for the input
--- signal.
-entity edge_detector is
+library altera_mf;
+use altera_mf.altera_mf_components.all;
+
+entity single_port_rom is
   generic (
-    RISING  : boolean := false;
-    FALLING : boolean := false
+    ADDR_WIDTH : natural := 8;
+    DATA_WIDTH : natural := 8;
+    INIT_FILE  : string := ""
   );
   port (
     -- clock
     clk : in std_logic;
 
-    -- data input
-    data : in std_logic;
+    -- chip select
+    cs : in std_logic := '1';
 
-    -- output data
-    q : out std_logic
+    -- address
+    addr : in unsigned(ADDR_WIDTH-1 downto 0);
+
+    -- data out
+    dout : out std_logic_vector(DATA_WIDTH-1 downto 0)
   );
-end edge_detector;
+end single_port_rom;
 
-architecture arch of edge_detector is
-  signal t0 : std_logic;
-  signal a, b : std_logic;
+architecture arch of single_port_rom is
+  signal q : std_logic_vector(DATA_WIDTH-1 downto 0);
 begin
-  process (clk)
-  begin
-    if rising_edge(clk) then
-      t0 <= data;
-    end if;
-  end process;
+  altsyncram_component : altsyncram
+  generic map (
+    address_aclr_a         => "NONE",
+    clock_enable_input_a   => "BYPASS",
+    clock_enable_output_a  => "BYPASS",
+    init_file              => INIT_FILE,
+    intended_device_family => "Cyclone V",
+    lpm_hint               => "ENABLE_RUNTIME_MOD=NO",
+    lpm_type               => "altsyncram",
+    numwords_a             => 2**ADDR_WIDTH,
+    operation_mode         => "ROM",
+    outdata_aclr_a         => "NONE",
+    outdata_reg_a          => "UNREGISTERED",
+    width_a                => DATA_WIDTH,
+    width_byteena_a        => 1,
+    widthad_a              => ADDR_WIDTH
+  )
+  port map (
+    address_a => std_logic_vector(addr),
+    clock0    => clk,
+    q_a       => q
+  );
 
-  a <= (not t0 and data) when RISING else '0';
-  b <= (t0 and not data) when FALLING else '0';
-  q <= a or b;
+  dout <= q when cs = '1' else (others => '0');
 end architecture arch;
