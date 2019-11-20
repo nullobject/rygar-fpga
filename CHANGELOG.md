@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* Add sound
+
 ## v1.0.0-beta.1 (2019-10-24)
 
 * Swap fire and jump buttons
