@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.0.0-beta.2 (2019-11-20)
+
 * Add sound
 
 ## v1.0.0-beta.1 (2019-10-24)
