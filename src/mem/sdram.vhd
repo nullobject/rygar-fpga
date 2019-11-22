@@ -25,15 +25,46 @@ use ieee.math_real.all;
 
 use work.common.all;
 
--- The SDRAM controller provides a symmetric 32-bit synchronous read-write
--- interface to a 16Mx16-bit SDRAM chip.
---
--- Because the SDRAM data bus is only 16-bits wide, the controller must burst
--- two 16-bit words to read/write a single 32-bit word to the SDRAM.
+-- This SDRAM controller provides a symmetric 32-bit synchronous read/write
+-- interface for a 16Mx16-bit SDRAM chip (e.g. AS4C16M16SA-6TCN, IS42S16400F,
+-- etc.).
 entity sdram is
   generic (
     -- clock frequency (in MHz)
-    CLK_FREQ : real
+    --
+    -- This value must be provided, as it is used to calculate the number of
+    -- clock cycles required for the other timing values.
+    CLK_FREQ : real;
+
+    -- 32-bit controller interface
+    ADDR_WIDTH : natural := 23;
+    DATA_WIDTH : natural := 32;
+
+    -- SDRAM interface
+    SDRAM_ADDR_WIDTH : natural := 13;
+    SDRAM_DATA_WIDTH : natural := 16;
+    SDRAM_COL_WIDTH  : natural := 9;
+    SDRAM_ROW_WIDTH  : natural := 13;
+    SDRAM_BANK_WIDTH : natural := 2;
+
+    -- The delay in clock cycles, between the start of a read command and the
+    -- availability of the output data.
+    CAS_LATENCY : natural := 2; -- 2=below 133MHz, 3=above 133MHz
+
+    -- The number of 16-bit words to be bursted during a read/write.
+    BURST_LENGTH : natural := 2;
+
+    -- timing values (in nanoseconds)
+    --
+    -- These values can be adjusted to match the exact timing of your SDRAM
+    -- chip (refer to the datasheet).
+    T_DESL : real := 200000.0; -- startup delay
+    T_MRD  : real :=     12.0; -- mode register cycle time
+    T_RC   : real :=     60.0; -- row cycle time
+    T_RCD  : real :=     18.0; -- RAS to CAS delay
+    T_RP   : real :=     18.0; -- precharge to activate delay
+    T_WR   : real :=     12.0; -- write recovery time
+    T_REFI : real :=   7800.0  -- average refresh interval
   );
   port (
     -- reset
@@ -43,10 +74,10 @@ entity sdram is
     clk : in std_logic;
 
     -- address bus
-    addr : in unsigned(SDRAM_CTRL_ADDR_WIDTH-1 downto 0);
+    addr : in unsigned(ADDR_WIDTH-1 downto 0);
 
     -- input data bus
-    data : in std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
+    data : in std_logic_vector(DATA_WIDTH-1 downto 0);
 
     -- When the write enable signal is asserted, a write operation will be performed.
     we : in std_logic;
@@ -63,9 +94,9 @@ entity sdram is
     valid : out std_logic;
 
     -- output data bus
-    q : out std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
+    q : out std_logic_vector(DATA_WIDTH-1 downto 0);
 
-    -- SDRAM interface
+    -- SDRAM interface (e.g. AS4C16M16SA-6TCN, IS42S16400F, etc.)
     sdram_a     : out unsigned(SDRAM_ADDR_WIDTH-1 downto 0);
     sdram_ba    : out unsigned(SDRAM_BANK_WIDTH-1 downto 0);
     sdram_dq    : inout std_logic_vector(SDRAM_DATA_WIDTH-1 downto 0);
@@ -93,24 +124,8 @@ architecture arch of sdram is
   constant CMD_STOP         : command_t := "0110";
   constant CMD_NOP          : command_t := "0111";
 
-  -- timing values taken directly from the datasheet (in nanoseconds)
-  constant T_DESL : real := 200000.0; -- startup delay
-  constant T_MRD  : real :=     12.0; -- mode register cycle time
-  constant T_RC   : real :=     60.0; -- row cycle time
-  constant T_RCD  : real :=     18.0; -- RAS to CAS delay
-  constant T_RP   : real :=     18.0; -- precharge to activate delay
-  constant T_WR   : real :=     12.0; -- write recovery time
-  constant T_REFI : real :=   7800.0; -- average refresh interval
-
-  -- the number of words in a burst
-  constant BURST_LENGTH : natural := 2;
-
   -- the ordering of the accesses within a burst
   constant BURST_TYPE : std_logic := '0'; -- 0=sequential, 1=interleaved
-
-  -- the delay in clock cycles, between the start of a read command and the
-  -- availability of the output data
-  constant CAS_LATENCY : natural := 2; -- 2=below 133MHz, 3=above 133MHz
 
   -- the write burst mode enables bursting for write operations
   constant WRITE_BURST_MODE : std_logic := '0'; -- 0=burst, 1=single
@@ -125,7 +140,7 @@ architecture arch of sdram is
     to_unsigned(ilog2(BURST_LENGTH), 3)
   );
 
-  -- calculate the clock period in nanoseconds
+  -- calculate the clock period (in nanoseconds)
   constant CLK_PERIOD : real := 1.0/CLK_FREQ*1000.0;
 
   -- the number of clock cycles to wait before initialising the device
@@ -181,9 +196,9 @@ architecture arch of sdram is
 
   -- registers
   signal addr_reg : unsigned(SDRAM_COL_WIDTH+SDRAM_ROW_WIDTH+SDRAM_BANK_WIDTH-1 downto 0);
-  signal data_reg : std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
+  signal data_reg : std_logic_vector(DATA_WIDTH-1 downto 0);
   signal we_reg   : std_logic;
-  signal q_reg    : std_logic_vector(SDRAM_CTRL_DATA_WIDTH-1 downto 0);
+  signal q_reg    : std_logic_vector(DATA_WIDTH-1 downto 0);
 
   -- aliases to decode the address register
   alias col  : unsigned(SDRAM_COL_WIDTH-1 downto 0) is addr_reg(SDRAM_COL_WIDTH-1 downto 0);
