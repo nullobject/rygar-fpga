@@ -168,15 +168,14 @@ begin
     done      => pcm_done
   );
 
-  msm5205 : entity work.msm5205
-  generic map (SAMPLE_FREQ => "10")
+  pcm : entity work.pcm
   port map (
     reset  => pcm_done,
     clk    => clk,
     cen    => cen_384,
-    vck    => pcm_vck,
     din    => pcm_data,
-    sample => pcm_sample
+    sample => pcm_sample,
+    irq    => pcm_vck
   );
 
   nmi : process (clk, reset)
