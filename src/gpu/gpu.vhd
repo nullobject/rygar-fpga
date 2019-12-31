@@ -118,7 +118,7 @@ begin
   video_gen : entity work.video_gen
   port map (
     clk   => clk,
-    cen_6 => cen_6,
+    cen   => cen_6,
     video => video
   );
 

@@ -41,8 +41,8 @@ use work.common.all;
 entity video_gen is
   port (
     -- clock signals
-    clk   : in std_logic;
-    cen_6 : in std_logic;
+    clk : in std_logic;
+    cen : in std_logic;
 
     -- video signals
     video : out video_t
@@ -51,18 +51,18 @@ end video_gen;
 
 architecture arch of video_gen is
   -- horizontal regions
-  constant H_DISPLAY     : natural := 256;
-  constant H_FRONT_PORCH : natural := 48;
+  constant H_FRONT_PORCH : natural := 40;
   constant H_RETRACE     : natural := 32;
-  constant H_BACK_PORCH  : natural := 48;
-  constant H_SCAN        : natural := H_DISPLAY+H_FRONT_PORCH+H_RETRACE+H_BACK_PORCH; -- 384
+  constant H_BACK_PORCH  : natural := 56;
+  constant H_DISPLAY     : natural := 256;
+  constant H_SCAN        : natural := H_FRONT_PORCH+H_RETRACE+H_BACK_PORCH+H_DISPLAY; -- 384
 
   -- vertical regions
-  constant V_DISPLAY     : natural := 224;
   constant V_FRONT_PORCH : natural := 16;
   constant V_RETRACE     : natural := 8;
   constant V_BACK_PORCH  : natural := 16;
-  constant V_SCAN        : natural := V_DISPLAY+V_FRONT_PORCH+V_RETRACE+V_BACK_PORCH; -- 264
+  constant V_DISPLAY     : natural := 224;
+  constant V_SCAN        : natural := V_FRONT_PORCH+V_RETRACE+V_BACK_PORCH+V_DISPLAY; -- 264
 
   -- initial counter values
   constant H_START : natural := 128;
@@ -82,19 +82,23 @@ begin
   horizontal_timing : process (clk)
   begin
     if rising_edge(clk) then
-      if cen_6 = '1' then
-        if x = 511 then
+      if cen = '1' then
+        if x = x'high then
           x <= H_START;
         else
           x <= x + 1;
         end if;
 
+        -- Assert the HSYNC signal after the front porch region. Deassert it
+        -- after the horizontal retrace.
         if x = H_START+H_FRONT_PORCH+H_RETRACE-1 then
           hsync <= '0';
         elsif x = H_START+H_FRONT_PORCH-1 then
           hsync <= '1';
         end if;
 
+        -- Assert the HBLANK signal at the end of the scan line. Deassert it
+        -- after the back porch region.
         if x = H_START+H_FRONT_PORCH+H_RETRACE+H_BACK_PORCH-1 then
           hblank <= '0';
         elsif x = H_START+H_SCAN-1 then
@@ -108,9 +112,9 @@ begin
   vertical_timing : process (clk)
   begin
     if rising_edge(clk) then
-      if cen_6 = '1' then
+      if cen = '1' then
         if x = H_START+H_FRONT_PORCH-1 then
-          if y = 511 then
+          if y = y'high then
             y <= V_START;
           else
             y <= y + 1;

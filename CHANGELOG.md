@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* Centre CRT image
+
 ## v1.0.0-beta.2 (2019-11-20)
 
 * Add sound
