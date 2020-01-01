@@ -31,15 +31,11 @@ module emu
   inout  [45:0] HPS_BUS,
 
   //Base video clock. Usually equals to CLK_SYS.
-  output        CLK_VIDEO,
+  output        VGA_CLK,
 
-  //Multiple resolutions are supported using different CE_PIXEL rates.
+  //Multiple resolutions are supported using different VGA_CE rates.
   //Must be based on CLK_VIDEO
-  output        CE_PIXEL,
-
-  //Video aspect ratio for HDMI. Most retro systems have ratio 4:3.
-  output  [7:0] VIDEO_ARX,
-  output  [7:0] VIDEO_ARY,
+  output        VGA_CE,
 
   output  [7:0] VGA_R,
   output  [7:0] VGA_G,
@@ -48,7 +44,25 @@ module emu
   output        VGA_VS,
   output        VGA_DE,    // = ~(VBlank | HBlank)
   output        VGA_F1,
-  output  [1:0] VGA_SL,
+
+  //Base video clock. Usually equals to CLK_SYS.
+  output        HDMI_CLK,
+
+  //Multiple resolutions are supported using different HDMI_CE rates.
+  //Must be based on CLK_VIDEO
+  output        HDMI_CE,
+
+  output  [7:0] HDMI_R,
+  output  [7:0] HDMI_G,
+  output  [7:0] HDMI_B,
+  output        HDMI_HS,
+  output        HDMI_VS,
+  output        HDMI_DE,    // = ~(VBlank | HBlank)
+  output  [1:0] HDMI_SL,    // scanlines fx
+
+  //Video aspect ratio for HDMI. Most retro systems have ratio 4:3.
+  output  [7:0] HDMI_ARX,
+  output  [7:0] HDMI_ARY,
 
   output        LED_USER,  // 1 - ON, 0 - OFF.
 
@@ -61,30 +75,6 @@ module emu
   output [15:0] AUDIO_L,
   output [15:0] AUDIO_R,
   output        AUDIO_S,   // 1 - signed audio samples, 0 - unsigned
-  output  [1:0] AUDIO_MIX, // 0 - no mix, 1 - 25%, 2 - 50%, 3 - 100% (mono)
-
-  //ADC
-  inout   [3:0] ADC_BUS,
-
-  // SD-SPI
-  output        SD_SCK,
-  output        SD_MOSI,
-  input         SD_MISO,
-  output        SD_CS,
-  input         SD_CD,
-
-  //High latency DDR3 RAM interface
-  //Use for non-critical time purposes
-  output        DDRAM_CLK,
-  input         DDRAM_BUSY,
-  output  [7:0] DDRAM_BURSTCNT,
-  output [28:0] DDRAM_ADDR,
-  input  [63:0] DDRAM_DOUT,
-  input         DDRAM_DOUT_READY,
-  output        DDRAM_RD,
-  output [63:0] DDRAM_DIN,
-  output  [7:0] DDRAM_BE,
-  output        DDRAM_WE,
 
   //SDRAM interface with lower latency
   output        SDRAM_CLK,
@@ -99,46 +89,32 @@ module emu
   output        SDRAM_nRAS,
   output        SDRAM_nWE,
 
-  input         UART_CTS,
-  output        UART_RTS,
-  input         UART_RXD,
-  output        UART_TXD,
-  output        UART_DTR,
-  input         UART_DSR,
-
   // Open-drain User port.
   // 0 - D+/RX
   // 1 - D-/TX
-  // 2..5 - USR1..USR4
+  // 2..6 - USR1..USR6
   // Set USER_OUT to 1 to read from USER_IN.
-  input   [5:0] USER_IN,
-  output  [5:0] USER_OUT,
-
-  input         OSD_STATUS
+  input   [6:0] USER_IN,
+  output  [6:0] USER_OUT
 );
 
-assign USER_OUT = '1;
-assign VGA_F1 = 0;
-assign {UART_RTS, UART_TXD, UART_DTR} = 0;
-assign {SD_SCK, SD_MOSI, SD_CS} = 'Z;
-
-assign AUDIO_R   = AUDIO_L;
-assign AUDIO_S   = 1;
-
+assign VGA_F1    = 0;
+assign USER_OUT  = '1;
 assign LED_USER  = ioctl_download;
 assign LED_DISK  = 0;
 assign LED_POWER = 0;
 
-assign CLK_VIDEO = clk_sys;
-assign VIDEO_ARX = 8'd4;
-assign VIDEO_ARY = 8'd3;
+assign HDMI_ARX = 8'd4;
+assign HDMI_ARY = 8'd3;
+
+assign AUDIO_R   = AUDIO_L;
+assign AUDIO_S   = 1;
 
 `include "build_id.v"
 localparam CONF_STR = {
   "A.Rygar;;",
-  "F,rom;",
   "-;",
-  "O1,Aspect Ratio,Original,Wide;",
+  "H0O1,Aspect Ratio,Original,Wide;",
   "O35,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
   "-;",
   "O89,Lives,3,4,5,2;",
@@ -148,7 +124,7 @@ localparam CONF_STR = {
   "OF,Allow Continue,Yes,No;",
   "-;",
   "R0,Reset;",
-  "J1,Fire,Jump,Start 1P,Start 2P,Coin;",
+  "J1,Fire,Jump,Start 1P,Coin;",
   "V,v",`BUILD_DATE
 };
 
@@ -170,6 +146,8 @@ pll pll
 
 wire [31:0] status;
 wire  [1:0] buttons;
+wire        forced_scandoubler;
+wire        direct_video;
 
 wire [24:0] ioctl_addr;
 wire  [7:0] ioctl_data;
@@ -181,7 +159,7 @@ wire [10:0] ps2_key;
 wire  [8:0] joystick_0, joystick_1;
 wire [15:0] joy = joystick_0 | joystick_1;
 
-wire forced_scandoubler;
+wire [21:0] gamma_bus;
 
 hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 (
@@ -193,11 +171,13 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
   .buttons(buttons),
   .status(status),
   .forced_scandoubler(forced_scandoubler),
+  .gamma_bus(gamma_bus),
+  .direct_video(direct_video),
 
+  .ioctl_download(ioctl_download),
+  .ioctl_wr(ioctl_wr),
   .ioctl_addr(ioctl_addr),
   .ioctl_dout(ioctl_data),
-  .ioctl_wr(ioctl_wr),
-  .ioctl_download(ioctl_download),
 
   .joystick_0(joystick_0),
   .joystick_1(joystick_1),
@@ -205,24 +185,19 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 );
 
 ///////////////////////////////////////////////////////////////////
+//
+wire [3:0] R,G,B;
+wire HSync,VSync,HBlank,VBlank;
 
-wire [3:0] R, G, B;
-wire HSync, VSync, HBlank, VBlank;
-wire [2:0] scale = status[5:3];
-wire scandoubler = (scale || forced_scandoubler);
-
-video_mixer #(.LINE_LENGTH(256), .HALF_DEPTH(1)) video_mixer
+arcade_fx #(256, 12) arcade_video
 (
-  .*,
-
-  .clk_sys(clk_sys),
+	.*,
+	.clk_video(clk_sys),
   .ce_pix(cen_12),
-  .ce_pix_out(CE_PIXEL),
-
-  .scanlines(0),
-  .scandoubler(scandoubler),
-  .hq2x(scale==1),
-  .mono(0)
+	.HBlank(~HBlank),
+	.VBlank(~VBlank),
+	.RGB_in({R,G,B}),
+	.fx(status[5:3])
 );
 
 wire [22:0] sdram_addr;
@@ -270,7 +245,6 @@ reg key_up      = 0;
 reg key_jump    = 0;
 reg key_fire    = 0;
 reg key_start_1 = 0;
-reg key_start_2 = 0;
 reg key_coin    = 0;
 
 always @(posedge clk_sys) begin
@@ -284,7 +258,6 @@ always @(posedge clk_sys) begin
       'h6B: key_left    <= pressed; // left
       'h74: key_right   <= pressed; // right
       'h16: key_start_1 <= pressed; // 1
-      'h1E: key_start_2 <= pressed; // 2
       'h2E: key_coin    <= pressed; // 5
       'h14: key_fire    <= pressed; // ctrl
       'h11: key_jump    <= pressed; // alt
@@ -299,8 +272,7 @@ wire up      = key_up      | joy[3];
 wire fire    = key_fire    | joy[4];
 wire jump    = key_jump    | joy[5];
 wire start_1 = key_start_1 | joy[6];
-wire start_2 = key_start_2 | joy[7];
-wire coin    = key_coin    | joy[8];
+wire coin    = key_coin    | joy[7];
 
 rygar rygar
 (
@@ -311,7 +283,7 @@ rygar rygar
   .joystick_1({2'b0, jump, fire, up, down, right, left}),
   .joystick_2({2'b0, jump, fire, up, down, right, left}),
   .start_1(start_1),
-  .start_2(start_2),
+  .start_2(1'b0),
   .coin_1(coin),
   .coin_2(1'b0),
 
