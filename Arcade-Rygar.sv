@@ -149,10 +149,10 @@ wire  [1:0] buttons;
 wire        forced_scandoubler;
 wire        direct_video;
 
+wire        ioctl_download;
+wire        ioctl_wr;
 wire [24:0] ioctl_addr;
 wire  [7:0] ioctl_data;
-wire        ioctl_wr;
-wire        ioctl_download;
 
 wire [10:0] ps2_key;
 
