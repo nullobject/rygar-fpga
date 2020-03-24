@@ -1,0 +1,40 @@
+<misterromdescription>
+	<name>Rygar</name>
+	<mameversion>02XX</mameversion>
+	<setname>rygar</setname>
+	<mratimestamp>20200324000000</mratimestamp>
+	<year>1986</year>
+	<manufacturer>Tecmo</manufacturer>
+	<category>Adventure</category>
+	<category>Plateform</category>
+	<rbf>rygar</rbf>
+	<switches default="00">
+		<dip bits="0,1"  name="Lives" ids="3,4,5,2"/>
+		<dip bits="2"    name="Cabinet" ids="Upright,Cocktail"/>
+		<dip bits="3,4"  name="Bonus Life" ids="50K 200K 500K,100K 300K 600K,200K 500K,100K"/>
+		<dip bits="5,6"  name="Difficulty" ids="Easy,Normal,Hard,Hardest"/>
+		<dip bits="7"    name="Allow Continue" ids="Yes,No"/>
+	</switches>
+	<buttons names="Fire,Jump,Start 1P,Start 2P,Coin" default="A,Start,Select,R"/>
+	<rom index="0" zip="rygar.zip" md5="4055575F902E214162E2D2557EB44AAB">
+		<part name="5.5p"/>
+		<part name="cpu_5m.bin"/>
+		<part name="cpu_5j.bin"/>
+		<part name="cpu_8k.bin"/>
+		<part name="vid_6p.bin"/>
+		<part name="vid_6o.bin"/>
+		<part name="vid_6n.bin"/>
+		<part name="vid_6l.bin"/>
+		<part name="vid_6f.bin"/>
+		<part name="vid_6e.bin"/>
+		<part name="vid_6c.bin"/>
+		<part name="vid_6b.bin"/>
+		<part name="vid_6k.bin"/>
+		<part name="vid_6j.bin"/>
+		<part name="vid_6h.bin"/>
+		<part name="vid_6g.bin"/>
+		<part name="cpu_4h.bin"/>
+		<part name="cpu_4h.bin"/>
+		<part name="cpu_1f.bin"/>
+	</rom>
+</misterromdescription>
