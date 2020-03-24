@@ -352,7 +352,12 @@ begin
     cen_384 => cen_384,
     req     => sound_cs and not cpu_wr_n,
     data    => cpu_dout,
-    audio   => audio
+    audio   => audio,
+	 
+	 dl_addr => ioctl_addr,
+	 dl_wr   => ioctl_wr and ioctl_download,
+	 dl_data => ioctl_data
+
   );
 
   -- Trigger an interrupt on the falling edge of the VBLANK signal.

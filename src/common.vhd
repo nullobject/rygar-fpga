@@ -59,10 +59,10 @@ package common is
   constant BG_ROM_ADDR_WIDTH     : natural := 15; -- 128kB
   constant BG_ROM_DATA_WIDTH     : natural := 32;
 
-  -- sound ROMs
-  constant SOUND_ROM_1_ADDR_WIDTH : natural := 14;
+  -- sound ROM
+  constant SOUND_ROM_1_ADDR_WIDTH : natural := 14; -- 16kB (cpu_4h.bin is 8kB only in rygar.zip)
   constant SOUND_ROM_1_DATA_WIDTH : natural := 8;
-  constant SOUND_ROM_2_ADDR_WIDTH : natural := 15;
+  constant SOUND_ROM_2_ADDR_WIDTH : natural := 15; -- 32kB? (ROM 1H is 27C128 => 16kB only)
   constant SOUND_ROM_2_DATA_WIDTH : natural := 8;
 
   -- ROM offsets

@@ -38,7 +38,13 @@ entity sound is
     data : in byte_t;
 
     -- audio data
-    audio : out audio_t
+    audio : out audio_t;
+
+	-- download interface
+	dl_addr : in  unsigned(IOCTL_ADDR_WIDTH-1 downto 0);
+	dl_wr   : in  std_logic;
+    dl_data : in  std_logic_vector( 7 downto 0)
+
   );
 end entity sound;
 
@@ -84,6 +90,14 @@ architecture arch of sound is
   signal pcm_vck     : std_logic;
   signal pcm_data    : nibble_t;
   signal pcm_sample  : signed(11 downto 0);
+  
+  signal sound_rom_1_we : std_logic;
+  signal rom_1_data     : std_logic_vector(7 downto 0);
+  signal rom_1_addr     : unsigned(12 downto 0);
+  signal sound_rom_2_we : std_logic;
+  signal rom_2_data     : std_logic_vector( 7 downto 0);
+  signal rom_2_addr     : unsigned(13 downto 0);
+  
 begin
   cpu : entity work.T80s
   port map (
@@ -104,30 +118,62 @@ begin
     DO                  => cpu_dout
   );
 
+   
   -- contains sound program data
-  sound_rom_1 : entity work.single_port_rom
-  generic map (
-    ADDR_WIDTH => SOUND_ROM_1_ADDR_WIDTH,
-    INIT_FILE  => "rom/cpu_4h.mif"
-  )
-  port map (
-    clk  => clk,
-    cs   => sound_rom_1_cs,
-    addr => cpu_addr(SOUND_ROM_1_ADDR_WIDTH-1 downto 0),
-    dout => sound_rom_1_data
-  );
+  sound_rom_1_we <= '1' when dl_wr = '1' and dl_addr(21 downto 13) = "000111110" else '0'; --7C000 - 7DFFF
+  sound_rom_1_data <=  rom_1_data when sound_rom_1_cs = '1' else X"00";  
+  rom_1_addr <= dl_addr(12 downto 0) when dl_wr = '1' else cpu_addr(12 downto 0);  
 
-  -- contains PCM data
-  sound_rom_2 : entity work.single_port_rom
-  generic map (
-    ADDR_WIDTH => SOUND_ROM_2_ADDR_WIDTH,
-    INIT_FILE  => "rom/cpu_1f.mif"
-  )
+  sound_rom_1 : entity work.single_port_ram
+  generic map (ADDR_WIDTH => 13)
   port map (
     clk  => clk,
-    addr => pcm_addr,
-    dout => sound_rom_2_data
+    cs   => '1',
+    addr => rom_1_addr,
+    din  => dl_data,
+    dout => rom_1_data,
+    we   => sound_rom_1_we
   );
+  
+--  sound_rom_1 : entity work.single_port_rom
+--  generic map (
+--    ADDR_WIDTH => SOUND_ROM_1_ADDR_WIDTH,
+--    INIT_FILE  => "rom/cpu_4h.hex"   -- 8Ko
+--  )
+--  port map (
+--    clk  => clk,
+--    cs   => sound_rom_1_cs,
+--    addr => cpu_addr(SOUND_ROM_1_ADDR_WIDTH-1 downto 0),
+--    dout => sound_rom_1_data
+--  );
+
+  
+  -- contains PCM data
+  sound_rom_2_we <= '1' when dl_wr = '1' and dl_addr(21 downto 14) = "00100000" else '0'; -- 80000 - 83FFF
+  sound_rom_2_data <= rom_2_data when pcm_addr(14) = '0' else X"00";
+  rom_2_addr <= dl_addr(13 downto 0) when dl_wr = '1' else pcm_addr(13 downto 0);  
+
+  sound_rom_2 : entity work.single_port_ram
+  generic map (ADDR_WIDTH => 14)
+  port map (
+    clk  => clk,
+    cs   => '1',
+    addr => rom_2_addr,
+    din  => dl_data,
+    dout => rom_2_data,
+    we   => sound_rom_2_we
+  );
+  
+--  sound_rom_2 : entity work.single_port_ram
+--  generic map (
+--    ADDR_WIDTH => SOUND_ROM_2_ADDR_WIDTH-1,
+--    INIT_FILE  => "rom/cpu_1f.hex"    -- 16Ko
+--  )
+--  port map (
+--    clk  => clk,
+--    addr => pcm_addr(SOUND_ROM_2_ADDR_WIDTH-1-1 downto 0),
+--    dout => rom_2_data -- sound_rom_2_data
+--  );
 
   sound_ram : entity work.single_port_ram
   generic map (ADDR_WIDTH => SOUND_RAM_ADDR_WIDTH)
