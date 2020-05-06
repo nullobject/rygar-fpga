@@ -280,21 +280,21 @@ begin
   -- main CPU
   cpu : entity work.T80s
   port map (
-    RESET_n             => not reset,
-    CLK                 => clk,
-    CEN                 => cen_4,
-    INT_n               => cpu_int_n,
-    M1_n                => cpu_m1_n,
-    MREQ_n              => cpu_mreq_n,
-    IORQ_n              => cpu_ioreq_n,
-    RD_n                => cpu_rd_n,
-    WR_n                => cpu_wr_n,
-    RFSH_n              => cpu_rfsh_n,
-    HALT_n              => open,
-    BUSAK_n             => open,
-    std_logic_vector(A) => cpu_addr,
-    DI                  => cpu_din,
-    DO                  => cpu_dout
+    RESET_n     => not reset,
+    CLK         => clk,
+    CEN         => cen_4,
+    INT_n       => cpu_int_n,
+    M1_n        => cpu_m1_n,
+    MREQ_n      => cpu_mreq_n,
+    IORQ_n      => cpu_ioreq_n,
+    RD_n        => cpu_rd_n,
+    WR_n        => cpu_wr_n,
+    RFSH_n      => cpu_rfsh_n,
+    HALT_n      => open,
+    BUSAK_n     => open,
+    unsigned(A) => cpu_addr,
+    DI          => cpu_din,
+    DO          => cpu_dout
   );
 
   -- GPU
